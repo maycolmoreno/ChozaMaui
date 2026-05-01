@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChozaMaui.ViewModels"
+             xmlns:models="clr-namespace:ChozaMaui.Models"
+             x:Class="ChozaMaui.Views.ProductosPage"
+             x:DataType="vm:ProductosViewModel"
+             Title="Productos"
+             BackgroundColor="{StaticResource Gray100}">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- ══ HEADER NARANJA ══ -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource Orange}" Padding="16,48,16,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Label Grid.Column="0" Text="Gestión de Productos"
+                   FontSize="22" FontAttributes="Bold" TextColor="White"
+                   VerticalOptions="Center" />
+            <!-- Botón nuevo: cambia según pestaña -->
+            <Button Grid.Column="1" FontSize="13" TextColor="White"
+                    BackgroundColor="#e67e00" CornerRadius="8" Padding="12,6"
+                    VerticalOptions="Center">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding MostrarCategorias}" Value="False">
+                        <Setter Property="Text" Value="+ Producto" />
+                        <Setter Property="Command" Value="{Binding AbrirNuevoProductoCommand}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Button" Binding="{Binding MostrarCategorias}" Value="True">
+                        <Setter Property="Text" Value="+ Categoría" />
+                        <Setter Property="Command" Value="{Binding AbrirNuevaCategoriaCommand}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+        </Grid>
+
+        <!-- ══ TABS ══ -->
+        <Grid Grid.Row="1" BackgroundColor="{StaticResource Orange}" Padding="16,0,16,12"
+              ColumnDefinitions="*,*" ColumnSpacing="8">
+            <!-- Productos tab -->
+            <Border Grid.Column="0" StrokeShape="RoundRectangle 20" Stroke="Transparent"
+                    Padding="0">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding MostrarCategorias}" Value="False">
+                        <Setter Property="BackgroundColor" Value="White" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Border" Binding="{Binding MostrarCategorias}" Value="True">
+                        <Setter Property="BackgroundColor" Value="Transparent" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <Button Text="Productos" CornerRadius="20" Padding="0,8"
+                        BackgroundColor="Transparent"
+                        Command="{Binding VerProductosCommand}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding MostrarCategorias}" Value="False">
+                            <Setter Property="TextColor" Value="{StaticResource Orange}" />
+                            <Setter Property="FontAttributes" Value="Bold" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding MostrarCategorias}" Value="True">
+                            <Setter Property="TextColor" Value="White" />
+                            <Setter Property="FontAttributes" Value="None" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </Border>
+            <!-- Categorías tab -->
+            <Border Grid.Column="1" StrokeShape="RoundRectangle 20" Stroke="Transparent"
+                    Padding="0">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding MostrarCategorias}" Value="True">
+                        <Setter Property="BackgroundColor" Value="White" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Border" Binding="{Binding MostrarCategorias}" Value="False">
+                        <Setter Property="BackgroundColor" Value="Transparent" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <Button Text="Categorías" CornerRadius="20" Padding="0,8"
+                        BackgroundColor="Transparent"
+                        Command="{Binding VerCategoriasCommand}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding MostrarCategorias}" Value="True">
+                            <Setter Property="TextColor" Value="{StaticResource Orange}" />
+                            <Setter Property="FontAttributes" Value="Bold" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding MostrarCategorias}" Value="False">
+                            <Setter Property="TextColor" Value="White" />
+                            <Setter Property="FontAttributes" Value="None" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </Border>
+        </Grid>
+
+        <!-- ══ CONTENIDO ══ -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Spacing="0">
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
+                                   Color="{StaticResource Orange}"
+                                   HorizontalOptions="Center" Margin="0,20" />
+
+                <VerticalStackLayout Padding="16" Spacing="12"
+                                     IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}">
+
+                    <!-- Mensaje feedback -->
+                    <Frame IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
+                           CornerRadius="8" Padding="12" HasShadow="False">
+                        <Frame.Triggers>
+                            <DataTrigger TargetType="Frame" Binding="{Binding MensajeExito}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{StaticResource OrangeLight}" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Frame" Binding="{Binding MensajeExito}" Value="False">
+                                <Setter Property="BackgroundColor" Value="#fdecea" />
+                            </DataTrigger>
+                        </Frame.Triggers>
+                        <Label Text="{Binding Mensaje}" FontSize="13"
+                               TextColor="{StaticResource TextPrimary}"
+                               HorizontalTextAlignment="Center" />
+                    </Frame>
+
+                    <!-- ══════════════════════════════════════════════
+                         SECCIÓN PRODUCTOS
+                    ══════════════════════════════════════════════ -->
+                    <VerticalStackLayout Spacing="12"
+                                         IsVisible="{Binding MostrarCategorias, Converter={StaticResource InvertBoolConverter}}">
+
+                        <!-- Formulario producto -->
+                        <Frame IsVisible="{Binding MostrarFormulario}"
+                               BackgroundColor="White" CornerRadius="12" Padding="16" HasShadow="False">
+                            <VerticalStackLayout Spacing="10">
+                                <Label FontSize="16" FontAttributes="Bold"
+                                       TextColor="{StaticResource Orange}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding EsEdicion}" Value="True">
+                                            <Setter Property="Text" Value="Editar producto" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label" Binding="{Binding EsEdicion}" Value="False">
+                                            <Setter Property="Text" Value="Nuevo producto" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+
+                                <Entry Placeholder="Nombre *" Text="{Binding FormNombre}"
+                                       BackgroundColor="{StaticResource Gray100}" FontSize="14" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                    <Entry Grid.Column="0" Placeholder="Precio *"
+                                           Text="{Binding FormPrecio}" Keyboard="Numeric"
+                                           BackgroundColor="{StaticResource Gray100}" FontSize="14" />
+                                    <Entry Grid.Column="1" Placeholder="Stock"
+                                           Text="{Binding FormStock}" Keyboard="Numeric"
+                                           BackgroundColor="{StaticResource Gray100}" FontSize="14" />
+                                </Grid>
+                                <Entry Placeholder="Descripción"
+                                       Text="{Binding FormDescripcion}"
+                                       BackgroundColor="{StaticResource Gray100}" FontSize="14" />
+                                <Entry Placeholder="URL imagen (opcional)"
+                                       Text="{Binding FormImagenUrl}"
+                                       BackgroundColor="{StaticResource Gray100}" FontSize="14" />
+
+                                <!-- Picker categoría -->
+                                <Picker Title="Categoría *"
+                                        ItemsSource="{Binding Categorias}"
+                                        SelectedItem="{Binding FormCategoria}"
+                                        ItemDisplayBinding="{Binding Nombre}"
+                                        BackgroundColor="{StaticResource Gray100}"
+                                        FontSize="14" />
+
+                                <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                    <Label Text="Activo" FontSize="14"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           VerticalOptions="Center" />
+                                    <Switch IsToggled="{Binding FormEstado}"
+                                            OnColor="{StaticResource Orange}" />
+                                </HorizontalStackLayout>
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,4,0,0">
+                                    <Button Grid.Column="0" Text="Cancelar"
+                                            BackgroundColor="{StaticResource Gray100}"
+                                            TextColor="{StaticResource TextSecondary}"
+                                            CornerRadius="8"
+                                            Command="{Binding CancelarFormularioCommand}" />
+                                    <Button Grid.Column="1" Text="Guardar"
+                                            BackgroundColor="{StaticResource Orange}"
+                                            TextColor="White" CornerRadius="8"
+                                            Command="{Binding GuardarProductoCommand}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Frame>
+
+                        <!-- Filtros -->
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <SearchBar Grid.Column="0"
+                                       Placeholder="Buscar producto..."
+                                       Text="{Binding TextoBusqueda}"
+                                       BackgroundColor="White" FontSize="14" />
+                            <Button Grid.Column="1" Text="✕" FontSize="14"
+                                    BackgroundColor="White"
+                                    TextColor="{StaticResource TextSecondary}"
+                                    CornerRadius="8" WidthRequest="44"
+                                    Command="{Binding LimpiarFiltroCommand}" />
+                        </Grid>
+
+                        <!-- Chips de categoría -->
+                        <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                            <HorizontalStackLayout Spacing="8" Padding="0,2">
+                                <Border StrokeShape="RoundRectangle 14" Stroke="Transparent"
+                                        Padding="12,6">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding CategoriaFiltro}" Value="{x:Null}">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource Orange}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding LimpiarFiltroCommand}" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="Todos" FontSize="13"
+                                           TextColor="White" FontAttributes="Bold" />
+                                </Border>
+                                <CollectionView ItemsSource="{Binding Categorias}"
+                                                ItemsLayout="HorizontalList">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="models:CategoriaResponse">
+                                            <Border StrokeShape="RoundRectangle 14"
+                                                    BackgroundColor="{StaticResource OrangeLight}"
+                                                    Stroke="Transparent" Padding="12,6" Margin="0,0,8,0">
+                                                <Border.GestureRecognizers>
+                                                    <TapGestureRecognizer
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ProductosViewModel}}, Path=LimpiarFiltroCommand}"
+                                                        CommandParameter="{Binding .}" />
+                                                </Border.GestureRecognizers>
+                                                <Label Text="{Binding Nombre}" FontSize="13"
+                                                       TextColor="{StaticResource Orange}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </HorizontalStackLayout>
+                        </ScrollView>
+
+                        <!-- Conteo -->
+                        <Label Text="{Binding Productos.Count, StringFormat='{0} productos'}"
+                               FontSize="13" TextColor="{StaticResource TextSecondary}" />
+
+                        <!-- Lista productos (BindableLayout evita CollectionView anidado en ScrollView) -->
+                        <Label Text="No hay productos."
+                               IsVisible="{Binding Productos, Converter={StaticResource IntIsZeroConverter}}"
+                               FontSize="14" TextColor="{StaticResource TextSecondary}"
+                               HorizontalTextAlignment="Center" Padding="0,8" />
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Productos}"
+                                             Spacing="0">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:ProductoResponse">
+                                    <Frame BackgroundColor="White" CornerRadius="10"
+                                           Padding="14" HasShadow="False" Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                            <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                                <Label Text="{Binding Nombre}"
+                                                       FontAttributes="Bold" FontSize="15"
+                                                       TextColor="{StaticResource TextPrimary}" />
+                                                <Label Text="{Binding Precio, StringFormat='${0:F2}'}"
+                                                       FontSize="14" FontAttributes="Bold"
+                                                       TextColor="{StaticResource Orange}" />
+                                                <Label Text="{Binding Descripcion}"
+                                                       FontSize="12"
+                                                       TextColor="{StaticResource TextSecondary}"
+                                                       LineBreakMode="TailTruncation"
+                                                       MaxLines="1"
+                                                       IsVisible="{Binding Descripcion, Converter={StaticResource StringToBoolConverter}}" />
+                                                <HorizontalStackLayout Spacing="8">
+                                                    <Label Text="{Binding StockActual, StringFormat='Stock: {0}'}"
+                                                           FontSize="12"
+                                                           TextColor="{StaticResource TextSecondary}" />
+                                                    <Border BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
+                                                            StrokeShape="RoundRectangle 8"
+                                                            Stroke="Transparent" Padding="6,2">
+                                                        <Label Text="{Binding EstadoTexto}"
+                                                               FontSize="11" TextColor="White"
+                                                               FontAttributes="Bold" />
+                                                    </Border>
+                                                </HorizontalStackLayout>
+                                            </VerticalStackLayout>
+                                            <Button Grid.Column="1" Text="✏️" FontSize="18"
+                                                    BackgroundColor="Transparent"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ProductosViewModel}}, Path=AbrirEdicionProductoCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    VerticalOptions="Center" />
+                                            <Button Grid.Column="2" Text="🗑️" FontSize="18"
+                                                    BackgroundColor="Transparent"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ProductosViewModel}}, Path=EliminarProductoCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    VerticalOptions="Center" />
+                                        </Grid>
+                                    </Frame>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+
+                    </VerticalStackLayout>
+
+                    <!-- ══════════════════════════════════════════════
+                         SECCIÓN CATEGORÍAS
+                    ══════════════════════════════════════════════ -->
+                    <VerticalStackLayout Spacing="12"
+                                         IsVisible="{Binding MostrarCategorias}">
+
+                        <!-- Formulario categoría -->
+                        <Frame IsVisible="{Binding MostrarFormCategoria}"
+                               BackgroundColor="White" CornerRadius="12" Padding="16" HasShadow="False">
+                            <VerticalStackLayout Spacing="10">
+                                <Label FontSize="16" FontAttributes="Bold"
+                                       TextColor="{StaticResource Orange}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding EsEdicionCategoria}" Value="True">
+                                            <Setter Property="Text" Value="Editar categoría" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label" Binding="{Binding EsEdicionCategoria}" Value="False">
+                                            <Setter Property="Text" Value="Nueva categoría" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Entry Placeholder="Nombre *" Text="{Binding FormCatNombre}"
+                                       BackgroundColor="{StaticResource Gray100}" FontSize="14" />
+                                <Entry Placeholder="Descripción *" Text="{Binding FormCatDescripcion}"
+                                       BackgroundColor="{StaticResource Gray100}" FontSize="14" />
+                                <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                    <Label Text="Activa" FontSize="14"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           VerticalOptions="Center" />
+                                    <Switch IsToggled="{Binding FormCatEstado}"
+                                            OnColor="{StaticResource Orange}" />
+                                </HorizontalStackLayout>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,4,0,0">
+                                    <Button Grid.Column="0" Text="Cancelar"
+                                            BackgroundColor="{StaticResource Gray100}"
+                                            TextColor="{StaticResource TextSecondary}"
+                                            CornerRadius="8"
+                                            Command="{Binding CancelarFormCategoriaCommand}" />
+                                    <Button Grid.Column="1" Text="Guardar"
+                                            BackgroundColor="{StaticResource Orange}"
+                                            TextColor="White" CornerRadius="8"
+                                            Command="{Binding GuardarCategoriaCommand}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Frame>
+
+                        <!-- Conteo categorías -->
+                        <Label Text="{Binding Categorias.Count, StringFormat='{0} categorías'}"
+                               FontSize="13" TextColor="{StaticResource TextSecondary}" />
+
+                        <!-- Lista categorías (BindableLayout evita CollectionView anidado en ScrollView) -->
+                        <Label Text="No hay categorías."
+                               IsVisible="{Binding Categorias, Converter={StaticResource IntIsZeroConverter}}"
+                               FontSize="14" TextColor="{StaticResource TextSecondary}"
+                               HorizontalTextAlignment="Center" Padding="0,8" />
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Categorias}"
+                                             Spacing="0">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:CategoriaResponse">
+                                    <Frame BackgroundColor="White" CornerRadius="10"
+                                           Padding="14" HasShadow="False" Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                            <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                                <Label Text="{Binding Nombre}"
+                                                       FontAttributes="Bold" FontSize="15"
+                                                       TextColor="{StaticResource TextPrimary}" />
+                                                <Label Text="{Binding Descripcion}"
+                                                       FontSize="12"
+                                                       TextColor="{StaticResource TextSecondary}"
+                                                       LineBreakMode="TailTruncation"
+                                                       MaxLines="1" />
+                                                <Border BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
+                                                        StrokeShape="RoundRectangle 8"
+                                                        Stroke="Transparent" Padding="6,2"
+                                                        HorizontalOptions="Start">
+                                                    <Label Text="{Binding EstadoTexto}"
+                                                           FontSize="11" TextColor="White"
+                                                           FontAttributes="Bold" />
+                                                </Border>
+                                            </VerticalStackLayout>
+                                            <Button Grid.Column="1" Text="✏️" FontSize="18"
+                                                    BackgroundColor="Transparent"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ProductosViewModel}}, Path=AbrirEdicionCategoriaCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    VerticalOptions="Center" />
+                                            <Button Grid.Column="2" Text="🗑️" FontSize="18"
+                                                    BackgroundColor="Transparent"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ProductosViewModel}}, Path=EliminarCategoriaCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    VerticalOptions="Center" />
+                                        </Grid>
+                                    </Frame>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>

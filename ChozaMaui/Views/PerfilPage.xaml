@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ChozaMaui.Views.PerfilPage"
+             Title="Mi Perfil"
+             BackgroundColor="#f4f6f9">
+
+    <ScrollView Padding="16">
+        <VerticalStackLayout Spacing="16">
+
+            <!-- Logo -->
+            <Image Source="lachozalogo.png"
+                   HeightRequest="70"
+                   HorizontalOptions="Center"
+                   Aspect="AspectFit"
+                   Margin="0,12,0,0" />
+
+            <!-- Avatar + nombre -->
+            <Border BackgroundColor="White" StrokeShape="RoundRectangle 12" Stroke="Transparent" Padding="20" HorizontalOptions="Fill">
+                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Border BackgroundColor="{StaticResource Primary}"
+                            StrokeShape="RoundRectangle 50"
+                            WidthRequest="80" HeightRequest="80"
+                            HorizontalOptions="Center">
+                        <Label Text="👤" FontSize="40" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <Label Text="{Binding NombreCompleto}"
+                           FontSize="20" FontAttributes="Bold"
+                           HorizontalOptions="Center" />
+                    <Label Text="{Binding Username}"
+                           FontSize="14" TextColor="Gray"
+                           HorizontalOptions="Center" />
+                    <Border BackgroundColor="{StaticResource Secondary}"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="10,4"
+                            HorizontalOptions="Center">
+                        <Label Text="{Binding Rol}" TextColor="White" FontSize="12" />
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Cambiar contraseña -->
+            <Label Text="Cambiar contraseña" FontSize="16" FontAttributes="Bold" />
+
+            <Border BackgroundColor="White" StrokeShape="RoundRectangle 10" Stroke="Transparent" Padding="16">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Contraseña actual" FontSize="13" />
+                    <Entry Placeholder="••••••••"
+                           IsPassword="True"
+                           Text="{Binding PasswordActual}" />
+
+                    <Label Text="Nueva contraseña" FontSize="13" />
+                    <Entry Placeholder="Mínimo 6 caracteres"
+                           IsPassword="True"
+                           Text="{Binding PasswordNuevo}" />
+
+                    <Label Text="Confirmar nueva contraseña" FontSize="13" />
+                    <Entry Placeholder="Repite la nueva contraseña"
+                           IsPassword="True"
+                           Text="{Binding PasswordConfirmar}" />
+
+                    <!-- Mensaje feedback -->
+                    <Label Text="{Binding MensajePassword}"
+                           IsVisible="{Binding MensajePassword, Converter={StaticResource StringToBoolConverter}}"
+                           FontSize="13">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding MensajeEsError}" Value="True">
+                                <Setter Property="TextColor" Value="#ef4444" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding MensajeEsError}" Value="False">
+                                <Setter Property="TextColor" Value="#10b981" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+
+                    <Button Text="Guardar contraseña"
+                            Command="{Binding CambiarPasswordCommand}"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            CornerRadius="8" />
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
+                                       Color="{StaticResource Primary}" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Cerrar sesión -->
+            <Button Text="Cerrar sesión"
+                    Command="{Binding CerrarSesionCommand}"
+                    BackgroundColor="{StaticResource Secondary}"
+                    TextColor="White"
+                    CornerRadius="8"
+                    Margin="0,8,0,24" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

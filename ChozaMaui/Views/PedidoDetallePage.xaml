@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:ChozaMaui.Models"
+             x:Class="ChozaMaui.Views.PedidoDetallePage"
+             Title="{Binding TituloPedido}"
+             BackgroundColor="#f4f6f9">
+
+    <ScrollView Padding="12">
+        <VerticalStackLayout Spacing="12">
+
+            <!-- Loading -->
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
+                               Color="#e94560" HorizontalOptions="Center" />
+
+            <!-- Error -->
+            <Label Text="{Binding ErrorMessage}"
+                   TextColor="Red" FontSize="13"
+                   IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}" />
+
+            <!-- Cabecera -->
+            <Frame BackgroundColor="White" CornerRadius="10" Padding="14">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="6">
+                    <!-- Estado -->
+                    <Border Grid.Row="0" Grid.Column="1"
+                            BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="10,4">
+                        <Label Text="{Binding Estado}" TextColor="White" FontSize="12" />
+                    </Border>
+                    <!-- Fecha -->
+                    <Label Grid.Row="0" Grid.Column="0"
+                           Text="{Binding FechaTexto}" FontSize="13" TextColor="Gray" />
+                    <!-- Mesa -->
+                    <Label Grid.Row="1" Grid.ColumnSpan="2">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Mesa: " FontAttributes="Bold" />
+                                <Span Text="{Binding MesaTexto}" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                    <!-- Cliente -->
+                    <Label Grid.Row="2" Grid.ColumnSpan="2">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Cliente: " FontAttributes="Bold" />
+                                <Span Text="{Binding ClienteTexto}" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                    <!-- Observaciones -->
+                    <Label Grid.Row="3" Grid.ColumnSpan="2"
+                           Text="{Binding Observaciones}"
+                           FontSize="12" TextColor="Gray" FontAttributes="Italic" />
+                </Grid>
+            </Frame>
+
+            <!-- Productos -->
+            <Label Text="Productos" FontSize="16" FontAttributes="Bold" />
+
+            <CollectionView ItemsSource="{Binding Detalles}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:PedidoDetalleResponse">
+                        <Frame BackgroundColor="White" CornerRadius="8" Padding="10" Margin="0,3">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <Label Grid.Column="0"
+                                       Text="{Binding Producto.Nombre}"
+                                       FontAttributes="Bold" FontSize="14" VerticalOptions="Center" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Cantidad, StringFormat='x{0}'}"
+                                       TextColor="Gray" FontSize="13" VerticalOptions="Center" />
+                                <Label Grid.Column="2"
+                                       Text="{Binding Subtotal, StringFormat='${0:0.00}'}"
+                                       TextColor="#e94560" FontAttributes="Bold" FontSize="14"
+                                       VerticalOptions="Center" />
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Total -->
+            <Frame BackgroundColor="#e94560" CornerRadius="10" Padding="14">
+                <Label Text="{Binding Total, StringFormat='Total: ${0:0.00}'}"
+                       TextColor="White" FontSize="20" FontAttributes="Bold"
+                       HorizontalOptions="Center" />
+            </Frame>
+
+            <!-- Cambiar estado (RF-02) -->
+            <Frame BackgroundColor="White" CornerRadius="10" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Modificar estado del pedido"
+                           FontAttributes="Bold" FontSize="14" />
+                    <Picker Title="Seleccionar nuevo estado"
+                            ItemsSource="{Binding EstadosDisponibles}"
+                            SelectedItem="{Binding EstadoSeleccionado}" />
+                    <Button Text="Guardar cambio"
+                            Command="{Binding CambiarEstadoCommand}"
+                            BackgroundColor="#e94560"
+                            TextColor="White"
+                            CornerRadius="8"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}" />
+                    <Label Text="{Binding MensajeCambio}"
+                           FontSize="12"
+                           TextColor="#10b981"
+                           IsVisible="{Binding MensajeCambio, Converter={StaticResource StringToBoolConverter}}" />
+
+                    <!-- Botón pagar (oculto para CAMARERO) -->
+                    <Button Text="💳 Ir a Pagar"
+                            Command="{Binding IrAPagarCommand}"
+                            BackgroundColor="{StaticResource Orange}"
+                            TextColor="White"
+                            CornerRadius="8"
+                            FontAttributes="Bold"
+                            HeightRequest="46"
+                            Margin="0,8,0,0"
+                            IsVisible="{Binding PuedeIrAPagar}"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

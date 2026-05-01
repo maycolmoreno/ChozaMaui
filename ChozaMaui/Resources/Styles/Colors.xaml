@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Paleta institucional La Choza (equivalente a custom-modern.css) -->
+    <Color x:Key="Primary">#F26522</Color>
+    <Color x:Key="Secondary">#1f1f1f</Color>
+    <Color x:Key="Accent">#FF9F68</Color>
+    <Color x:Key="Orange">#F26522</Color>
+    <Color x:Key="OrangeLight">#FFE3D0</Color>
+    <Color x:Key="Success">#7DBE31</Color>
+    <Color x:Key="Danger">#E74C3C</Color>
+    <Color x:Key="White">White</Color>
+    <Color x:Key="Gray100">#F5F7FB</Color>
+    <Color x:Key="TextPrimary">#444444</Color>
+    <Color x:Key="TextSecondary">#888888</Color>
+
+</ResourceDictionary>

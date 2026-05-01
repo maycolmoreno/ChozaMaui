@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChozaMaui.ViewModels"
+             xmlns:models="clr-namespace:ChozaMaui.Models"
+             x:Class="ChozaMaui.Views.MapaPage"
+             x:DataType="vm:MapaViewModel"
+             Title="Mesas"
+             BackgroundColor="{StaticResource Gray100}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+
+            <!-- Header naranja -->
+            <Grid BackgroundColor="{StaticResource Orange}" Padding="16,48,16,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Image Grid.Column="0" Source="lachozalogo.png"
+                       HeightRequest="44" WidthRequest="44"
+                       Aspect="AspectFit"
+                       VerticalOptions="Center"
+                       Margin="0,0,10,0" />
+
+                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                    <Label Text="Mapa de Mesas" FontSize="22" FontAttributes="Bold" TextColor="White" />
+                    <Label Text="Estado actual de todos los comedores" FontSize="13" TextColor="#ffe0b2" />
+                </VerticalStackLayout>
+
+                <Button Grid.Column="2"
+                        Text="↻" FontSize="20" TextColor="White"
+                        BackgroundColor="Transparent"
+                        Command="{Binding CargarCommand}"
+                        VerticalOptions="Center" />
+            </Grid>
+
+            <!-- Leyenda -->
+            <HorizontalStackLayout Spacing="16" Padding="16,12" BackgroundColor="White">
+                <!-- Disponible -->
+                <HorizontalStackLayout Spacing="6">
+                    <BoxView WidthRequest="14" HeightRequest="14" CornerRadius="7"
+                             Color="{StaticResource Success}" VerticalOptions="Center" />
+                    <Label VerticalOptions="Center" FontSize="13" TextColor="{StaticResource TextPrimary}">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Disponibles " />
+                                <Span Text="{Binding TotalDisponibles}" FontAttributes="Bold" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </HorizontalStackLayout>
+                <!-- Ocupada -->
+                <HorizontalStackLayout Spacing="6">
+                    <BoxView WidthRequest="14" HeightRequest="14" CornerRadius="7"
+                             Color="{StaticResource Primary}" VerticalOptions="Center" />
+                    <Label VerticalOptions="Center" FontSize="13" TextColor="{StaticResource TextPrimary}">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Ocupadas " />
+                                <Span Text="{Binding TotalOcupadas}" FontAttributes="Bold" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </HorizontalStackLayout>
+            </HorizontalStackLayout>
+
+            <!-- Indicador de carga -->
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               Color="{StaticResource Orange}"
+                               HorizontalOptions="Center"
+                               Margin="0,24" />
+
+            <!-- Mensaje vacío / error -->
+            <Label Text="{Binding Mensaje}"
+                   IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
+                   HorizontalTextAlignment="Center"
+                   FontSize="14" TextColor="{StaticResource TextSecondary}"
+                   Margin="16,24" />
+
+            <!-- Lista de comedores -->
+            <CollectionView ItemsSource="{Binding Grupos}"
+                            IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}"
+                            Margin="0,8,0,24">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:GrupoComedor">
+                        <VerticalStackLayout Padding="16,0,16,16" Spacing="10">
+
+                            <!-- Nombre del comedor -->
+                            <Label Text="{Binding Nombre}"
+                                   FontSize="16" FontAttributes="Bold"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   Margin="0,8,0,0" />
+
+                            <!-- Grid de mesas con FlexLayout -->
+                            <FlexLayout BindableLayout.ItemsSource="{Binding .}"
+                                        Wrap="Wrap" JustifyContent="Start"
+                                        AlignItems="Start" Direction="Row">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="models:MesaResponse">
+                                        <Frame BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
+                                               CornerRadius="10" Padding="0" HasShadow="False"
+                                               WidthRequest="80" HeightRequest="80"
+                                               Margin="4">
+                                            <Frame.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MapaViewModel}}, Path=VerDetalleMesaCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Frame.GestureRecognizers>
+                                            <VerticalStackLayout VerticalOptions="Center"
+                                                                 HorizontalOptions="Center"
+                                                                 Spacing="4">
+                                                <Label Text="{Binding Numero, StringFormat='Mesa {0}'}"
+                                                       FontAttributes="Bold" FontSize="13"
+                                                       TextColor="White"
+                                                       HorizontalTextAlignment="Center" />
+                                                <Label Text="{Binding EstadoTexto}"
+                                                       FontSize="10" TextColor="White"
+                                                       HorizontalTextAlignment="Center" />
+                                                <Label Text="{Binding Capacidad, StringFormat='👥 {0}'}"
+                                                       FontSize="10" TextColor="White"
+                                                       HorizontalTextAlignment="Center" />
+                                            </VerticalStackLayout>
+                                        </Frame>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </FlexLayout>
+
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

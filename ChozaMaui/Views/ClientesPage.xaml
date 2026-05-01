@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChozaMaui.ViewModels"
+             xmlns:models="clr-namespace:ChozaMaui.Models"
+             x:Class="ChozaMaui.Views.ClientesPage"
+             x:DataType="vm:ClientesViewModel"
+             Title="Clientes"
+             BackgroundColor="{StaticResource Gray100}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Header naranja -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource Orange}" Padding="16,48,16,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                <Label Text="Gestión de Clientes"
+                       FontSize="22" FontAttributes="Bold" TextColor="White" />
+                <Label Text="{Binding Clientes.Count, StringFormat='{0} clientes registrados'}"
+                       FontSize="13" TextColor="#ffe0b2" />
+            </VerticalStackLayout>
+            <Button Grid.Column="1" Text="+ Nuevo" FontSize="13"
+                    TextColor="White" BackgroundColor="#e67e00"
+                    CornerRadius="8" Padding="12,6"
+                    Command="{Binding AbrirNuevoCommand}"
+                    VerticalOptions="Center" />
+        </Grid>
+
+        <!-- Contenido: CollectionView ocupa el resto de la pantalla con Header para
+             el formulario y buscador, eliminando el antipatrón CollectionView-dentro-de-ScrollView -->
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding Clientes}">
+
+            <!-- ═══ HEADER: actividad + formulario + búsqueda ═══ -->
+            <CollectionView.Header>
+                <VerticalStackLayout Spacing="0">
+                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
+                                       Color="{StaticResource Orange}"
+                                       HorizontalOptions="Center" Margin="0,20" />
+                    <VerticalStackLayout Padding="16" Spacing="12"
+                                         IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}">
+
+                        <!-- Mensaje feedback -->
+                        <Frame IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
+                               BackgroundColor="{Binding MensajeExito, Converter={StaticResource InvertBoolConverter}}"
+                               CornerRadius="8" Padding="12" HasShadow="False">
+                            <Frame.Triggers>
+                                <DataTrigger TargetType="Frame" Binding="{Binding MensajeExito}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource OrangeLight}" />
+                                </DataTrigger>
+                            </Frame.Triggers>
+                            <Label Text="{Binding Mensaje}" FontSize="13"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   HorizontalTextAlignment="Center" />
+                        </Frame>
+
+                        <!-- ═══ FORMULARIO ═══ -->
+                        <Frame IsVisible="{Binding MostrarFormulario}"
+                               BackgroundColor="White" CornerRadius="12"
+                               Padding="16" HasShadow="False">
+                            <VerticalStackLayout Spacing="10">
+                                <Label FontSize="16" FontAttributes="Bold"
+                                       TextColor="{StaticResource Orange}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding EsEdicion}" Value="True">
+                                            <Setter Property="Text" Value="Editar cliente" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label" Binding="{Binding EsEdicion}" Value="False">
+                                            <Setter Property="Text" Value="Nuevo cliente" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                                <Entry Placeholder="Nombre *"
+                                       Text="{Binding FormNombre}"
+                                       BackgroundColor="{StaticResource Gray100}"
+                                       FontSize="14" />
+                                <Entry Placeholder="Cédula *"
+                                       Text="{Binding FormCedula}"
+                                       Keyboard="Numeric"
+                                       BackgroundColor="{StaticResource Gray100}"
+                                       FontSize="14" />
+                                <Entry Placeholder="Teléfono"
+                                       Text="{Binding FormTelefono}"
+                                       Keyboard="Telephone"
+                                       BackgroundColor="{StaticResource Gray100}"
+                                       FontSize="14" />
+                                <Entry Placeholder="Email"
+                                       Text="{Binding FormEmail}"
+                                       Keyboard="Email"
+                                       BackgroundColor="{StaticResource Gray100}"
+                                       FontSize="14" />
+                                <Entry Placeholder="Dirección"
+                                       Text="{Binding FormDireccion}"
+                                       BackgroundColor="{StaticResource Gray100}"
+                                       FontSize="14" />
+                                <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                    <Label Text="Cliente activo" FontSize="14"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           VerticalOptions="Center" />
+                                    <Switch IsToggled="{Binding FormEstado}"
+                                            OnColor="{StaticResource Orange}" />
+                                </HorizontalStackLayout>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,6,0,0">
+                                    <Button Grid.Column="0" Text="Cancelar"
+                                            BackgroundColor="{StaticResource Gray100}"
+                                            TextColor="{StaticResource TextSecondary}"
+                                            CornerRadius="8"
+                                            Command="{Binding CancelarFormularioCommand}" />
+                                    <Button Grid.Column="1" Text="Guardar"
+                                            BackgroundColor="{StaticResource Orange}"
+                                            TextColor="White" CornerRadius="8"
+                                            Command="{Binding GuardarCommand}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Frame>
+
+                        <!-- ═══ BÚSQUEDA ═══ -->
+                        <SearchBar Placeholder="Buscar por nombre o cédula..."
+                                   Text="{Binding TextoBusqueda}"
+                                   BackgroundColor="White"
+                                   PlaceholderColor="{StaticResource TextSecondary}"
+                                   FontSize="14" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </CollectionView.Header>
+
+            <!-- ═══ VACÍO ═══ -->
+            <CollectionView.EmptyView>
+                <Label Text="No hay clientes registrados."
+                       Padding="16,12"
+                       FontSize="14" TextColor="{StaticResource TextSecondary}"
+                       HorizontalTextAlignment="Center"
+                       IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}" />
+            </CollectionView.EmptyView>
+
+            <!-- ═══ LISTA ═══ -->
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:ClienteResponse">
+                    <Frame BackgroundColor="White" CornerRadius="10"
+                           Padding="14" HasShadow="False" Margin="16,0,16,8">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="{Binding Nombre}"
+                                       FontAttributes="Bold" FontSize="15"
+                                       TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="{Binding Cedula, StringFormat='CI: {0}'}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="{Binding Telefono}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource TextSecondary}"
+                                       IsVisible="{Binding Telefono, Converter={StaticResource StringToBoolConverter}}" />
+                                <Label Text="{Binding Email}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource TextSecondary}"
+                                       IsVisible="{Binding Email, Converter={StaticResource StringToBoolConverter}}" />
+                                <Border BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
+                                        StrokeShape="RoundRectangle 10"
+                                        Stroke="Transparent"
+                                        Padding="8,3" HorizontalOptions="Start">
+                                    <Label Text="{Binding EstadoTexto}"
+                                           FontSize="11" TextColor="White"
+                                           FontAttributes="Bold" />
+                                </Border>
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="✏️"
+                                    FontSize="18" BackgroundColor="Transparent"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ClientesViewModel}}, Path=AbrirEdicionCommand}"
+                                    CommandParameter="{Binding .}"
+                                    VerticalOptions="Center" />
+                            <Button Grid.Column="2" Text="🗑️"
+                                    FontSize="18" BackgroundColor="Transparent"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ClientesViewModel}}, Path=EliminarCommand}"
+                                    CommandParameter="{Binding .}"
+                                    VerticalOptions="Center" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+        </CollectionView>
+
+    </Grid>
+
+</ContentPage>

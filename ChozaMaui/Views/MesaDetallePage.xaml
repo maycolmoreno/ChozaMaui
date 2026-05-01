@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChozaMaui.ViewModels"
+             x:Class="ChozaMaui.Views.MesaDetallePage"
+             x:DataType="vm:MesaDetalleViewModel"
+             Title="{Binding Titulo}"
+             BackgroundColor="{StaticResource Gray100}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+
+            <!-- Header naranja -->
+            <Grid BackgroundColor="{StaticResource Orange}" Padding="16,48,16,20">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="{Binding Titulo}"
+                           FontSize="24" FontAttributes="Bold" TextColor="White" />
+                    <Label Text="{Binding ComEdorTexto}"
+                           FontSize="14" TextColor="#ffe0b2" />
+                    <!-- Badge estado -->
+                    <Border BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
+                            StrokeShape="RoundRectangle 12" Stroke="Transparent"
+                            Padding="10,4" HorizontalOptions="Start">
+                        <Label Text="{Binding EstadoTexto}"
+                               FontSize="12" FontAttributes="Bold" TextColor="White" />
+                    </Border>
+                </VerticalStackLayout>
+            </Grid>
+
+            <VerticalStackLayout Padding="16" Spacing="14">
+
+                <!-- Tarjeta info de mesa -->
+                <Frame BackgroundColor="White" CornerRadius="10" Padding="16" HasShadow="False">
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto">
+                        <Label Grid.Row="0" Grid.Column="0"
+                               Text="Número" FontSize="11"
+                               TextColor="{StaticResource TextSecondary}"
+                               HorizontalTextAlignment="Center" />
+                        <Label Grid.Row="1" Grid.Column="0"
+                               Text="{Binding Mesa.Numero}"
+                               FontSize="22" FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}"
+                               HorizontalTextAlignment="Center" />
+
+                        <Label Grid.Row="0" Grid.Column="1"
+                               Text="Capacidad" FontSize="11"
+                               TextColor="{StaticResource TextSecondary}"
+                               HorizontalTextAlignment="Center" />
+                        <Label Grid.Row="1" Grid.Column="1"
+                               Text="{Binding Mesa.Capacidad, StringFormat='{0} 👥'}"
+                               FontSize="22" FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}"
+                               HorizontalTextAlignment="Center" />
+
+                        <Label Grid.Row="0" Grid.Column="2"
+                               Text="Estado" FontSize="11"
+                               TextColor="{StaticResource TextSecondary}"
+                               HorizontalTextAlignment="Center" />
+                        <Label Grid.Row="1" Grid.Column="2"
+                               Text="{Binding EstadoTexto}"
+                               FontSize="16" FontAttributes="Bold"
+                               TextColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
+                               HorizontalTextAlignment="Center" />
+                    </Grid>
+                </Frame>
+
+                <!-- Botón cambiar estado -->
+                <Button Text="{Binding BotonEstadoTexto}"
+                        Command="{Binding CambiarEstadoCommand}"
+                        BackgroundColor="{Binding BotonEstadoColor, Converter={StaticResource HexToColorConverter}}"
+                        TextColor="White" CornerRadius="8" FontAttributes="Bold"
+                        HeightRequest="46"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}" />
+
+                <!-- Separador -->
+                <BoxView HeightRequest="1" Color="#e5e7eb" Margin="0,4" />
+
+                <!-- Pedido activo -->
+                <Label Text="Pedido Activo" FontSize="17" FontAttributes="Bold"
+                       TextColor="{StaticResource TextPrimary}" />
+
+                <!-- Sin pedido activo -->
+                <Frame IsVisible="{Binding TienePedidoActivo, Converter={StaticResource InvertBoolConverter}}"
+                       BackgroundColor="White" CornerRadius="10" Padding="16" HasShadow="False">
+                    <Label Text="No hay pedido activo en esta mesa."
+                           FontSize="14" TextColor="{StaticResource TextSecondary}"
+                           HorizontalTextAlignment="Center" />
+                </Frame>
+
+                <!-- Con pedido activo -->
+                <Frame IsVisible="{Binding TienePedidoActivo}"
+                       BackgroundColor="White" CornerRadius="10" Padding="16" HasShadow="False">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                <Label Text="{Binding PedidoActivo.Idpedido, StringFormat='Pedido #{0}'}"
+                                       FontAttributes="Bold" FontSize="16"
+                                       TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="{Binding PedidoActivo.Fecha, StringFormat='{0:dd/MM/yyyy HH:mm}'}"
+                                       FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                            </VerticalStackLayout>
+                            <!-- Badge estado pedido -->
+                            <Border Grid.Column="1"
+                                    BackgroundColor="{Binding PedidoActivo.EstadoBadgeColor}"
+                                    StrokeShape="RoundRectangle 10" Stroke="Transparent"
+                                    Padding="10,4" VerticalOptions="Center">
+                                <Label Text="{Binding PedidoActivo.Estado}"
+                                       FontSize="11" FontAttributes="Bold" TextColor="White" />
+                            </Border>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="Total" FontSize="11"
+                                       TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="{Binding PedidoActivo.Total, StringFormat='${0:F2}'}"
+                                       FontSize="18" FontAttributes="Bold"
+                                       TextColor="{StaticResource Orange}" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                <Label Text="Productos" FontSize="11"
+                                       TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="{Binding PedidoActivo.CantidadProductos}"
+                                       FontSize="18" FontAttributes="Bold"
+                                       TextColor="{StaticResource TextPrimary}" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Button Text="Ver Detalle del Pedido →"
+                                Command="{Binding VerPedidoCommand}"
+                                BackgroundColor="{StaticResource Orange}"
+                                TextColor="White" CornerRadius="8"
+                                HeightRequest="42" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Actividad / mensaje -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   Color="{StaticResource Orange}"
+                                   HorizontalOptions="Center" />
+
+                <Label Text="{Binding Mensaje}"
+                       IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
+                       FontSize="13" TextColor="{StaticResource Orange}"
+                       HorizontalTextAlignment="Center" />
+
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
