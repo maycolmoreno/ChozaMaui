@@ -312,7 +312,8 @@ public class ApiService
         r.EnsureSuccessStatusCode();
     }
 
-    // ── Reportes ───────────────────────────────────────────────────
+
+    // ── Reportes -───────────────────────────────────────────────────
     public async Task<ReporteVentasDia> GetReporteVentasDiaAsync(DateTime? fecha = null)
     {
         var query = fecha.HasValue ? $"?fecha={fecha.Value:yyyy-MM-dd}" : string.Empty;
