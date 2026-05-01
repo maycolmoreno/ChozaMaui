@@ -22,6 +22,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<SessionService>();
         builder.Services.AddTransient<AuthHandler>();
         builder.Services.AddSingleton<INavigationService, NavigationService>();
+        builder.Services.AddSingleton<ReceiptPdfService>();
 
         // HttpClient tipado con AuthHandler y timeout de 15s
         builder.Services.AddHttpClient<ApiService>(c =>

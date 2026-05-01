@@ -6,135 +6,282 @@
              x:Class="ChozaMaui.Views.MapaPage"
              x:DataType="vm:MapaViewModel"
              Title="Mesas"
-             BackgroundColor="{StaticResource Gray100}">
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#f5f7fb">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="0">
+    <Grid>
+        <!-- ══ CONTENIDO PRINCIPAL ══ -->
+        <Grid RowDefinitions="*">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
 
-            <!-- Header naranja -->
-            <Grid BackgroundColor="{StaticResource Orange}" Padding="16,48,16,20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+                <Grid BackgroundColor="{StaticResource Orange}" Padding="18,48,18,18">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <Image Grid.Column="0"
+                               Source="lachozalogo.png"
+                               HeightRequest="54"
+                               WidthRequest="54"
+                               Aspect="AspectFit"
+                               VerticalOptions="Center" />
 
-                <Image Grid.Column="0" Source="lachozalogo.png"
-                       HeightRequest="44" WidthRequest="44"
-                       Aspect="AspectFit"
-                       VerticalOptions="Center"
-                       Margin="0,0,10,0" />
-
-                <VerticalStackLayout Grid.Column="1" Spacing="2">
-                    <Label Text="Mapa de Mesas" FontSize="22" FontAttributes="Bold" TextColor="White" />
-                    <Label Text="Estado actual de todos los comedores" FontSize="13" TextColor="#ffe0b2" />
-                </VerticalStackLayout>
-
-                <Button Grid.Column="2"
-                        Text="↻" FontSize="20" TextColor="White"
-                        BackgroundColor="Transparent"
-                        Command="{Binding CargarCommand}"
-                        VerticalOptions="Center" />
-            </Grid>
-
-            <!-- Leyenda -->
-            <HorizontalStackLayout Spacing="16" Padding="16,12" BackgroundColor="White">
-                <!-- Disponible -->
-                <HorizontalStackLayout Spacing="6">
-                    <BoxView WidthRequest="14" HeightRequest="14" CornerRadius="7"
-                             Color="{StaticResource Success}" VerticalOptions="Center" />
-                    <Label VerticalOptions="Center" FontSize="13" TextColor="{StaticResource TextPrimary}">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Disponibles " />
-                                <Span Text="{Binding TotalDisponibles}" FontAttributes="Bold" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                </HorizontalStackLayout>
-                <!-- Ocupada -->
-                <HorizontalStackLayout Spacing="6">
-                    <BoxView WidthRequest="14" HeightRequest="14" CornerRadius="7"
-                             Color="{StaticResource Primary}" VerticalOptions="Center" />
-                    <Label VerticalOptions="Center" FontSize="13" TextColor="{StaticResource TextPrimary}">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Ocupadas " />
-                                <Span Text="{Binding TotalOcupadas}" FontAttributes="Bold" />
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                </HorizontalStackLayout>
-            </HorizontalStackLayout>
-
-            <!-- Indicador de carga -->
-            <ActivityIndicator IsRunning="{Binding IsBusy}"
-                               IsVisible="{Binding IsBusy}"
-                               Color="{StaticResource Orange}"
-                               HorizontalOptions="Center"
-                               Margin="0,24" />
-
-            <!-- Mensaje vacío / error -->
-            <Label Text="{Binding Mensaje}"
-                   IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
-                   HorizontalTextAlignment="Center"
-                   FontSize="14" TextColor="{StaticResource TextSecondary}"
-                   Margin="16,24" />
-
-            <!-- Lista de comedores -->
-            <CollectionView ItemsSource="{Binding Grupos}"
-                            IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}"
-                            Margin="0,8,0,24">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="models:GrupoComedor">
-                        <VerticalStackLayout Padding="16,0,16,16" Spacing="10">
-
-                            <!-- Nombre del comedor -->
-                            <Label Text="{Binding Nombre}"
-                                   FontSize="16" FontAttributes="Bold"
-                                   TextColor="{StaticResource TextPrimary}"
-                                   Margin="0,8,0,0" />
-
-                            <!-- Grid de mesas con FlexLayout -->
-                            <FlexLayout BindableLayout.ItemsSource="{Binding .}"
-                                        Wrap="Wrap" JustifyContent="Start"
-                                        AlignItems="Start" Direction="Row">
-                                <BindableLayout.ItemTemplate>
-                                    <DataTemplate x:DataType="models:MesaResponse">
-                                        <Frame BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
-                                               CornerRadius="10" Padding="0" HasShadow="False"
-                                               WidthRequest="80" HeightRequest="80"
-                                               Margin="4">
-                                            <Frame.GestureRecognizers>
-                                                <TapGestureRecognizer
-                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MapaViewModel}}, Path=VerDetalleMesaCommand}"
-                                                    CommandParameter="{Binding .}" />
-                                            </Frame.GestureRecognizers>
-                                            <VerticalStackLayout VerticalOptions="Center"
-                                                                 HorizontalOptions="Center"
-                                                                 Spacing="4">
-                                                <Label Text="{Binding Numero, StringFormat='Mesa {0}'}"
-                                                       FontAttributes="Bold" FontSize="13"
-                                                       TextColor="White"
-                                                       HorizontalTextAlignment="Center" />
-                                                <Label Text="{Binding EstadoTexto}"
-                                                       FontSize="10" TextColor="White"
-                                                       HorizontalTextAlignment="Center" />
-                                                <Label Text="{Binding Capacidad, StringFormat='👥 {0}'}"
-                                                       FontSize="10" TextColor="White"
-                                                       HorizontalTextAlignment="Center" />
-                                            </VerticalStackLayout>
-                                        </Frame>
-                                    </DataTemplate>
-                                </BindableLayout.ItemTemplate>
-                            </FlexLayout>
-
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Mapa de Mesas"
+                                   FontSize="24"
+                                   FontAttributes="Bold"
+                                   TextColor="White" />
+                            <Label Text="Estado actual de todos los comedores"
+                                   FontSize="13"
+                                   TextColor="#ffe0b2" />
                         </VerticalStackLayout>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
 
-        </VerticalStackLayout>
-    </ScrollView>
+                        <Button Grid.Column="2"
+                                Text="↻"
+                                FontSize="24"
+                                TextColor="White"
+                                BackgroundColor="Transparent"
+                                Command="{Binding CargarCommand}"
+                                VerticalOptions="Center" />
+                    </Grid>
+                </Grid>
 
+                <Border Margin="14,-10,14,12"
+                        BackgroundColor="White"
+                        Stroke="#e2e8f0"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="12,14">
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                        <VerticalStackLayout Grid.Column="0" Spacing="5" HorizontalOptions="Center">
+                            <BoxView WidthRequest="18" HeightRequest="18" CornerRadius="9" Color="#28b779" />
+                            <Label Text="Disponibles" FontSize="11" TextColor="#1f2937" />
+                            <Label Text="{Binding TotalDisponibles}" FontSize="20" FontAttributes="Bold" TextColor="#111827" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="5" HorizontalOptions="Center">
+                            <BoxView WidthRequest="18" HeightRequest="18" CornerRadius="9" Color="#0ea5e9" />
+                            <Label Text="Ocupadas" FontSize="11" TextColor="#1f2937" />
+                            <Label Text="{Binding TotalOcupadas}" FontSize="20" FontAttributes="Bold" TextColor="#111827" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2" Spacing="5" HorizontalOptions="Center">
+                            <BoxView WidthRequest="18" HeightRequest="18" CornerRadius="9" Color="#f59e0b" />
+                            <Label Text="En prep." FontSize="11" TextColor="#1f2937" />
+                            <Label Text="{Binding TotalEnPreparacion}" FontSize="20" FontAttributes="Bold" TextColor="#111827" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="3" Spacing="5" HorizontalOptions="Center">
+                            <BoxView WidthRequest="18" HeightRequest="18" CornerRadius="9" Color="#ef4444" />
+                            <Label Text="Listas" FontSize="11" TextColor="#1f2937" />
+                            <Label Text="{Binding TotalListas}" FontSize="20" FontAttributes="Bold" TextColor="#111827" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   Color="{StaticResource Orange}"
+                                   HorizontalOptions="Center"
+                                   Margin="0,18" />
+
+                <Label Text="{Binding Mensaje}"
+                       IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
+                       HorizontalTextAlignment="Center"
+                       FontSize="14"
+                       TextColor="#6b7280"
+                       Margin="16,24" />
+
+                <CollectionView ItemsSource="{Binding Grupos}"
+                                IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}"
+                                Margin="14,0,14,18">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:GrupoMesaVisual">
+                            <Border BackgroundColor="White"
+                                    Stroke="#e2e8f0"
+                                    StrokeShape="RoundRectangle 16"
+                                    Padding="14"
+                                    Margin="0,0,0,14">
+                                <VerticalStackLayout Spacing="12">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label Grid.Column="0"
+                                               Text="{Binding Nombre}"
+                                               TextTransform="Uppercase"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               TextColor="#111827" />
+                                        <Label Grid.Column="1"
+                                               Text="{Binding TotalMesas, StringFormat='{0} mesas'}"
+                                               FontSize="12"
+                                               FontAttributes="Bold"
+                                               TextColor="#374151" />
+                                    </Grid>
+
+                                    <FlexLayout BindableLayout.ItemsSource="{Binding .}"
+                                                Wrap="Wrap"
+                                                JustifyContent="SpaceBetween"
+                                                AlignItems="Start"
+                                                Direction="Row">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="models:MesaVisual">
+                                                <Border BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
+                                                        StrokeShape="RoundRectangle 12"
+                                                        Stroke="Transparent"
+                                                        Padding="8"
+                                                        WidthRequest="96"
+                                                        HeightRequest="84"
+                                                        Margin="0,0,0,10">
+                                                    <Border.GestureRecognizers>
+                                                        <TapGestureRecognizer
+                                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerDetalleMesaCommand}"
+                                                            CommandParameter="{Binding .}" />
+                                                    </Border.GestureRecognizers>
+                                                    <Grid RowDefinitions="Auto,*,Auto">
+                                                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                                            <Label Grid.Column="0"
+                                                                   Text="{Binding NumeroTexto}"
+                                                                   FontSize="24"
+                                                                   FontAttributes="Bold"
+                                                                   TextColor="White"
+                                                                   HorizontalOptions="Center" />
+                                                            <Label Grid.Column="1"
+                                                                   Text="{Binding EstadoIcono}"
+                                                                   FontSize="16"
+                                                                   TextColor="White" />
+                                                        </Grid>
+
+                                                        <Label Grid.Row="1"
+                                                               Text="{Binding PedidoBadgeTexto}"
+                                                               FontSize="12"
+                                                               FontAttributes="Bold"
+                                                               TextColor="White"
+                                                               HorizontalTextAlignment="Center"
+                                                               VerticalTextAlignment="Center" />
+
+                                                        <Label Grid.Row="2"
+                                                               Text="{Binding Capacidad, StringFormat='👥 {0}'}"
+                                                               FontSize="13"
+                                                               FontAttributes="Bold"
+                                                               TextColor="White"
+                                                               HorizontalTextAlignment="Center" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </FlexLayout>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Border Margin="14,0,14,18"
+                        BackgroundColor="White"
+                        Stroke="#e2e8f0"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="12">
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" RowSpacing="10">
+                        <Label Grid.Row="0" Grid.Column="0" Text="● Disponible" TextColor="#28b779" FontAttributes="Bold" FontSize="12" />
+                        <Label Grid.Row="0" Grid.Column="1" Text="● Ocupada" TextColor="#0ea5e9" FontAttributes="Bold" FontSize="12" />
+                        <Label Grid.Row="1" Grid.Column="0" Text="♨ En preparación" TextColor="#f59e0b" FontAttributes="Bold" FontSize="12" />
+                        <Label Grid.Row="1" Grid.Column="1" Text="🔔 Lista para entregar" TextColor="#ef4444" FontAttributes="Bold" FontSize="12" />
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+        </Grid>
+
+        <!-- ══ BACKDROP ══ -->
+        <BoxView Color="#80000000"
+                 IsVisible="{Binding MostrarSheet}">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding CerrarSheetCommand}" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- ══ BOTTOM SHEET ══ -->
+        <Border VerticalOptions="End"
+                IsVisible="{Binding MostrarSheet}"
+                BackgroundColor="White"
+                StrokeShape="RoundRectangle 24,24,0,0"
+                Stroke="#e2e8f0"
+                StrokeThickness="1">
+            <VerticalStackLayout Spacing="0" Padding="0,14,0,24">
+
+                <!-- Drag handle -->
+                <BoxView WidthRequest="40" HeightRequest="4" Color="#d1d5db"
+                         CornerRadius="2" HorizontalOptions="Center" Margin="0,0,0,18" />
+
+                <!-- Mesa icon con color de estado -->
+                <Border BackgroundColor="{Binding SheetEstadoColor, Converter={StaticResource HexToColorConverter}}"
+                        StrokeShape="RoundRectangle 40"
+                        Stroke="Transparent"
+                        WidthRequest="80" HeightRequest="80"
+                        HorizontalOptions="Center" Margin="0,0,0,14">
+                    <Label Text="🪑" FontSize="38"
+                           HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+
+                <!-- Título -->
+                <Label Text="{Binding SheetTitulo}"
+                       FontSize="24" FontAttributes="Bold"
+                       TextColor="#111827" HorizontalOptions="Center" />
+                <Label Text="{Binding SheetComedorTexto}"
+                       FontSize="14" TextColor="#6b7280"
+                       HorizontalOptions="Center" Margin="0,3" />
+                <Label Text="{Binding SheetCapacidadTexto}"
+                       FontSize="13" TextColor="#9ca3af"
+                       HorizontalOptions="Center" Margin="0,2,0,10" />
+
+                <!-- Estado badge -->
+                <Border BackgroundColor="{Binding SheetEstadoColor, Converter={StaticResource HexToColorConverter}}"
+                        StrokeShape="RoundRectangle 10"
+                        Stroke="Transparent"
+                        Padding="16,6"
+                        HorizontalOptions="Center"
+                        Margin="0,0,0,20">
+                    <Label Text="{Binding SheetEstadoTexto}"
+                           FontSize="12" FontAttributes="Bold" TextColor="White" />
+                </Border>
+
+                <BoxView HeightRequest="1" Color="#e5e7eb" Margin="16,0" />
+
+                <!-- Opción 1: Ver / Continuar pedido -->
+                <Grid ColumnDefinitions="Auto,*,Auto" Padding="22,16" ColumnSpacing="14">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrAlPosCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Label Grid.Column="0" Text="📋" FontSize="22" VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="Ver / Continuar pedido"
+                           FontSize="16" FontAttributes="Bold" TextColor="#111827"
+                           VerticalOptions="Center" />
+                    <Label Grid.Column="2" Text="›"
+                           FontSize="24" TextColor="#9ca3af" VerticalOptions="Center" />
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="#e5e7eb" Margin="16,0" />
+
+                <!-- Opción 2: Detalles de la mesa -->
+                <Grid ColumnDefinitions="Auto,*,Auto" Padding="22,16" ColumnSpacing="14">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrADetalleCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Label Grid.Column="0" Text="ℹ️" FontSize="22" VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="Detalles de la mesa"
+                           FontSize="16" TextColor="#111827" VerticalOptions="Center" />
+                    <Label Grid.Column="2" Text="›"
+                           FontSize="24" TextColor="#9ca3af" VerticalOptions="Center" />
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="#e5e7eb" Margin="16,0" />
+
+                <!-- Opción 3: Cancelar -->
+                <Grid ColumnDefinitions="Auto,*" Padding="22,16" ColumnSpacing="14">
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding CerrarSheetCommand}" />
+                    </Grid.GestureRecognizers>
+                    <Label Grid.Column="0" Text="✕" FontSize="20"
+                           TextColor="#ef4444" VerticalOptions="Center" />
+                    <Label Grid.Column="1" Text="Cancelar"
+                           FontSize="16" TextColor="#ef4444" VerticalOptions="Center" />
+                </Grid>
+
+            </VerticalStackLayout>
+        </Border>
+
+    </Grid>
 </ContentPage>

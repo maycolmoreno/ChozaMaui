@@ -6,10 +6,13 @@ using ChozaMaui.Services;
 
 namespace ChozaMaui.ViewModels;
 
+[QueryProperty(nameof(MesaSeleccionada), "Mesa")]
 public partial class PosViewModel : ObservableObject
 {
     private readonly ApiService _api;
     private readonly SessionService _session;
+    private readonly ReceiptPdfService _receiptPdf;
+    private PedidoResponse? _ultimoPedidoParaRecibo;
 
     // ── Listas base ────────────────────────────────────────────────────
     public ObservableCollection<MesaResponse> Mesas { get; } = [];
@@ -20,14 +23,28 @@ public partial class PosViewModel : ObservableObject
     // ── Selecciones ───────────────────────────────────────────────────
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MesaSeleccionadaTexto))]
+    [NotifyPropertyChangedFor(nameof(MesaHeaderTexto))]
     private MesaResponse? mesaSeleccionada;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EstadoPedidoTexto))]
+    [NotifyPropertyChangedFor(nameof(EstadoPedidoColor))]
+    [NotifyPropertyChangedFor(nameof(TienePedidoEnCurso))]
+    [NotifyPropertyChangedFor(nameof(PuedeMarcarListo))]
+    [NotifyPropertyChangedFor(nameof(PuedeEntregarPedido))]
+    [NotifyPropertyChangedFor(nameof(PedidoEnCursoTotalTexto))]
+    [NotifyPropertyChangedFor(nameof(TotalPedidoActualTexto))]
+    private PedidoResponse? pedidoEnCurso;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ClienteTexto))]
+    [NotifyPropertyChangedFor(nameof(ClienteNombreTexto))]
+    [NotifyPropertyChangedFor(nameof(ClienteEstadoTexto))]
     private ClienteResponse? clienteSeleccionado;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TotalTexto))]
+    [NotifyPropertyChangedFor(nameof(TotalPedidoActualTexto))]
     private double total;
 
     [ObservableProperty] private string observaciones = string.Empty;
@@ -49,17 +66,57 @@ public partial class PosViewModel : ObservableObject
     public string MesaSeleccionadaTexto =>
         MesaSeleccionada is null ? "Sin mesa" : MesaSeleccionada.Etiqueta;
 
+    public string MesaHeaderTexto =>
+        MesaSeleccionada is null ? "Selecciona mesa" : $"Mesa #{MesaSeleccionada.Numero}";
+
+    public string MeseroTexto => _session.NombreCompleto ?? _session.Username ?? "Mesero";
+
+    public string EstadoPedidoTexto =>
+        PedidoEnCurso?.EstadoTextoVisual ?? (Carrito.Count > 0 ? "NUEVO PEDIDO" : "SIN PEDIDO");
+
+    public string EstadoPedidoColor =>
+        PedidoEnCurso?.EstadoBadgeColor ?? (Carrito.Count > 0 ? "#f59e0b" : "#6b7280");
+
+    public bool TienePedidoEnCurso => PedidoEnCurso is not null;
+    public bool PuedeMarcarListo => PedidoEnCurso?.Estado is "EN_COCINA" or "EN_BAR";
+    public bool PuedeEntregarPedido => PedidoEnCurso?.PuedeEntregarse == true;
+    public string PedidoEnCursoTotalTexto => PedidoEnCurso is null ? "$0.00" : $"${PedidoEnCurso.Total:0.00}";
+    public string TotalPedidoActualTexto => PedidoEnCurso is null ? TotalTexto : PedidoEnCursoTotalTexto;
+
     public string ClienteTexto =>
         ClienteSeleccionado is null ? "👤 Asignar cliente" : $"👤 {ClienteSeleccionado.Nombre}  ·  {ClienteSeleccionado.Cedula}";
+
+    public string ClienteNombreTexto => ClienteSeleccionado?.Nombre ?? "Sin asignar";
+    public string ClienteEstadoTexto => ClienteSeleccionado is null ? "Cliente" : ClienteSeleccionado.Cedula;
 
     public int TotalItems => Carrito.Sum(i => i.Cantidad);
     public string TotalTexto => $"${Total:0.00}";
     public string BienvenidaTexto => $"Bienvenido, {_session.NombreCompleto ?? _session.Username}";
 
-    public PosViewModel(ApiService api, SessionService session)
+    // ── Propiedades para el nuevo diseño ──────────────────────────────
+    public string ComedorTexto    => MesaSeleccionada?.NombreComedor ?? "";
+    public string MesaNumeroTexto => MesaSeleccionada is null ? "Selecciona mesa" : $"Mesa #{MesaSeleccionada.Numero}";
+    public bool   TieneItems      => Carrito.Count > 0;
+
+    [ObservableProperty] private bool mostrarExito;
+
+    private string _pedidoEntregadoTotalTexto = "$0.00";
+    public string PedidoEntregadoTotalTexto => _pedidoEntregadoTotalTexto;
+
+    public PosViewModel(ApiService api, SessionService session, ReceiptPdfService receiptPdf)
     {
         _api = api;
         _session = session;
+        _receiptPdf = receiptPdf;
+    }
+
+    // Llamado automáticamente cuando Shell establece MesaSeleccionada vía QueryProperty
+    partial void OnMesaSeleccionadaChanged(MesaResponse? value)
+    {
+        OnPropertyChanged(nameof(MesaNumeroTexto));
+        OnPropertyChanged(nameof(ComedorTexto));
+        if (value is not null)
+            _ = CargarDatosAsync();
     }
 
     // ── Carga inicial ─────────────────────────────────────────────────
@@ -70,20 +127,19 @@ public partial class PosViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var mesasTask = _api.GetTodasMesasAsync();
-            var catTask = _api.GetCategoriasActivasAsync();
+            var catTask  = _api.GetCategoriasActivasAsync();
             var prodTask = _api.GetProductosActivosAsync();
 
-            await Task.WhenAll(mesasTask, catTask, prodTask);
-
-            Mesas.Clear();
-            foreach (var m in mesasTask.Result) Mesas.Add(m);
+            await Task.WhenAll(catTask, prodTask);
 
             Categorias.Clear();
             foreach (var c in catTask.Result) Categorias.Add(c);
 
             Productos.Clear();
             foreach (var p in prodTask.Result) Productos.Add(p);
+
+            if (MesaSeleccionada is not null)
+                await CargarPedidoEnCursoAsync();
         }
         catch (Exception ex)
         {
@@ -156,6 +212,8 @@ public partial class PosViewModel : ObservableObject
             Carrito.Add(new ItemCarrito { Producto = producto, Cantidad = 1 });
         }
         RecalcularTotal();
+        OnPropertyChanged(nameof(EstadoPedidoTexto));
+        OnPropertyChanged(nameof(EstadoPedidoColor));
     }
 
     [RelayCommand]
@@ -170,6 +228,8 @@ public partial class PosViewModel : ObservableObject
             Carrito.Remove(item);
         }
         RecalcularTotal();
+        OnPropertyChanged(nameof(EstadoPedidoTexto));
+        OnPropertyChanged(nameof(EstadoPedidoColor));
     }
 
     [RelayCommand]
@@ -179,26 +239,23 @@ public partial class PosViewModel : ObservableObject
         Total = 0;
         FotoAdjunta = null;
         OnPropertyChanged(nameof(TotalItems));
+        OnPropertyChanged(nameof(TieneItems));
+        OnPropertyChanged(nameof(EstadoPedidoTexto));
+        OnPropertyChanged(nameof(EstadoPedidoColor));
     }
 
     private void RecalcularTotal()
     {
         Total = Carrito.Sum(i => i.Subtotal);
         OnPropertyChanged(nameof(TotalItems));
+        OnPropertyChanged(nameof(TieneItems));
     }
 
     [RelayCommand]
     public async Task SeleccionarMesaAsync(MesaResponse mesa)
     {
-        if (!mesa.Estado)
-        {
-            await Shell.Current.DisplayAlertAsync(
-                "Mesa ocupada",
-                $"La mesa #{mesa.Numero} está actualmente ocupada. No puedes asignarle un nuevo pedido.",
-                "Entendido");
-            return;
-        }
         MesaSeleccionada = mesa;
+        await CargarPedidoEnCursoAsync();
     }
 
     [RelayCommand]
@@ -242,6 +299,50 @@ public partial class PosViewModel : ObservableObject
 
     [RelayCommand]
     public void QuitarCliente() => ClienteSeleccionado = null;
+
+    [RelayCommand]
+    public async Task CrearClienteRapidoAsync()
+    {
+        var nombre = await Shell.Current.DisplayPromptAsync(
+            "Nuevo cliente",
+            "Nombre del cliente",
+            accept: "Siguiente",
+            cancel: "Cancelar",
+            placeholder: "Ej: Juan Pérez");
+
+        if (string.IsNullOrWhiteSpace(nombre)) return;
+
+        var cedula = await Shell.Current.DisplayPromptAsync(
+            "Nuevo cliente",
+            "Cédula del cliente",
+            accept: "Crear",
+            cancel: "Cancelar",
+            placeholder: "Ej: 0102030405",
+            keyboard: Keyboard.Numeric);
+
+        if (string.IsNullOrWhiteSpace(cedula)) return;
+
+        IsBusy = true;
+        try
+        {
+            ClienteSeleccionado = await _api.CrearClienteAsync(new ClienteRequest
+            {
+                Nombre = nombre.Trim(),
+                Cedula = cedula.Trim(),
+                Estado = true
+            });
+
+            await MostrarMensajeAsync($"Cliente {ClienteSeleccionado.Nombre} creado y asignado.", error: false);
+        }
+        catch (Exception ex)
+        {
+            await MostrarMensajeAsync($"Error creando cliente: {ex.Message}", error: true);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 
     // ── Cámara (sensor del dispositivo) ──────────────────────────────
 
@@ -293,10 +394,109 @@ public partial class PosViewModel : ObservableObject
         OnPropertyChanged(nameof(FotoTexto));
     }
 
+    // Elimina completamente un ítem del carrito (botón 🗑)
+    [RelayCommand]
+    public void EliminarItemCarrito(ItemCarrito item)
+    {
+        Carrito.Remove(item);
+        RecalcularTotal();
+        OnPropertyChanged(nameof(EstadoPedidoTexto));
+        OnPropertyChanged(nameof(EstadoPedidoColor));
+    }
+
+    // Volver al mapa de mesas
+    [RelayCommand]
+    public async Task VolverAsync()
+        => await Shell.Current.GoToAsync("//mapa");
+
+    // Cerrar mesa tras entrega: oculta éxito, limpia y vuelve al mapa
+    [RelayCommand]
+    public async Task CerrarMesaAsync()
+    {
+        MostrarExito = false;
+        LimpiarCarrito();
+        PedidoEnCurso   = null;
+        MesaSeleccionada = null;
+        await Shell.Current.GoToAsync("//mapa");
+    }
+
+    [RelayCommand]
+    public async Task ImprimirCuentaAsync()
+    {
+        var pedido = PedidoEnCurso ?? _ultimoPedidoParaRecibo;
+        if (pedido is null)
+        {
+            await MostrarMensajeAsync("No hay pedido disponible para imprimir.", error: true);
+            return;
+        }
+
+        try
+        {
+            var rutaPdf = await _receiptPdf.GenerarReciboPedidoAsync(pedido, MeseroTexto);
+            await Share.Default.RequestAsync(new ShareFileRequest
+            {
+                Title = $"Recibo pedido #{pedido.Idpedido}",
+                File = new ShareFile(rutaPdf, "application/pdf")
+            });
+        }
+        catch (Exception ex)
+        {
+            await MostrarMensajeAsync($"No se pudo generar el recibo: {ex.Message}", error: true);
+        }
+    }
+
     // ── Enviar pedido ─────────────────────────────────────────────────
 
     [RelayCommand]
     public async Task EnviarPedidoAsync()
+        => await CrearPedidoAsync("PENDIENTE", "Pedido");
+
+    [RelayCommand]
+    public async Task EnviarACocinaAsync()
+        => await CrearPedidoAsync("EN_COCINA", "Pedido enviado a cocina");
+
+    [RelayCommand]
+    public async Task MarcarComoListoAsync()
+    {
+        if (PedidoEnCurso is null)
+        {
+            await MostrarMensajeAsync("No hay pedido activo para marcar como listo.", error: true);
+            return;
+        }
+
+        if (!PuedeMarcarListo)
+        {
+            await MostrarMensajeAsync("Solo puedes marcar listo un pedido en cocina o bar.", error: true);
+            return;
+        }
+
+        await CambiarEstadoPedidoActualAsync("LISTO_PARA_ENTREGA", "Pedido marcado como listo.");
+    }
+
+    [RelayCommand]
+    public async Task EntregarPedidoActualAsync()
+    {
+        if (PedidoEnCurso is null)
+        {
+            await MostrarMensajeAsync("No hay pedido activo para entregar.", error: true);
+            return;
+        }
+
+        if (!PuedeEntregarPedido)
+        {
+            await MostrarMensajeAsync("Solo se puede entregar un pedido listo.", error: true);
+            return;
+        }
+
+        _ultimoPedidoParaRecibo = PedidoEnCurso;
+        _pedidoEntregadoTotalTexto = $"${PedidoEnCurso.Total:0.00}";
+        OnPropertyChanged(nameof(PedidoEntregadoTotalTexto));
+
+        await CambiarEstadoPedidoActualAsync("COMPLETADO", "Pedido entregado al cliente.");
+        MostrarExito = true;
+    }
+
+    private async Task CrearPedidoAsync(string estadoDestino, string mensajeExito)
     {
         if (MesaSeleccionada is null)
         {
@@ -306,6 +506,11 @@ public partial class PosViewModel : ObservableObject
         if (Carrito.Count == 0)
         {
             await MostrarMensajeAsync("El carrito está vacío.", error: true);
+            return;
+        }
+        if (ClienteSeleccionado is null)
+        {
+            await MostrarMensajeAsync("Asigna un cliente antes de enviar el pedido.", error: true);
             return;
         }
 
@@ -331,7 +536,7 @@ public partial class PosViewModel : ObservableObject
                 Fecha = DateTime.Now.ToString("s"),  // asignado justo al enviar
                 IdUsuario = _session.UserId,
                 IdMesa = MesaSeleccionada.Idmesa,
-                IdCliente = ClienteSeleccionado?.Idcliente ?? 0,
+                IdCliente = ClienteSeleccionado.Idcliente,
                 Observaciones = obs,
                 Detalles = Carrito.Select(i => new PedidoDetalleRequest
                 {
@@ -344,7 +549,7 @@ public partial class PosViewModel : ObservableObject
             var pedido = await _api.CrearPedidoAsync(request);
 
             // Vincular pedido a una cuenta abierta (crear si no existe)
-            int idCliente = ClienteSeleccionado?.Idcliente ?? 0;
+            int idCliente = ClienteSeleccionado.Idcliente;
             var cuentasAbiertas = await _api.ObtenerCuentasAbiertasAsync();
             var cuentaExistente = cuentasAbiertas
                 .FirstOrDefault(c => c.Mesa?.Idmesa == MesaSeleccionada.Idmesa
@@ -360,13 +565,16 @@ public partial class PosViewModel : ObservableObject
                 await _api.AgregarPedidoACuentaAsync(nuevaCuenta.Idcuenta, pedido.Idpedido);
             }
 
+            if (estadoDestino != "PENDIENTE")
+                pedido = await _api.CambiarEstadoPedidoAsync(pedido.Idpedido, estadoDestino);
+
             LimpiarCarrito();
             MostrarCarrito = false;
-            MesaSeleccionada = null;
+            PedidoEnCurso = pedido;
             ClienteSeleccionado = null;
             Observaciones = string.Empty;
             await CargarDatosAsync();
-            await MostrarMensajeAsync($"Pedido #{pedido.Idpedido} creado correctamente.", error: false);
+            await MostrarMensajeAsync($"{mensajeExito} #{pedido.Idpedido}.", error: false);
         }
         catch (Exception ex)
         {
@@ -388,6 +596,49 @@ public partial class PosViewModel : ObservableObject
         await Task.Delay(3000);
         MostrarMensaje = false;
         Mensaje = string.Empty;
+    }
+
+    private async Task CargarPedidoEnCursoAsync()
+    {
+        if (MesaSeleccionada is null)
+        {
+            PedidoEnCurso = null;
+            return;
+        }
+
+        try
+        {
+            var pedidos = await _api.GetPedidosAsync();
+            PedidoEnCurso = pedidos
+                .Where(p => p.EsActivo && p.Mesa?.Idmesa == MesaSeleccionada.Idmesa)
+                .OrderByDescending(p => p.Fecha)
+                .FirstOrDefault();
+        }
+        catch
+        {
+            PedidoEnCurso = null;
+        }
+    }
+
+    private async Task CambiarEstadoPedidoActualAsync(string estado, string mensajeExito)
+    {
+        if (PedidoEnCurso is null) return;
+
+        IsBusy = true;
+        try
+        {
+            PedidoEnCurso = await _api.CambiarEstadoPedidoAsync(PedidoEnCurso.Idpedido, estado);
+            await CargarDatosAsync();
+            await MostrarMensajeAsync(mensajeExito, error: false);
+        }
+        catch (Exception ex)
+        {
+            await MostrarMensajeAsync($"Error cambiando estado: {ex.Message}", error: true);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private async Task<string?> ValidarStockCarritoAsync()

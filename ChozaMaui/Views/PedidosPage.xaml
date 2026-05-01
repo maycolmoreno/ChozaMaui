@@ -8,255 +8,480 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="#f5f7fb">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*">
+    <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- ══ HEADER ══ -->
-        <Grid Grid.Row="0" BackgroundColor="White" Padding="16,52,16,16">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                <Border Grid.Column="0" BackgroundColor="#f0f4f8"
-                        StrokeShape="RoundRectangle 22" Stroke="Transparent"
-                        WidthRequest="44" HeightRequest="44">
-                    <Label Text="👤" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center"/>
-                </Border>
-                <Image Grid.Column="1" Source="lachozalogo.png"
-                       HeightRequest="40"
-                       HorizontalOptions="Center"
-                       Aspect="AspectFit"
-                       VerticalOptions="Center" />
-                <ActivityIndicator Grid.Column="2"
-                                   IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
-                                   Color="{StaticResource Orange}" VerticalOptions="Center"/>
-                <Border Grid.Column="3" BackgroundColor="#f0f4f8"
-                        StrokeShape="RoundRectangle 22" Stroke="Transparent"
-                        WidthRequest="44" HeightRequest="44">
-                    <Label Text="🔔" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center"/>
-                </Border>
+        <!-- ══ HEADER NARANJA ══ -->
+        <Grid Grid.Row="0" BackgroundColor="{StaticResource Orange}" Padding="16,50,16,20">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                    <Label Text="Pedidos"
+                           FontSize="28" FontAttributes="Bold" TextColor="White" />
+                    <Label Text="Historial y estado de pedidos"
+                           FontSize="13" TextColor="#ffe0b2" />
+                </VerticalStackLayout>
+
+                <HorizontalStackLayout Grid.Column="1" Spacing="12" VerticalOptions="Center">
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       IsVisible="{Binding IsBusy}"
+                                       Color="White" VerticalOptions="Center" />
+                    <!-- Campana con badge -->
+                    <Grid WidthRequest="44" HeightRequest="44">
+                        <Border BackgroundColor="#c66900"
+                                StrokeShape="RoundRectangle 22"
+                                Stroke="Transparent"
+                                WidthRequest="44" HeightRequest="44">
+                            <Label Text="🔔" FontSize="20"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <Border BackgroundColor="#ef4444"
+                                StrokeShape="RoundRectangle 10"
+                                Stroke="Transparent"
+                                HorizontalOptions="End" VerticalOptions="Start"
+                                Padding="5,2" Margin="0,-4,-4,0">
+                            <Label Text="{Binding PedidosActivos}"
+                                   FontSize="10" FontAttributes="Bold" TextColor="White" />
+                        </Border>
+                    </Grid>
+                </HorizontalStackLayout>
             </Grid>
         </Grid>
 
-        <!-- ══ KPI CARDS ══ -->
-        <Grid Grid.Row="1"
-              ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
-              Padding="12,10,12,4" RowSpacing="8" ColumnSpacing="8">
-
-            <!-- Kitchen Load -->
-            <Border Grid.Column="0" Grid.Row="0"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 12"
-                    Stroke="#e2e8f0" Padding="14,12">
-                <VerticalStackLayout Spacing="4">
-                    <Label Text="KITCHEN LOAD" TextColor="{StaticResource TextSecondary}"
-                           FontSize="10" FontAttributes="Bold" />
-                    <Label Text="{Binding CargaCocinaLabel}"
-                           FontSize="17" FontAttributes="Bold"
-                           TextColor="{Binding CargaCocinaColor, Converter={StaticResource HexToColorConverter}}" />
-                </VerticalStackLayout>
-            </Border>
-
-            <!-- Active Orders -->
-            <Border Grid.Column="1" Grid.Row="0"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 12"
-                    Stroke="#e2e8f0" Padding="14,12">
-                <Grid ColumnDefinitions="*,Auto">
-                    <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
-                        <Label Text="ACTIVE ORDERS" TextColor="{StaticResource TextSecondary}"
-                               FontSize="10" FontAttributes="Bold" />
-                    </VerticalStackLayout>
-                    <Label Grid.Column="1" Text="{Binding PedidosActivos}"
-                           FontSize="38" FontAttributes="Bold"
-                           TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
-                </Grid>
-            </Border>
-
-            <!-- Avg Time -->
-            <Border Grid.Column="0" Grid.Row="1"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 12"
-                    Stroke="#e2e8f0" Padding="14,12">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                    <Label Grid.Column="0" Text="⏱" FontSize="24"
-                           VerticalOptions="Center" />
-                    <VerticalStackLayout Grid.Column="1" Spacing="2">
-                        <Label Text="AVG TIME" TextColor="{StaticResource TextSecondary}"
-                               FontSize="10" FontAttributes="Bold" />
-                        <Label Text="{Binding TiempoPromedioTexto}"
-                               FontSize="18" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
-                    </VerticalStackLayout>
-                </Grid>
-            </Border>
-
-            <!-- Completed -->
-            <Border Grid.Column="1" Grid.Row="1"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 12"
-                    Stroke="#e2e8f0" Padding="14,12">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                    <Label Grid.Column="0" Text="✅" FontSize="24"
-                           VerticalOptions="Center" />
-                    <VerticalStackLayout Grid.Column="1" Spacing="2">
-                        <Label Text="COMPLETED" TextColor="{StaticResource TextSecondary}"
-                               FontSize="10" FontAttributes="Bold" />
-                        <Label Text="{Binding TotalCompletados}"
-                               FontSize="18" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
-                    </VerticalStackLayout>
-                </Grid>
-            </Border>
-        </Grid>
-
-        <!-- ══ BUSCAR + FILTRO ══ -->
-        <Grid Grid.Row="2"
-              ColumnDefinitions="*,Auto"
-              Padding="12,4,12,8" ColumnSpacing="8">
-            <Border Grid.Column="0"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 12"
-                    Stroke="#e2e8f0" Padding="4,0">
-                <SearchBar Placeholder="Buscar mesa o mesero…"
-                           PlaceholderColor="#9ca3af" TextColor="{StaticResource TextPrimary}"
-                           BackgroundColor="Transparent"
-                           Text="{Binding Busqueda}" />
-            </Border>
-            <Border Grid.Column="1"
-                    BackgroundColor="White" StrokeShape="RoundRectangle 12"
-                    Stroke="#e2e8f0" Padding="4,0" WidthRequest="130">
-                <Picker ItemsSource="{Binding Estados}"
-                        SelectedItem="{Binding FiltroEstado}"
-                        TextColor="{StaticResource TextPrimary}" BackgroundColor="Transparent" />
-            </Border>
-        </Grid>
-
-        <!-- ══ LISTA DE PEDIDOS ══ -->
-        <RefreshView Grid.Row="3"
+        <!-- ══ LISTA CON HEADER INTEGRADO ══ -->
+        <RefreshView Grid.Row="1"
                      IsRefreshing="{Binding IsBusy}"
-                     Command="{Binding CargarCommand}">
+                     Command="{Binding CargarCommand}"
+                     RefreshColor="{StaticResource Orange}">
             <CollectionView ItemsSource="{Binding Pedidos}"
                             SelectionMode="None">
+
+                <!-- HEADER: chips + búsqueda -->
+                <CollectionView.Header>
+                    <VerticalStackLayout BackgroundColor="#f5f7fb">
+
+                        <!-- CHIPS DE FILTRO -->
+                        <ScrollView Orientation="Horizontal"
+                                    HorizontalScrollBarVisibility="Never"
+                                    Padding="12,14,12,4">
+                            <HorizontalStackLayout Spacing="8">
+
+                                <!-- Todos -->
+                                <Border StrokeShape="RoundRectangle 20"
+                                        StrokeThickness="1.5"
+                                        Padding="16,10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SeleccionarFiltroCommand}"
+                                                              CommandParameter="TODOS" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="TODOS">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource Orange}" />
+                                            <Setter Property="Stroke" Value="{StaticResource Orange}" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="!TODOS">
+                                            <Setter Property="BackgroundColor" Value="White" />
+                                            <Setter Property="Stroke" Value="#e2e8f0" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="≡  Todos" FontSize="13">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="TODOS">
+                                                <Setter Property="TextColor" Value="White" />
+                                                <Setter Property="FontAttributes" Value="Bold" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="EN_PREPARACION">
+                                                <Setter Property="TextColor" Value="#374151" />
+                                                <Setter Property="FontAttributes" Value="None" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+
+                                <!-- En preparación -->
+                                <Border StrokeShape="RoundRectangle 20"
+                                        StrokeThickness="1.5"
+                                        Padding="16,10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SeleccionarFiltroCommand}"
+                                                              CommandParameter="EN_PREPARACION" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="EN_PREPARACION">
+                                            <Setter Property="BackgroundColor" Value="#f59e0b" />
+                                            <Setter Property="Stroke" Value="#f59e0b" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="TODOS">
+                                            <Setter Property="BackgroundColor" Value="White" />
+                                            <Setter Property="Stroke" Value="#e2e8f0" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="🍳  En preparación" FontSize="13">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="EN_PREPARACION">
+                                                <Setter Property="TextColor" Value="White" />
+                                                <Setter Property="FontAttributes" Value="Bold" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="TODOS">
+                                                <Setter Property="TextColor" Value="#374151" />
+                                                <Setter Property="FontAttributes" Value="None" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+
+                                <!-- Listos -->
+                                <Border StrokeShape="RoundRectangle 20"
+                                        StrokeThickness="1.5"
+                                        Padding="16,10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SeleccionarFiltroCommand}"
+                                                              CommandParameter="LISTOS" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="LISTOS">
+                                            <Setter Property="BackgroundColor" Value="#28b779" />
+                                            <Setter Property="Stroke" Value="#28b779" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="TODOS">
+                                            <Setter Property="BackgroundColor" Value="White" />
+                                            <Setter Property="Stroke" Value="#e2e8f0" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="✓  Listos" FontSize="13">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="LISTOS">
+                                                <Setter Property="TextColor" Value="White" />
+                                                <Setter Property="FontAttributes" Value="Bold" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="TODOS">
+                                                <Setter Property="TextColor" Value="#374151" />
+                                                <Setter Property="FontAttributes" Value="None" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+
+                                <!-- Entregados -->
+                                <Border StrokeShape="RoundRectangle 20"
+                                        StrokeThickness="1.5"
+                                        Padding="16,10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SeleccionarFiltroCommand}"
+                                                              CommandParameter="ENTREGADOS" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="ENTREGADOS">
+                                            <Setter Property="BackgroundColor" Value="#0ea5e9" />
+                                            <Setter Property="Stroke" Value="#0ea5e9" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="TODOS">
+                                            <Setter Property="BackgroundColor" Value="White" />
+                                            <Setter Property="Stroke" Value="#e2e8f0" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="🚚  Entregados" FontSize="13">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="ENTREGADOS">
+                                                <Setter Property="TextColor" Value="White" />
+                                                <Setter Property="FontAttributes" Value="Bold" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="TODOS">
+                                                <Setter Property="TextColor" Value="#374151" />
+                                                <Setter Property="FontAttributes" Value="None" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+
+                                <!-- Cancelados -->
+                                <Border StrokeShape="RoundRectangle 20"
+                                        StrokeThickness="1.5"
+                                        Padding="16,10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SeleccionarFiltroCommand}"
+                                                              CommandParameter="CANCELADOS" />
+                                    </Border.GestureRecognizers>
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="CANCELADOS">
+                                            <Setter Property="BackgroundColor" Value="#ef4444" />
+                                            <Setter Property="Stroke" Value="#ef4444" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding FiltroEstado}" Value="TODOS">
+                                            <Setter Property="BackgroundColor" Value="White" />
+                                            <Setter Property="Stroke" Value="#e2e8f0" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="✗  Cancelados" FontSize="13">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="CANCELADOS">
+                                                <Setter Property="TextColor" Value="White" />
+                                                <Setter Property="FontAttributes" Value="Bold" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding FiltroEstado}" Value="TODOS">
+                                                <Setter Property="TextColor" Value="#374151" />
+                                                <Setter Property="FontAttributes" Value="None" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+
+                            </HorizontalStackLayout>
+                        </ScrollView>
+
+                        <!-- BÚSQUEDA + FILTROS -->
+                        <Grid ColumnDefinitions="*,Auto"
+                              Padding="12,8,12,12"
+                              ColumnSpacing="8">
+                            <Border Grid.Column="0"
+                                    BackgroundColor="White"
+                                    StrokeShape="RoundRectangle 12"
+                                    Stroke="#e2e8f0"
+                                    Padding="10,0">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                    <Label Grid.Column="0" Text="🔍"
+                                           FontSize="16" VerticalOptions="Center"
+                                           TextColor="#9ca3af" />
+                                    <Entry Grid.Column="1"
+                                           Placeholder="Buscar por mesa, cliente o número…"
+                                           PlaceholderColor="#9ca3af"
+                                           TextColor="#111827"
+                                           BackgroundColor="Transparent"
+                                           Text="{Binding Busqueda}"
+                                           FontSize="13" />
+                                </Grid>
+                            </Border>
+                            <Border Grid.Column="1"
+                                    BackgroundColor="White"
+                                    StrokeShape="RoundRectangle 12"
+                                    Stroke="#e2e8f0"
+                                    Padding="14,12">
+                                <Label Text="⚙  Filtros"
+                                       FontSize="13" FontAttributes="Bold"
+                                       TextColor="#374151" />
+                            </Border>
+                        </Grid>
+
+                    </VerticalStackLayout>
+                </CollectionView.Header>
+
+                <!-- ESTADO VACÍO -->
                 <CollectionView.EmptyView>
                     <VerticalStackLayout HorizontalOptions="Center"
                                          VerticalOptions="Center"
                                          Spacing="12" Margin="0,60">
-                        <Label Text="📋" FontSize="48" HorizontalOptions="Center" />
-                        <Label Text="Sin pedidos con ese filtro"
+                        <Label Text="📋" FontSize="52" HorizontalOptions="Center" />
+                        <Label Text="Sin pedidos para este filtro"
                                TextColor="#6b7280" FontSize="15"
                                HorizontalOptions="Center" />
+                        <Label Text="Prueba con otro filtro o recarga la página"
+                               TextColor="#9ca3af" FontSize="13"
+                               HorizontalOptions="Center" HorizontalTextAlignment="Center" />
                     </VerticalStackLayout>
                 </CollectionView.EmptyView>
+
+                <!-- TARJETA DE PEDIDO -->
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:PedidoResponse">
-                        <Grid Margin="12,5">
-                            <Border BackgroundColor="White"
-                                    StrokeShape="RoundRectangle 12"
-                                    Stroke="#e2e8f0"
-                                    StrokeThickness="1"
-                                    Padding="0">
-                                <!-- Grid: columna izquierda = franja de color, derecha = contenido -->
-                                <Grid ColumnDefinitions="6,*">
-                                    <!-- Franja lateral de color por estado -->
-                                    <BoxView Grid.Column="0"
-                                             Color="{Binding EstadoBorderColor, Converter={StaticResource HexToColorConverter}}"
-                                             CornerRadius="12,0,0,12" />
+                        <Border BackgroundColor="White"
+                                StrokeShape="RoundRectangle 14"
+                                Stroke="#e2e8f0"
+                                StrokeThickness="1"
+                                Margin="12,0,12,10"
+                                Padding="14">
+                            <VerticalStackLayout Spacing="0">
 
-                                    <!-- Contenido de la tarjeta -->
+                                <!-- FILA PRINCIPAL: círculo + info + precio/badge -->
+                                <Grid ColumnDefinitions="56,*,Auto" ColumnSpacing="12">
+
+                                    <!-- Círculo de color con ícono -->
+                                    <Border Grid.Column="0"
+                                            WidthRequest="56" HeightRequest="56"
+                                            BackgroundColor="{Binding CircleColor, Converter={StaticResource HexToColorConverter}}"
+                                            StrokeShape="RoundRectangle 28"
+                                            Stroke="Transparent"
+                                            VerticalOptions="Center">
+                                        <Label Text="🪑" FontSize="26"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center" />
+                                    </Border>
+
+                                    <!-- Info: mesa, comedor, cliente, hora -->
                                     <VerticalStackLayout Grid.Column="1"
-                                                         Padding="14,12,14,12"
-                                                         Spacing="8">
-
-                                        <!-- Fila 1: Badge estado + # pedido + Tiempo -->
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <Border Grid.Column="0"
-                                                    BackgroundColor="{Binding EstadoBadgeBackground, Converter={StaticResource HexToColorConverter}}"
-                                                    StrokeShape="RoundRectangle 6"
-                                                    Stroke="Transparent"
-                                                    Padding="8,3">
-                                                <Label Text="{Binding Estado}"
-                                                       TextColor="White"
-                                                       FontSize="10" FontAttributes="Bold" />
-                                            </Border>
-                                            <Label Grid.Column="1"
-                                                   Text="{Binding Idpedido, StringFormat='  #{0}'}"
-                                                   TextColor="{StaticResource TextSecondary}" FontSize="12"
-                                                   VerticalOptions="Center" />
-                                            <Label Grid.Column="2"
-                                                   Text="{Binding TiempoTranscurrido}"
-                                                   TextColor="{StaticResource TextPrimary}" FontSize="17"
-                                                   FontAttributes="Bold"
-                                                   VerticalOptions="Center" />
-                                        </Grid>
-
-                                        <!-- Fila 2: Mesa + Mesero -->
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <Label Grid.Column="0"
-                                                   Text="{Binding Mesa.Etiqueta}"
-                                                   TextColor="{StaticResource TextPrimary}" FontSize="19"
-                                                   FontAttributes="Bold" />
-                                            <Label Grid.Column="1"
-                                                   Text="{Binding Usuario.NombreCompleto, StringFormat='Mesero: {0}'}"
-                                                   TextColor="{StaticResource TextSecondary}" FontSize="12"
-                                                   VerticalOptions="End" />
-                                        </Grid>
-
-                                        <!-- Fila 3: Barra de progreso -->
-                                        <ProgressBar Progress="{Binding BarraProgreso}"
-                                                     ProgressColor="{Binding BarraProgresoColor, Converter={StaticResource HexToColorConverter}}"
-                                                     BackgroundColor="#e2e8f0"
-                                                     HeightRequest="6" />
-
-                                        <!-- Fila 4: Etiquetas del progreso -->
-                                        <Grid ColumnDefinitions="*,*,*">
-                                            <Label Grid.Column="0"
-                                                   Text="RECIBIDO"
-                                                   TextColor="{StaticResource TextSecondary}" FontSize="9" />
-                                            <Label Grid.Column="1"
-                                                   Text="{Binding EtapaActualLabel}"
-                                                   TextColor="{Binding BarraProgresoColor, Converter={StaticResource HexToColorConverter}}"
-                                                   FontSize="9" FontAttributes="Bold"
-                                                   HorizontalOptions="Center" />
-                                            <Label Grid.Column="2"
-                                                   Text="LISTO"
-                                                   TextColor="{StaticResource TextSecondary}" FontSize="9"
-                                                   HorizontalOptions="End" />
-                                        </Grid>
-
-                                        <!-- Fila 5: Resumen items + Ver detalle + Cobrar -->
-                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                            <Label Grid.Column="0"
-                                                   Text="{Binding ResumenItems}"
-                                                   TextColor="#9ca3af" FontSize="12"
-                                                   LineBreakMode="TailTruncation"
-                                                   VerticalOptions="Center" />
-                                            <!-- Botón Cobrar (solo estados LISTO / ENTREGADO) -->
-                                            <Border Grid.Column="1"
-                                                    BackgroundColor="#28b779"
-                                                    StrokeShape="RoundRectangle 8"
-                                                    Stroke="Transparent"
-                                                    Padding="10,5"
-                                                    IsVisible="{Binding EsCobrable}">
-                                                <Border.GestureRecognizers>
-                                                    <TapGestureRecognizer
-                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IrAPagarCommand}"
-                                                        CommandParameter="{Binding .}" />
-                                                </Border.GestureRecognizers>
-                                                <Label Text="💳 Cobrar"
-                                                       TextColor="White"
-                                                       FontSize="11" FontAttributes="Bold" />
-                                            </Border>
-                                            <Label Grid.Column="2"
-                                                   Text="VER  ›"
-                                                   TextColor="{StaticResource Orange}"
-                                                   FontSize="12" FontAttributes="Bold"
-                                                   VerticalOptions="Center">
-                                                <Label.GestureRecognizers>
-                                                    <TapGestureRecognizer
-                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerDetalleCommand}"
-                                                        CommandParameter="{Binding .}" />
-                                                </Label.GestureRecognizers>
-                                            </Label>
-                                        </Grid>
-
+                                                         Spacing="3"
+                                                         VerticalOptions="Center">
+                                        <Label Text="{Binding Mesa.Etiqueta}"
+                                               FontSize="16" FontAttributes="Bold"
+                                               TextColor="#111827" />
+                                        <Label Text="{Binding Mesa.NombreComedor}"
+                                               FontSize="12" TextColor="#6b7280" />
+                                        <Label Text="{Binding ClienteNombreTexto, StringFormat='👤 {0}'}"
+                                               FontSize="12" TextColor="#374151" />
+                                        <Label Text="{Binding FechaYNumTexto, StringFormat='🕐 {0}'}"
+                                               FontSize="11" TextColor="#9ca3af" />
                                     </VerticalStackLayout>
+
+                                    <!-- Precio + cantidad + badge -->
+                                    <VerticalStackLayout Grid.Column="2"
+                                                         HorizontalOptions="End"
+                                                         Spacing="5"
+                                                         VerticalOptions="Center">
+                                        <Label Text="{Binding Total, StringFormat='${0:0.00}'}"
+                                               FontSize="18" FontAttributes="Bold"
+                                               TextColor="#111827"
+                                               HorizontalOptions="End" />
+                                        <Label Text="{Binding NumProductosTexto}"
+                                               FontSize="11" TextColor="#9ca3af"
+                                               HorizontalOptions="End" />
+                                        <Border BackgroundColor="{Binding BadgeLightBackground, Converter={StaticResource HexToColorConverter}}"
+                                                StrokeShape="RoundRectangle 6"
+                                                Stroke="{Binding BadgeTextColor, Converter={StaticResource HexToColorConverter}}"
+                                                StrokeThickness="1"
+                                                Padding="8,4"
+                                                HorizontalOptions="End">
+                                            <Label Text="{Binding BadgeTexto}"
+                                                   FontSize="10" FontAttributes="Bold"
+                                                   TextColor="{Binding BadgeTextColor, Converter={StaticResource HexToColorConverter}}" />
+                                        </Border>
+                                    </VerticalStackLayout>
+
                                 </Grid>
-                            </Border>
-                        </Grid>
+
+                                <!-- DIVISOR -->
+                                <BoxView HeightRequest="1" Color="#f1f5f9" Margin="0,12" />
+
+                                <!-- BOTONES DE ACCIÓN -->
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+
+                                    <!-- Ver pedido / Ver detalle (siempre visible) -->
+                                    <Border Grid.Column="0"
+                                            BackgroundColor="Transparent"
+                                            Stroke="{StaticResource Orange}"
+                                            StrokeShape="RoundRectangle 8"
+                                            StrokeThickness="1.5"
+                                            Padding="0,12">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerDetalleCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+                                        <Label Text="{Binding TextoBotonPrincipal}"
+                                               TextColor="{StaticResource Orange}"
+                                               FontSize="13" FontAttributes="Bold"
+                                               HorizontalOptions="Center" />
+                                    </Border>
+
+                                    <!-- "Abrir" → navega al POS (solo pedidos activos en cocina/bar) -->
+                                    <Button Grid.Column="1"
+                                            Text="Abrir"
+                                            IsVisible="{Binding EsAbrible}"
+                                            BackgroundColor="{StaticResource Orange}"
+                                            TextColor="White"
+                                            CornerRadius="8"
+                                            FontAttributes="Bold"
+                                            FontSize="13"
+                                            WidthRequest="88"
+                                            HeightRequest="46"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AbrirEnPosCommand}"
+                                            CommandParameter="{Binding .}" />
+
+                                    <!-- "Entregar" → marca como COMPLETADO (solo pedidos listos) -->
+                                    <Button Grid.Column="1"
+                                            Text="Entregar"
+                                            IsVisible="{Binding EsEntregable}"
+                                            BackgroundColor="#28b779"
+                                            TextColor="White"
+                                            CornerRadius="8"
+                                            FontAttributes="Bold"
+                                            FontSize="13"
+                                            WidthRequest="88"
+                                            HeightRequest="46"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EntregarRapidoCommand}"
+                                            CommandParameter="{Binding .}" />
+
+                                </Grid>
+
+                            </VerticalStackLayout>
+                        </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
+
             </CollectionView>
         </RefreshView>
+
+        <!-- ══ BARRA DE ESTADÍSTICAS INFERIOR ══ -->
+        <Border Grid.Row="2"
+                BackgroundColor="White"
+                Stroke="#e2e8f0"
+                StrokeShape="RoundRectangle 0"
+                StrokeThickness="0"
+                Padding="8,14,8,18">
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4">
+
+                <VerticalStackLayout Grid.Column="0" Spacing="4" HorizontalOptions="Center">
+                    <Label Text="🍳" FontSize="22" HorizontalOptions="Center" />
+                    <Label Text="{Binding TotalEnPreparacion}"
+                           FontSize="20" FontAttributes="Bold"
+                           TextColor="#f59e0b" HorizontalOptions="Center" />
+                    <Label Text="En preparación"
+                           FontSize="10" TextColor="#6b7280"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="Center">
+                    <Label Text="✓" FontSize="22" TextColor="#28b779" FontAttributes="Bold"
+                           HorizontalOptions="Center" />
+                    <Label Text="{Binding TotalListos}"
+                           FontSize="20" FontAttributes="Bold"
+                           TextColor="#28b779" HorizontalOptions="Center" />
+                    <Label Text="Listos"
+                           FontSize="10" TextColor="#6b7280"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="Center">
+                    <Label Text="🚚" FontSize="22" HorizontalOptions="Center" />
+                    <Label Text="{Binding TotalEntregadosHoy}"
+                           FontSize="20" FontAttributes="Bold"
+                           TextColor="#0ea5e9" HorizontalOptions="Center" />
+                    <Label Text="Entregados hoy"
+                           FontSize="10" TextColor="#6b7280"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="3" Spacing="4" HorizontalOptions="Center">
+                    <Label Text="✗" FontSize="22" TextColor="#ef4444" FontAttributes="Bold"
+                           HorizontalOptions="Center" />
+                    <Label Text="{Binding TotalCancelados}"
+                           FontSize="20" FontAttributes="Bold"
+                           TextColor="#ef4444" HorizontalOptions="Center" />
+                    <Label Text="Cancelados"
+                           FontSize="10" TextColor="#6b7280"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+            </Grid>
+        </Border>
 
     </Grid>
 </ContentPage>

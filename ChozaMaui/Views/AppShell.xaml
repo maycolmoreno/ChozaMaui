@@ -19,19 +19,19 @@
 
     <TabBar>
 
-        <!-- Pantalla 1: POS -->
+        <!-- Pantalla 1: Mapa de mesas -->
+        <Tab Title="Mapa">
+            <ShellContent ContentTemplate="{DataTemplate views:MapaPage}" Route="mapa" />
+        </Tab>
+
+        <!-- Pantalla 2: POS -->
         <Tab Title="POS">
             <ShellContent ContentTemplate="{DataTemplate views:PosPage}" Route="pos" />
         </Tab>
 
-        <!-- Pantalla 2: Pedidos -->
+        <!-- Pantalla 3: Pedidos -->
         <Tab Title="Pedidos">
             <ShellContent ContentTemplate="{DataTemplate views:PedidosPage}" Route="pedidos" />
-        </Tab>
-
-        <!-- Pantalla 3: Mapa -->
-        <Tab Title="Mapa">
-            <ShellContent ContentTemplate="{DataTemplate views:MapaPage}" Route="mapa" />
         </Tab>
 
         <!-- Pantalla 4: Perfil -->

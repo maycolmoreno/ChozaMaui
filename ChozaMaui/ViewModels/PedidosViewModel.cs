@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChozaMaui.Models;
 using ChozaMaui.Services;
-using Microsoft.Maui.Graphics;
 
 namespace ChozaMaui.ViewModels;
 
@@ -28,8 +27,11 @@ public partial class PedidosViewModel : ObservableObject
     [ObservableProperty] private string cargaCocinaLabel = "Normal";
     [ObservableProperty] private string cargaCocinaColor = "#28b779";
 
-    public List<string> Estados { get; } =
-        ["TODOS", "PENDIENTE", "EN_PROCESO", "LISTO", "ENTREGADO", "CANCELADO"];
+    // ── Stats para barra inferior ──────────────────────────────────────
+    [ObservableProperty] private int totalEnPreparacion;
+    [ObservableProperty] private int totalListos;
+    [ObservableProperty] private int totalEntregadosHoy;
+    [ObservableProperty] private int totalCancelados;
 
     public PedidosViewModel(ApiService api) => _api = api;
 
@@ -53,17 +55,33 @@ public partial class PedidosViewModel : ObservableObject
         }
     }
 
+    // ── Filtros chip ──────────────────────────────────────────────────
+
+    [RelayCommand]
+    public void SeleccionarFiltro(string filtro)
+    {
+        FiltroEstado = filtro;
+    }
+
     partial void OnFiltroEstadoChanged(string value) => AplicarFiltro();
     partial void OnBusquedaChanged(string value) => AplicarFiltro();
 
     private void AplicarFiltro()
     {
         var hoy = DateTime.Today;
-        // Filtrar siempre por hoy — no se muestra histórico
         var resultado = _todos.Where(p => p.Fecha.Date == hoy).AsEnumerable();
 
-        if (FiltroEstado != "TODOS")
-            resultado = resultado.Where(p => p.Estado == FiltroEstado);
+        resultado = FiltroEstado switch
+        {
+            "EN_PREPARACION" => resultado.Where(p =>
+                p.Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO" or "PENDIENTE"),
+            "LISTOS"         => resultado.Where(p =>
+                p.Estado is "LISTO_PARA_ENTREGA" or "LISTO"),
+            "ENTREGADOS"     => resultado.Where(p =>
+                p.Estado is "COMPLETADO" or "ENTREGADO"),
+            "CANCELADOS"     => resultado.Where(p => p.Estado == "CANCELADO"),
+            _                => resultado
+        };
 
         if (!string.IsNullOrWhiteSpace(Busqueda))
         {
@@ -71,7 +89,7 @@ public partial class PedidosViewModel : ObservableObject
             resultado = resultado.Where(p =>
                 p.Idpedido.ToString().Contains(q) ||
                 (p.Mesa?.Etiqueta.ToLower().Contains(q) ?? false) ||
-                (p.Cliente?.NombreCompleto.ToLower().Contains(q) ?? false));
+                (p.Cliente?.Nombre.ToLower().Contains(q) ?? false));
         }
 
         Pedidos.Clear();
@@ -86,10 +104,16 @@ public partial class PedidosViewModel : ObservableObject
         var hoy = DateTime.Today;
         var todosHoy = _todos.Where(p => p.Fecha.Date == hoy).ToList();
 
-        PedidosActivos = todosHoy.Count(p => p.Estado != "ENTREGADO" && p.Estado != "CANCELADO");
-        TotalCompletados = todosHoy.Count(p => p.Estado == "ENTREGADO");
+        TotalEnPreparacion = todosHoy.Count(p =>
+            p.Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO" or "PENDIENTE");
+        TotalListos         = todosHoy.Count(p => p.Estado is "LISTO_PARA_ENTREGA" or "LISTO");
+        TotalEntregadosHoy  = todosHoy.Count(p => p.Estado is "COMPLETADO" or "ENTREGADO");
+        TotalCancelados     = todosHoy.Count(p => p.Estado == "CANCELADO");
 
-        var activos = todosHoy.Where(p => p.Estado != "ENTREGADO" && p.Estado != "CANCELADO").ToList();
+        PedidosActivos   = TotalEnPreparacion + TotalListos;
+        TotalCompletados = TotalEntregadosHoy;
+
+        var activos = todosHoy.Where(p => p.EsActivo).ToList();
         if (activos.Count == 0)
             TiempoPromedioTexto = "0m";
         else
@@ -101,12 +125,14 @@ public partial class PedidosViewModel : ObservableObject
         }
 
         if (PedidosActivos >= 9)
-        { CargaCocinaLabel = "High Intensity"; CargaCocinaColor = "#ef4444"; }
+        { CargaCocinaLabel = "Alta intensidad"; CargaCocinaColor = "#ef4444"; }
         else if (PedidosActivos >= 4)
-        { CargaCocinaLabel = "Moderate";       CargaCocinaColor = "#f59e0b"; }
+        { CargaCocinaLabel = "Moderada";        CargaCocinaColor = "#f59e0b"; }
         else
-        { CargaCocinaLabel = "Normal";         CargaCocinaColor = "#28b779"; }
+        { CargaCocinaLabel = "Normal";          CargaCocinaColor = "#28b779"; }
     }
+
+    // ── Acciones de tarjeta ───────────────────────────────────────────
 
     [RelayCommand]
     public async Task VerDetalleAsync(PedidoResponse pedido)
@@ -119,6 +145,35 @@ public partial class PedidosViewModel : ObservableObject
     {
         await Shell.Current.GoToAsync("pago",
             new Dictionary<string, object> { { "Pedido", pedido } });
+    }
+
+    /// Navega a POS con la mesa del pedido seleccionado.
+    [RelayCommand]
+    public async Task AbrirEnPosAsync(PedidoResponse pedido)
+    {
+        if (pedido.Mesa is null) return;
+        await Shell.Current.GoToAsync("//pos",
+            new Dictionary<string, object> { { "Mesa", pedido.Mesa } });
+    }
+
+    /// Marca el pedido como COMPLETADO directamente desde la lista.
+    [RelayCommand]
+    public async Task EntregarRapidoAsync(PedidoResponse pedido)
+    {
+        IsBusy = true;
+        try
+        {
+            await _api.CambiarEstadoPedidoAsync(pedido.Idpedido, "COMPLETADO");
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error al entregar: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     // ── Polling automático ────────────────────────────────────────────
@@ -150,3 +205,4 @@ public partial class PedidosViewModel : ObservableObject
         _pollingCts = null;
     }
 }
+
