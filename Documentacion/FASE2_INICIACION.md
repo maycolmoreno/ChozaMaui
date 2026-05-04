@@ -1,6 +1,8 @@
 # FASE 2: INICIACIÓN - Metodología Mobile-D
 ## Proyecto: Choza POS - Sistema de Punto de Venta Móvil
 
+> **Estado**: ✅ COMPLETADA | **Fecha**: Mayo 2026 | **Versión**: 2.0
+
 ---
 
 ## 1. PREPARACIÓN DEL PROYECTO
@@ -17,24 +19,28 @@
 #### Estructura del Workspace
 ```
 C:\Users\mmorenos\Desktop\version final 3\Proyecto\
-└── ChozaMaui\
-    ├── ChozaMaui.csproj
-    ├── Models\
-    ├── Views\
-    ├── ViewModels\
-    ├── Services\
-    ├── Converters\
-    ├── Resources\
-    └── Platforms\
+├── ChozaMaui\                    # Aplicación móvil .NET MAUI
+│   ├── ChozaMaui.csproj
+│   ├── MauiProgram.cs
+│   ├── Models\
+│   ├── Views\                    # 14 páginas XAML
+│   ├── ViewModels\               # 14 ViewModels
+│   ├── Services\                 # 5 servicios
+│   ├── Converters\
+│   ├── Resources\
+│   └── Platforms\
+├── pisip\                        # Backend REST principal (Spring Boot 3.5.10, Java 17)
+├── consumochoza\                 # Backend de consumo/reportes (Spring Boot 3.5.10, Java 17)
+└── Documentacion\
 ```
 
 #### Dependencias del Proyecto
 ```xml
-- Microsoft.Maui.Controls (versión MAUI estándar)
-- Microsoft.Maui.Controls.Compatibility
-- Microsoft.Maui.Controls.Maps (integración de mapas)
+- Microsoft.Maui.Controls (net10.0-android)
+- Microsoft.Maui.Controls.Maps (integración de mapas Google)
 - Microsoft.Extensions.Logging.Debug (v9.0.4)
-- CommunityToolkit.Mvvm (v8.4.0) - Para implementación MVVM
+- CommunityToolkit.Mvvm (v8.4.0)  -- Fuente MVVM: ObservableObject, RelayCommand, ObservableProperty
+- Microsoft.Extensions.Http           -- IHttpClientFactory + DelegatingHandler
 ```
 
 #### Configuración de Plataforma Objetivo
@@ -68,70 +74,112 @@ C:\Users\mmorenos\Desktop\version final 3\Proyecto\
 - Creación del proyecto base .NET MAUI
 - Configuración de repositorio Git
 - Definición de arquitectura inicial
+- Conexión a backends Spring Boot (pisip, consumochoza)
 
-#### Sprint 1 - Funcionalidades Core (2 semanas)
-**Objetivo**: Sistema de autenticación y navegación básica
-
-**Entregables**:
-- Sistema de login con validación
-- Sesión de usuario persistente
-- Navegación principal (Shell)
-- Integración con API backend
-
-**User Stories**:
-- US-001: Como mesero, quiero iniciar sesión con mi usuario y contraseña
-- US-002: Como usuario, quiero que mi sesión se mantenga activa
-- US-003: Como usuario, quiero navegar entre las secciones de la aplicación
-
-#### Sprint 2 - Gestión de Pedidos (2 semanas)
-**Objetivo**: Toma y visualización de pedidos
+#### Sprint 1 - Autenticación y Navegación (2 semanas) ✅ COMPLETADO
+**Objetivo**: Sistema de autenticación y dos Shells de navegación por rol
 
 **Entregables**:
-- Vista de catálogo de productos
-- Carrito de pedidos
-- Asignación de mesa
-- Registro de pedido en API
+- Sistema de login con validación y JWT
+- Sesión persistente con SecureStorage
+- AppShell (rol Mesero) con tabs: POS, Pedidos, Mapa, Perfil
+- AppShellCajero (rol Cajero/Administrador) con tabs: Turno, HistorialCuentas, Comedores/Mesas, Clientes, Productos, Admin, Perfil
+- AuthHandler para inyección automática de JWT en todas las peticiones
 
-**User Stories**:
-- US-004: Como mesero, quiero ver el catálogo de productos disponibles
-- US-005: Como mesero, quiero agregar productos a un pedido
-- US-006: Como mesero, quiero asignar el pedido a una mesa
-- US-007: Como mesero, quiero enviar el pedido a cocina
+**User Stories completadas**:
+- US-001: Inicio de sesión con redirección por rol
+- US-002: Sesión persistente entre cierres de app
+- US-003: Navegación diferenciada por Shell según rol
 
-#### Sprint 3 - Historial y Detalle (1 semana)
+#### Sprint 2 - Módulo POS y Pedidos (2 semanas) ✅ COMPLETADO
+**Objetivo**: Toma de pedidos y visualización completa
+
+**Entregables**:
+- POS funcional: catálogo por categorías, carrito, asignación de mesa y cliente
+- Listado de pedidos con filtros por estado
+- Detalle de pedido con productos y totales
+- Detalle de mesa con pedidos activos
+
+**User Stories completadas**:
+- US-004: Catálogo de productos con filtro por categoría
+- US-005: Agregar/quitar productos del carrito con cantidades
+- US-006: Asignar mesa y cliente (opcional) al pedido
+- US-007: Enviar pedido a cocina y confirmar creación
+
+#### Sprint 3 - Pagos y Cuentas (2 semanas) ✅ COMPLETADO
+**Objetivo**: Módulo completo de cobro y cuentas
+
+**Entregables**:
+- PagoPage: registro de pago con método (Efectivo/Tarjeta/Transferencia)
+- Cálculo automático de saldo pendiente y cierre de cuenta
+- HistorialCuentasPage con filtros y estadísticas rápidas
+- Generación de recibo PDF por pedido (ReceiptPdfService, Android nativo)
+
+**User Stories completadas**:
+- US-008: Registrar pago parcial o total desde la cuenta del pedido
+- US-009: Consultar historial de cuentas con filtro por estado y fecha
+- US-010: Generar y compartir recibo PDF del consumo
+
+#### Sprint 4 - Panel Admin y Gestión (1 semana) ✅ COMPLETADO
+**Objetivo**: Funcionalidades de administración y control
+
+**Entregables**:
+- AdminPage: KPIs del día con carga paralela (Task.WhenAll)
+- TurnoPage: apertura y cierre de turno de caja
+- ComedoresMesasPage: CRUD de comedores y mesas
+- ClientesPage: CRUD de clientes con búsqueda
+- ProductosPage: CRUD de productos con imagen y categoría
+
+**User Stories completadas**:
+- US-011: Panel admin con ventas, pedidos del día y top productos
+- US-012: Abrir y cerrar turno de caja con montos
+- US-013: Gestionar comedores y mesas del restaurante
+- US-014: Gestionar catálogo completo de productos
+
+#### Sprint 5 - Perfil, Mapa y Estabilización (1 semana) ✅ COMPLETADO
+**Objetivo**: Completar funcionalidades complementarias y corregir bugs
+
+**Entregables**:
+- PerfilPage con edición y cambio de contraseña
+- MapaPage con mapa interactivo y pin de ubicación
+- Converters de estado a color, moneda y fechas
+- Optimizaciones de UI/UX y correción de bugs reportados
+
+#### Sprint 3 - Historial y Detalle (1 semana) ✅ COMPLETADO
 **Objetivo**: Consulta de pedidos existentes
 
 **Entregables**:
-- Listado de pedidos con filtros
-- Detalle completo de pedido
-- Estados de pedido en tiempo real
+- Listado de pedidos con filtros por estado (PENDIENTE, EN_PROCESO, LISTO, ENTREGADO, CANCELADO)
+- Detalle completo de pedido con productos, cantidades y totales
+- Colores por estado para retroalimentación visual instantánea
+- Polling automático cada 30 segundos para actualización en tiempo real
 
-**User Stories**:
-- US-008: Como mesero, quiero ver el historial de pedidos
-- US-009: Como mesero, quiero ver el detalle de un pedido específico
-- US-010: Como mesero, quiero filtrar pedidos por estado
+**User Stories completadas**:
+- US-008: Historial de pedidos con filtros
+- US-009: Detalle completo de pedido específico
+- US-010: Filtrado de pedidos por estado con colores
 
-#### Sprint 4 - Funcionalidades Complementarias (1 semana)
-**Objetivo**: Perfil de usuario y geolocalización
+#### Sprint 4 - Funcionalidades Complementarias (1 semana) ✅ COMPLETADO
+**Objetivo**: Perfil, mapa y logout
 
 **Entregables**:
-- Perfil de usuario editable
+- Perfil de usuario con edición y cambio de contraseña
 - Integración de mapa con ubicación del restaurante
-- Cierre de sesión
+- Cierre de sesión seguro (limpia SecureStorage)
 
-**User Stories**:
-- US-011: Como usuario, quiero ver y editar mi perfil
-- US-012: Como usuario, quiero ver la ubicación del restaurante en un mapa
-- US-013: Como usuario, quiero cerrar sesión de forma segura
+**User Stories completadas**:
+- US-011: Ver y editar perfil de usuario
+- US-012: Ver ubicación del restaurante en mapa interactivo
+- US-013: Cierre de sesión seguro
 
-#### Sprint 5 - Pruebas y Pulido (1 semana)
-**Objetivo**: Estabilización y mejoras finales
+#### Sprint 5 - Pruebas y Pulido (1 semana) ✅ COMPLETADO
+**Objetivo**: Estabilización, mejoras finales y documentación
 
 **Entregables**:
-- Corrección de bugs reportados
-- Optimizaciones de rendimiento
-- Mejoras de UI/UX
-- Documentación de usuario final
+- Correción de bugs reportados en pruebas con usuarios reales
+- Optimizaciones de rendimiento (carga paralela con Task.WhenAll)
+- Mejoras de UI/UX (colores de estado, feedback visual, toasts)
+- Documentación de usuario y técnica completa
 
 ---
 
@@ -218,79 +266,88 @@ C:\Users\mmorenos\Desktop\version final 3\Proyecto\
 **Responsabilidad**: Lógica de negocio y comunicación externa
 
 **ApiService**:
-- Comunicación con API REST backend
-- Manejo de peticiones HTTP (GET, POST, PUT, DELETE)
-- Serialización/deserialización JSON
-- Manejo de errores de red
+- Comunicación con API REST backend (pisip + consumochoza)
+- Manejo de peticiones HTTP (GET, POST, PUT, DELETE) vía `IHttpClientFactory`
+- Serialización/deserialización JSON con `System.Net.Http.Json`
+- Timeout global de 15 segundos
+- URL base configurable: `http://10.0.2.2:8081` (emulador) ↔ `http://localhost:8081` (Windows/iOS)
+
+**AuthHandler** (DelegatingHandler):
+- Inyecta automáticamente el token JWT en el header `Authorization: Bearer <token>` de cada petición
+- Elimina la necesidad de aplicar el token manualmente en ApiService
 
 **SessionService**:
-- Gestión de token de autenticación
-- Información del usuario logueado
-- Persistencia de sesión
-- Control de expiración
+- Almacena token JWT y datos del usuario en `SecureStorage`
+- Expone `Username`, `Rol`, `IsAuthenticated` para toda la app
+- Métodos: `SaveSession()`, `ClearSession()`, `GetToken()`
+
+**INavigationService / NavigationService**:
+- Abstrae la navegación entre páginas vía Shell routing
+- Registrado como Singleton para acceso desde cualquier ViewModel
+
+**ReceiptPdfService**:
+- Genera recibos PDF nativos en Android usando `Android.Graphics.Pdf`
+- Incluye: nombre del restaurante, mesero, lista de productos, totales
+- Guarda en caché del dispositivo y retorna ruta para compartir
 
 #### 3.2.3 ViewModels (Modelos de Vista)
 **Responsabilidad**: Lógica de presentación y binding
 
-**Implementaciones**:
-1. **LoginViewModel**: 
-   - Validación de credenciales
-   - Comando de inicio de sesión
-   - Navegación post-login
+**14 ViewModels implementados** (todos extienden `ObservableObject` de CommunityToolkit.Mvvm):
 
-2. **PosViewModel**:
-   - Carga de productos y categorías
-   - Gestión del carrito de compras
-   - Selección de mesa
-   - Creación de pedido
-
-3. **PedidosViewModel**:
-   - Listado de pedidos
-   - Filtrado por estado
-   - Navegación a detalle
-
-4. **PedidoDetalleViewModel**:
-   - Visualización completa del pedido
-   - Información de productos
-   - Totales calculados
-
-5. **MapaViewModel**:
-   - Geolocalización del restaurante
-   - Integración con Maps API
-
-6. **PerfilViewModel**:
-   - Información del usuario
-   - Edición de perfil
-   - Cierre de sesión
+1. **LoginViewModel**: Validación de credenciales, comando Login, redirección por rol
+2. **PosViewModel**: Catálogo con filtro por categoría, carrito, mesa, cliente y creación de pedido
+3. **PedidosViewModel**: Listado con filtros de estado, polling automático cada 30 s
+4. **PedidoDetalleViewModel**: Detalle de pedido, cambio de estado, generación de PDF
+5. **MesaDetalleViewModel**: Pedidos activos de una mesa, navegación a pago
+6. **PagoViewModel**: Registro de pago, cálculo de saldo, cierre de cuenta
+7. **HistorialCuentasViewModel**: Cuentas con filtros (estado/fecha/cliente), estadísticas rápidas
+8. **TurnoViewModel**: Apertura y cierre de turno con montos
+9. **AdminViewModel**: KPIs del día (Task.WhenAll), top productos, estado de mesas
+10. **ClientesViewModel**: CRUD de clientes con búsqueda en tiempo real
+11. **ProductosViewModel**: CRUD de productos con imagen y categoría
+12. **ComedoresMesasViewModel**: CRUD de comedores y mesas con filtro por comedor
+13. **MapaViewModel**: Carga de mapa y pin de ubicación del restaurante
+14. **PerfilViewModel**: Edición de perfil y cambio de contraseña
 
 **Características Comunes**:
-- Uso de `CommunityToolkit.Mvvm`
-- `ObservableObject` para notificaciones
-- `ICommand` para acciones
-- `ObservableCollection` para listas dinámicas
+- `ObservableObject` base, source-generation con `[ObservableProperty]` y `[RelayCommand]`
+- `ObservableCollection<T>` para listas enlazadas a la UI
+- `IsBusy` y `Mensaje` en todos los ViewModels para feedback visual
 
 #### 3.2.4 Views (Vistas)
 **Responsabilidad**: Interfaz de usuario
 
-**Tecnología**: XAML + Code-behind
+**14 páginas XAML + 2 Shells implementados**:
 
-**Estructura de Navegación**:
+**Estructura de Navegación Dual**:
 ```
-AppShell (Contenedor Principal)
-├── LoginPage (Inicial, sin navegación)
-└── TabBar (Post-autenticación)
-    ├── PosPage (Tab: "Pedido")
-    ├── PedidosPage (Tab: "Historial")
-    │   └── → PedidoDetallePage (Modal)
-    ├── MapaPage (Tab: "Mapa")
-    └── PerfilPage (Tab: "Perfil")
+LoginPage (página inicial, sin Shell)
+│
+├── AppShell (Rol: Mesero)
+│   ├── PosPage          (Tab: Pedido)
+│   ├── PedidosPage      (Tab: Historial)
+│   │   └── → PedidoDetallePage (modal)
+│   │       └── → PagoPage (modal)
+│   ├── MapaPage         (Tab: Mapa)
+│   └── PerfilPage       (Tab: Perfil)
+│
+└── AppShellCajero (Rol: Cajero / Administrador)
+    ├── TurnoPage            (Tab: Turno)
+    ├── HistorialCuentasPage (Tab: Cuentas)
+    ├── ComedoresMesasPage   (Tab: Comedores/Mesas)
+    │   └── → MesaDetallePage (modal)
+    ├── ClientesPage         (Tab: Clientes)
+    ├── ProductosPage        (Tab: Productos)
+    ├── AdminPage            (Tab: Dashboard)
+    └── PerfilPage           (Tab: Perfil)
 ```
 
 **Características de UI**:
-- Diseño responsivo
-- Temas con colores corporativos (#1a1a2e)
-- Iconografía consistente
-- Feedback visual de acciones
+- Diseño responsivo para diferentes tamaños de pantalla Android
+- Tema con colores corporativos (#1a1a2e fondo, naranjas para acciones)
+- Colores de estado para pedidos y cuentas (verde/amarillo/rojo)
+- Toasts de confirmación e indicadores de carga
 
 #### 3.2.5 Converters (Convertidores)
 **Responsabilidad**: Transformación de datos para UI
@@ -427,30 +484,43 @@ AppShell (Contenedor Principal)
 
 ```csharp
 // Servicios Singleton (compartidos en toda la app)
-builder.Services.AddSingleton<ApiService>();
 builder.Services.AddSingleton<SessionService>();
+builder.Services.AddSingleton<INavigationService, NavigationService>();
+builder.Services.AddSingleton<ReceiptPdfService>();
+builder.Services.AddSingleton<AppShell>();
+builder.Services.AddSingleton<AppShellCajero>();
 
-// ViewModels Transient (nueva instancia cada vez)
+// AuthHandler + HttpClient tipado con timeout 15 s
+builder.Services.AddTransient<AuthHandler>();
+builder.Services.AddHttpClient<ApiService>(c => {
+    c.BaseAddress = new Uri(ApiService.BaseUrl);
+    c.Timeout = TimeSpan.FromSeconds(15);
+}).AddHttpMessageHandler<AuthHandler>();
+
+// ViewModels Transient (nueva instancia en cada navegación)
 builder.Services.AddTransient<LoginViewModel>();
 builder.Services.AddTransient<PosViewModel>();
 builder.Services.AddTransient<PedidosViewModel>();
 builder.Services.AddTransient<PedidoDetalleViewModel>();
+builder.Services.AddTransient<MesaDetalleViewModel>();
+builder.Services.AddTransient<PagoViewModel>();
 builder.Services.AddTransient<MapaViewModel>();
 builder.Services.AddTransient<PerfilViewModel>();
+builder.Services.AddTransient<TurnoViewModel>();
+builder.Services.AddTransient<AdminViewModel>();
+builder.Services.AddTransient<ClientesViewModel>();
+builder.Services.AddTransient<ProductosViewModel>();
+builder.Services.AddTransient<ComedoresMesasViewModel>();
+builder.Services.AddTransient<HistorialCuentasViewModel>();
 
-// Views
-builder.Services.AddTransient<LoginPage>();
-builder.Services.AddTransient<PosPage>();
-builder.Services.AddTransient<PedidosPage>();
-builder.Services.AddTransient<PedidoDetallePage>();
-builder.Services.AddTransient<MapaPage>();
-builder.Services.AddTransient<PerfilPage>();
-builder.Services.AddSingleton<AppShell>();
+// Pages Transient (se crean en cada navegación)
+builder.Services.AddTransient<LoginPage>(); /* ... 13 páginas más */
 ```
 
-**Decisión Arquitectónica**:
-- **Singleton**: Para servicios que mantienen estado global (sesión, configuración)
-- **Transient**: Para ViewModels y Views que deben re-crearse en cada navegación
+**Decisiones Arquitectónicas**:
+- **Singleton**: Servicios que mantienen estado global (sesión, navegación, PDF) y Shells
+- **Transient**: ViewModels y Pages para re-creación limpia en cada navegación
+- **DelegatingHandler**: `AuthHandler` inyecta JWT automáticamente en toda petición HTTP
 
 ### 5.3 Recursos de la Aplicación
 

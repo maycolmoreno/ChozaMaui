@@ -1,15 +1,17 @@
 # FASE 1: EXPLORACIÓN - Metodología Mobile-D
 ## Proyecto: Choza POS - Sistema de Punto de Venta Móvil
 
+> **Estado**: ✅ COMPLETADA | **Fecha**: Mayo 2026 | **Versión**: 2.0
+
 ---
 
 ## 1. IDENTIFICACIÓN DE LOS STAKEHOLDERS
 
 ### Stakeholders Primarios
-- **Propietario del Restaurante "La Choza"**: Tomador de decisiones final, interesado en incrementar eficiencia operativa y reducir errores.
-- **Meseros/Personal de Servicio**: Usuarios principales de la aplicación, necesitan interfaz intuitiva y rápida.
-- **Chef/Personal de Cocina**: Receptores de los pedidos, requieren información clara y oportuna.
-- **Cajeros**: Usuarios del sistema para procesar pagos y cerrar cuentas.
+- **Propietario del Restaurante "La Choza"**: Tomador de decisiones final, interesado en incrementar eficiencia operativa y reducir errores. Tiene acceso al panel administrativo con KPIs y reportes de ventas.
+- **Meseros/Personal de Servicio**: Usuarios principales del módulo POS; toman pedidos, gestionan mesas y visualizan el estado de las órdenes en tiempo real.
+- **Chef/Personal de Cocina**: Receptores de los pedidos; requieren información clara, oportuna y cambio de estado de pedido (PENDIENTE → EN_PROCESO → LISTO → ENTREGADO).
+- **Cajeros**: Procesan pagos (Efectivo, Tarjeta, Transferencia), abren/cierran turnos de caja y gestionan el historial de cuentas.
 
 ### Stakeholders Secundarios
 - **Clientes del Restaurante**: Beneficiarios indirectos de un servicio más rápido y preciso.
@@ -39,29 +41,39 @@ El restaurante "La Choza" busca modernizar su sistema de toma de pedidos, elimin
 
 ### 2.3 Alcance del Proyecto
 
-#### Funcionalidades Incluidas (Scope In)
-- ✅ Autenticación de usuarios (meseros, administradores)
-- ✅ Gestión de pedidos (crear, visualizar, modificar)
-- ✅ Catálogo de productos por categorías
-- ✅ Asignación de pedidos a mesas
-- ✅ Visualización de estado de pedidos
-- ✅ Perfil de usuario
-- ✅ Geolocalización del restaurante
+#### Funcionalidades Incluidas (Scope In) — Implementadas ✅
+- ✅ Autenticación de usuarios con roles diferenciados (Mesero, Cajero, Administrador) mediante JWT
+- ✅ Punto de Venta (POS): selección de productos, carrito, asignación de mesa y cliente
+- ✅ Gestión completa de pedidos (crear, visualizar, modificar, cambiar estado)
+- ✅ Catálogo de productos por categorías con gestión CRUD (módulo Administrador)
+- ✅ Asignación de pedidos a mesas con soporte multi-comedor
+- ✅ Módulo de Pagos: Efectivo, Tarjeta y Transferencia con registro de cuentas
+- ✅ Historial de cuentas con filtros por estado, fecha y búsqueda de cliente
+- ✅ Panel Administrativo: KPIs del día (ventas, tickets, top 5 productos, estado de mesas)
+- ✅ Control de Turnos de Caja (apertura/cierre con monto inicial/final)
+- ✅ Gestión de Comedores y Mesas (CRUD completo)
+- ✅ Gestión de Clientes (CRUD con búsqueda por nombre y cédula)
+- ✅ Generación de Recibos PDF por pedido (Android nativo)
+- ✅ Dos Shells de navegación: AppShell (Mesero) y AppShellCajero (Cajero/Administrador)
+- ✅ Perfil de usuario (visualización y edición)
+- ✅ Geolocalización del restaurante en mapa interactivo
 
 #### Funcionalidades Excluidas (Scope Out)
-- ❌ Procesamiento de pagos en línea
-- ❌ Sistema de inventario completo
-- ❌ Reportes de ventas avanzados
+- ❌ Procesamiento de pagos en línea (pasarela externa)
+- ❌ Sistema de inventario automático con alertas de stock
 - ❌ Gestión de empleados y nómina
 - ❌ Reservaciones de mesas
+- ❌ Soporte iOS (sólo Android API 24+)
 
 ### 2.4 Restricciones y Limitaciones
 
 #### Restricciones Técnicas
-- **Plataforma**: Inicialmente solo Android (SDK 24.0 o superior)
-- **Framework**: .NET MAUI con .NET 10
-- **Conectividad**: Requiere conexión a internet para operación completa
+- **Plataforma**: Solo Android (SDK 24.0 o superior)
+- **Framework**: .NET MAUI con .NET 10, C# 13
+- **Conectividad**: Requiere conexión a internet/red local para operación completa
 - **Hardware**: Dispositivos con GPS para funcionalidad de mapas
+- **Backend**: Dos proyectos Spring Boot 3.5.10 (Java 17): `pisip` (API REST principal) y `consumochoza` (módulo de consumo/reportes)
+- **Base de Datos**: PostgreSQL (accedida exclusivamente por los backends)
 
 #### Restricciones de Negocio
 - **Presupuesto**: Limitado, uso de herramientas open-source cuando sea posible
@@ -108,7 +120,7 @@ El stack tecnológico es apropiado y el equipo cuenta con las capacidades necesa
 - Reducción de errores = Menos desperdicio de alimentos
 - Mayor rotación de mesas = Incremento en ventas
 - Reducción de papel = Ahorro en material de oficina
-- ROI estimado: 6-9 meses
+- ROI estimado: 6 a 8 semanas
 
 #### Evaluación: **ALTA VIABILIDAD ECONÓMICA**
 Bajo costo de implementación con beneficios tangibles a corto plazo.
@@ -153,45 +165,70 @@ No existen barreras legales significativas para la implementación.
 
 ### 4.1 Requisitos Funcionales
 
-#### RF-01: Autenticación de Usuarios
-- **Prioridad**: Alta
-- **Descripción**: El sistema debe permitir el inicio de sesión con usuario y contraseña
-- **Criterio de Aceptación**: Usuario puede autenticarse y recibir token de sesión
+#### RF-01: Autenticación de Usuarios con Roles
+- **Prioridad**: Alta | **Estado**: ✅ Implementado
+- **Descripción**: El sistema debe permitir el inicio de sesión con usuario y contraseña con redirección diferenciada por rol (Mesero → AppShell, Cajero/Admin → AppShellCajero)
+- **Criterio de Aceptación**: Usuario se autentica, recibe JWT y es redirigido al Shell correspondiente a su rol
 
-#### RF-02: Gestión de Pedidos
-- **Prioridad**: Alta
-- **Descripción**: Crear, visualizar, modificar y completar pedidos
-- **Criterio de Aceptación**: Mesero puede tomar pedidos completos con productos, cantidades y mesa asignada
+#### RF-02: Punto de Venta (POS)
+- **Prioridad**: Alta | **Estado**: ✅ Implementado
+- **Descripción**: Crear pedidos seleccionando productos del catálogo, asignando mesa y cliente opcional
+- **Criterio de Aceptación**: Mesero puede tomar pedidos completos con carrito, cantidades, mesa y enviarlos al backend
 
 #### RF-03: Catálogo de Productos
-- **Prioridad**: Alta
-- **Descripción**: Visualizar productos disponibles organizados por categorías
-- **Criterio de Aceptación**: Productos se muestran con nombre, precio, descripción e imagen
+- **Prioridad**: Alta | **Estado**: ✅ Implementado
+- **Descripción**: Visualizar y gestionar productos organizados por categorías (CRUD para administradores)
+- **Criterio de Aceptación**: Productos se muestran con nombre, precio, descripción, imagen y estado; el administrador puede crear/editar/deshabilitar productos
 
-#### RF-04: Asignación de Mesas
-- **Prioridad**: Alta
-- **Descripción**: Asociar pedidos con mesas específicas del restaurante
-- **Criterio de Aceptación**: Cada pedido tiene una mesa asignada con su número y comedor
+#### RF-04: Gestión de Comedores y Mesas
+- **Prioridad**: Alta | **Estado**: ✅ Implementado
+- **Descripción**: CRUD completo de comedores y mesas con filtros por comedor y control de estado (Libre/Ocupada)
+- **Criterio de Aceptación**: Administrador gestiona comedores y mesas; cada pedido tiene mesa con número y comedor identificados
 
 #### RF-05: Historial de Pedidos
-- **Prioridad**: Media
-- **Descripción**: Consultar pedidos previos con filtros por estado y fecha
-- **Criterio de Aceptación**: Usuario puede ver listado de pedidos con información resumida
+- **Prioridad**: Media | **Estado**: ✅ Implementado
+- **Descripción**: Consultar pedidos con filtros por estado (PENDIENTE, EN_PROCESO, LISTO, ENTREGADO, CANCELADO)
+- **Criterio de Aceptación**: Usuario ve listado con estado visual codificado por color y puede acceder al detalle
 
-#### RF-06: Detalle de Pedido
-- **Prioridad**: Media
-- **Descripción**: Ver información completa de un pedido específico
-- **Criterio de Aceptación**: Muestra todos los productos, cantidades, precios y totales
+#### RF-06: Módulo de Pagos y Cuentas
+- **Prioridad**: Alta | **Estado**: ✅ Implementado
+- **Descripción**: Registrar pagos (Efectivo, Tarjeta, Transferencia) asociados a cuentas por pedido; soporta pagos parciales
+- **Criterio de Aceptación**: Cajero procesa pago, el sistema calcula saldo pendiente y cierra cuenta al completar
 
-#### RF-07: Perfil de Usuario
-- **Prioridad**: Baja
-- **Descripción**: Visualizar y actualizar información del usuario logueado
-- **Criterio de Aceptación**: Usuario puede ver y editar su información personal
+#### RF-07: Historial de Cuentas
+- **Prioridad**: Media | **Estado**: ✅ Implementado
+- **Descripción**: Consultar cuentas con filtros por estado (ABIERTA/CERRADA/ANULADA), fecha y búsqueda de cliente; muestra estadísticas rápidas
+- **Criterio de Aceptación**: Cajero/Admin consulta cuentas con totales facturados y puede expandir detalle de cada cuenta
 
-#### RF-08: Geolocalización
-- **Prioridad**: Baja
-- **Descripción**: Mostrar ubicación del restaurante en un mapa
-- **Criterio de Aceptación**: Mapa interactivo muestra la ubicación del establecimiento
+#### RF-08: Panel Administrativo
+- **Prioridad**: Alta | **Estado**: ✅ Implementado
+- **Descripción**: Dashboard con KPIs del día: total de ventas, número de pedidos, ticket promedio, top 5 productos, estado de mesas y turno activo
+- **Criterio de Aceptación**: Administrador visualiza métricas en tiempo real con carga paralela de datos
+
+#### RF-09: Control de Turnos de Caja
+- **Prioridad**: Alta | **Estado**: ✅ Implementado
+- **Descripción**: Apertura y cierre de turno de caja con registro de monto inicial y final
+- **Criterio de Aceptación**: Cajero abre turno con monto inicial; al cerrar registra monto final y el sistema almacena el turno
+
+#### RF-10: Gestión de Clientes
+- **Prioridad**: Media | **Estado**: ✅ Implementado
+- **Descripción**: CRUD de clientes con búsqueda por nombre y cédula; registro rápido desde módulo de pagos
+- **Criterio de Aceptación**: Usuario busca o crea clientes en tiempo real; se asocian a pedidos y cuentas
+
+#### RF-11: Generación de Recibos PDF
+- **Prioridad**: Media | **Estado**: ✅ Implementado
+- **Descripción**: Generar y compartir recibo de consumo en formato PDF por pedido (Android nativo)
+- **Criterio de Aceptación**: El recibo incluye detalle de productos, totales, mesero y número de pedido; se guarda en caché y se puede compartir
+
+#### RF-12: Perfil de Usuario
+- **Prioridad**: Baja | **Estado**: ✅ Implementado
+- **Descripción**: Visualizar y editar información del usuario; cambiar contraseña
+- **Criterio de Aceptación**: Usuario edita sus datos y puede cambiar contraseña con validación
+
+#### RF-13: Geolocalización
+- **Prioridad**: Baja | **Estado**: ✅ Implementado
+- **Descripción**: Mostrar ubicación del restaurante en mapa interactivo
+- **Criterio de Aceptación**: Mapa muestra pin con la ubicación del establecimiento
 
 ### 4.2 Requisitos No Funcionales
 
@@ -288,6 +325,6 @@ No existen barreras legales significativas para la implementación.
 ---
 
 **Documento elaborado por**: Equipo de Desarrollo Choza POS  
-**Fecha**: 2024  
-**Versión**: 1.0  
-**Estado**: Aprobado
+**Fecha**: Mayo 2026  
+**Versión**: 2.0 (actualizado con alcance final implementado)  
+**Estado**: ✅ Fase Completada — Todos los requisitos identificados fueron implementados exitosamente
