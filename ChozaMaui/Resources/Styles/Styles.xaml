@@ -3,10 +3,81 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                     xmlns:conv="clr-namespace:ChozaMaui.Converters">
 
+    <!-- ═══ CONVERTERS ═══ -->
     <conv:StringToBoolConverter x:Key="StringToBoolConverter" />
     <conv:InvertBoolConverter x:Key="InvertBoolConverter" />
     <conv:NotNullToBoolConverter x:Key="NotNullToBoolConverter" />
     <conv:IntIsZeroConverter x:Key="IntIsZeroConverter" />
+    <conv:IntIsNotZeroConverter x:Key="IntIsNotZeroConverter" />
     <conv:HexToColorConverter x:Key="HexToColorConverter" />
+    <conv:BoolToColorConverter x:Key="BoolToColorConverter" />
+    <conv:StringEqualsColorConverter x:Key="StringEqualsColorConverter" />
+    <conv:BoolToStringConverter x:Key="BoolToStringConverter" />
+    <conv:StringToCachedImageSourceConverter x:Key="StringToCachedImageSourceConverter" />
+
+    <!-- ═══════════════════════════════════════════════════
+         LA CHOZA — DESIGN SYSTEM v2.0
+         Componentes y estilos globales
+    ════════════════════════════════════════════════════ -->
+
+    <!-- ─── TIPOGRAFÍA ─── -->
+    <Style x:Key="TitleMd" TargetType="Label">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+    </Style>
+
+    <Style x:Key="TitleSm" TargetType="Label">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+    </Style>
+
+    <!-- ─── BOTONES ─── -->
+    <Style x:Key="BtnPrimary" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+        <Setter Property="TextColor" Value="White" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="HeightRequest" Value="52" />
+        <Setter Property="Padding" Value="16,0" />
+    </Style>
+
+    <Style x:Key="BtnSecondary" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="White" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="BorderColor" Value="{StaticResource Border}" />
+        <Setter Property="BorderWidth" Value="1.5" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="HeightRequest" Value="52" />
+        <Setter Property="Padding" Value="16,0" />
+    </Style>
+
+    <Style x:Key="BtnDanger" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource DangerLight}" />
+        <Setter Property="TextColor" Value="{StaticResource Danger}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="HeightRequest" Value="52" />
+        <Setter Property="Padding" Value="16,0" />
+    </Style>
+
+    <!-- ─── SECCIÓN HEADER DENTRO DE PÁGINA ─── -->
+    <Style x:Key="SectionTitle" TargetType="Label">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+
+    <!-- ─── DIVIDER ─── -->
+    <Style x:Key="Divider" TargetType="BoxView">
+        <Setter Property="HeightRequest" Value="1" />
+        <Setter Property="Color" Value="{StaticResource Border}" />
+        <Setter Property="Margin" Value="0,8" />
+    </Style>
 
 </ResourceDictionary>

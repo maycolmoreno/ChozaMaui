@@ -8,10 +8,17 @@ namespace ChozaMaui.ViewModels;
 
 public partial class PedidosViewModel : ObservableObject
 {
-    private readonly ApiService _api;
+    private readonly PedidoApiService _pedidosApi;
+    private readonly NotificationService _notifications;
+    private readonly PosOrderWorkflowService _pedidoWorkflow;
+    private readonly PedidoPresentationService _presentation;
+    private readonly SessionService _session;
+    private readonly LiveRefreshCoordinator _refreshCoordinator;
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private List<PedidoResponse> _todos = [];
-    private CancellationTokenSource? _pollingCts;
     private const int PollingIntervalSeconds = 30;
+    private const string TopicCamarero = "/topic/camarero";
+    private const string TopicCocina = "/topic/cocina";
 
     public ObservableCollection<PedidoResponse> Pedidos { get; } = [];
 
@@ -22,10 +29,6 @@ public partial class PedidosViewModel : ObservableObject
 
     // ── KPIs ──────────────────────────────────────────────────────────
     [ObservableProperty] private int pedidosActivos;
-    [ObservableProperty] private int totalCompletados;
-    [ObservableProperty] private string tiempoPromedioTexto = "0m";
-    [ObservableProperty] private string cargaCocinaLabel = "Normal";
-    [ObservableProperty] private string cargaCocinaColor = "#28b779";
 
     // ── Stats para barra inferior ──────────────────────────────────────
     [ObservableProperty] private int totalEnPreparacion;
@@ -33,17 +36,29 @@ public partial class PedidosViewModel : ObservableObject
     [ObservableProperty] private int totalEntregadosHoy;
     [ObservableProperty] private int totalCancelados;
 
-    public PedidosViewModel(ApiService api) => _api = api;
+    public PedidosViewModel(PedidoApiService pedidosApi, NotificationService notifications, PosOrderWorkflowService pedidoWorkflow, PedidoPresentationService presentation, SessionService session, LiveRefreshCoordinator refreshCoordinator)
+    {
+        _pedidosApi = pedidosApi;
+        _notifications = notifications;
+        _pedidoWorkflow = pedidoWorkflow;
+        _presentation = presentation;
+        _session = session;
+        _refreshCoordinator = refreshCoordinator;
+    }
 
     [RelayCommand]
     public async Task CargarAsync()
     {
+        if (!await _refreshLock.WaitAsync(0))
+            return;
+
         IsBusy = true;
         ErrorMessage = string.Empty;
         try
         {
-            _todos = await _api.GetPedidosAsync();
+            _todos = await _pedidosApi.GetPedidosAsync();
             AplicarFiltro();
+            await _notifications.VerificarPedidosListosAsync(_todos);
         }
         catch (Exception ex)
         {
@@ -52,6 +67,7 @@ public partial class PedidosViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            _refreshLock.Release();
         }
     }
 
@@ -68,68 +84,23 @@ public partial class PedidosViewModel : ObservableObject
 
     private void AplicarFiltro()
     {
-        var hoy = DateTime.Today;
-        var resultado = _todos.Where(p => p.Fecha.Date == hoy).AsEnumerable();
-
-        resultado = FiltroEstado switch
+        var snapshot = _presentation.BuildList(_todos, FiltroEstado, Busqueda);
+        MainThread.BeginInvokeOnMainThread(() =>
         {
-            "EN_PREPARACION" => resultado.Where(p =>
-                p.Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO" or "PENDIENTE"),
-            "LISTOS"         => resultado.Where(p =>
-                p.Estado is "LISTO_PARA_ENTREGA" or "LISTO"),
-            "ENTREGADOS"     => resultado.Where(p =>
-                p.Estado is "COMPLETADO" or "ENTREGADO"),
-            "CANCELADOS"     => resultado.Where(p => p.Estado == "CANCELADO"),
-            _                => resultado
-        };
-
-        if (!string.IsNullOrWhiteSpace(Busqueda))
-        {
-            var q = Busqueda.Trim().ToLower();
-            resultado = resultado.Where(p =>
-                p.Idpedido.ToString().Contains(q) ||
-                (p.Mesa?.Etiqueta.ToLower().Contains(q) ?? false) ||
-                (p.Cliente?.Nombre.ToLower().Contains(q) ?? false));
-        }
-
-        Pedidos.Clear();
-        foreach (var p in resultado.OrderByDescending(p => p.Fecha))
-            Pedidos.Add(p);
-
-        RecalcularKpis();
+            Pedidos.Clear();
+            foreach (var p in snapshot.Pedidos)
+                Pedidos.Add(p);
+            AplicarKpis(snapshot);
+        });
     }
 
-    private void RecalcularKpis()
+    private void AplicarKpis(PedidosPresentationSnapshot snapshot)
     {
-        var hoy = DateTime.Today;
-        var todosHoy = _todos.Where(p => p.Fecha.Date == hoy).ToList();
-
-        TotalEnPreparacion = todosHoy.Count(p =>
-            p.Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO" or "PENDIENTE");
-        TotalListos         = todosHoy.Count(p => p.Estado is "LISTO_PARA_ENTREGA" or "LISTO");
-        TotalEntregadosHoy  = todosHoy.Count(p => p.Estado is "COMPLETADO" or "ENTREGADO");
-        TotalCancelados     = todosHoy.Count(p => p.Estado == "CANCELADO");
-
-        PedidosActivos   = TotalEnPreparacion + TotalListos;
-        TotalCompletados = TotalEntregadosHoy;
-
-        var activos = todosHoy.Where(p => p.EsActivo).ToList();
-        if (activos.Count == 0)
-            TiempoPromedioTexto = "0m";
-        else
-        {
-            var avgMin = activos.Average(p => (DateTime.Now - p.Fecha).TotalMinutes);
-            TiempoPromedioTexto = avgMin < 60
-                ? $"{(int)avgMin}m"
-                : $"{(int)avgMin / 60}h {(int)avgMin % 60}m";
-        }
-
-        if (PedidosActivos >= 9)
-        { CargaCocinaLabel = "Alta intensidad"; CargaCocinaColor = "#ef4444"; }
-        else if (PedidosActivos >= 4)
-        { CargaCocinaLabel = "Moderada";        CargaCocinaColor = "#f59e0b"; }
-        else
-        { CargaCocinaLabel = "Normal";          CargaCocinaColor = "#28b779"; }
+        TotalEnPreparacion = snapshot.TotalEnPreparacion;
+        TotalListos = snapshot.TotalListos;
+        TotalEntregadosHoy = snapshot.TotalEntregadosHoy;
+        TotalCancelados = snapshot.TotalCancelados;
+        PedidosActivos = snapshot.PedidosActivos;
     }
 
     // ── Acciones de tarjeta ───────────────────────────────────────────
@@ -152,8 +123,12 @@ public partial class PedidosViewModel : ObservableObject
     public async Task AbrirEnPosAsync(PedidoResponse pedido)
     {
         if (pedido.Mesa is null) return;
-        await Shell.Current.GoToAsync("//pos",
-            new Dictionary<string, object> { { "Mesa", pedido.Mesa } });
+        await Shell.Current.GoToAsync("pos",
+            new Dictionary<string, object>
+            {
+                { "Mesa", pedido.Mesa },
+                { "PedidoId", pedido.Idpedido }
+            });
     }
 
     /// Marca el pedido como COMPLETADO directamente desde la lista.
@@ -163,7 +138,7 @@ public partial class PedidosViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            await _api.CambiarEstadoPedidoAsync(pedido.Idpedido, "COMPLETADO");
+            await _pedidoWorkflow.CambiarEstadoPedidoAsync(pedido, "COMPLETADO");
             await CargarAsync();
         }
         catch (Exception ex)
@@ -180,29 +155,48 @@ public partial class PedidosViewModel : ObservableObject
 
     public async Task IniciarPollingAsync()
     {
-        _pollingCts?.Cancel();
-        _pollingCts = new CancellationTokenSource();
-        var token = _pollingCts.Token;
+        await _refreshCoordinator.StartAsync(
+            CargarAsync,
+            ObtenerTopicsActivos(),
+            OnNotificacionRecibida,
+            PollingIntervalSeconds);
+    }
 
-        await CargarAsync();
+    private void OnNotificacionRecibida(NotificacionPedidoWs notif)
+    {
+        // 1. Registrar en el historial compartido de notificaciones
+        var esNuevoEvento = _notifications.RegistrarDesdeWebSocket(notif);
+        if (!esNuevoEvento)
+            return;
 
-        _ = Task.Run(async () =>
+        // 2. El refresh lo ejecuta LiveRefreshCoordinator para no duplicar cargas.
+        // 3. Mostrar alerta visual según evento
+        var titulo = notif.Evento switch
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(PollingIntervalSeconds));
-            try
-            {
-                while (await timer.WaitForNextTickAsync(token))
-                    await MainThread.InvokeOnMainThreadAsync(CargarAsync);
-            }
-            catch (OperationCanceledException) { }
-        }, token);
+            "LISTO"     => "🔔 ¡Pedido listo para entregar!",
+            "CONFIRMAR" => "🍳 Nuevo pedido en cocina",
+            "CANCELADO" => "❌ Pedido cancelado",
+            _           => "📋 Cambio en pedido"
+        };
+        _ = MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            if (Shell.Current is not null)
+                await Shell.Current.DisplayAlertAsync(titulo, notif.Mensaje, "OK");
+        });
     }
 
     public void DetenerPolling()
     {
-        _pollingCts?.Cancel();
-        _pollingCts?.Dispose();
-        _pollingCts = null;
+        _refreshCoordinator.Stop();
+    }
+
+    private IEnumerable<string> ObtenerTopicsActivos()
+    {
+        var rol = _session.Rol ?? string.Empty;
+        if (rol is "CAMARERO" or "ADMIN")
+            yield return TopicCamarero;
+        if (rol is "COCINA" or "ADMIN")
+            yield return TopicCocina;
     }
 }
 

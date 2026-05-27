@@ -4,7 +4,7 @@ namespace ChozaMaui.Services;
 
 /// <summary>
 /// DelegatingHandler que inyecta el JWT en cada request automáticamente.
-/// Elimina la necesidad de llamar AplicarToken() manualmente en ApiService.
+/// Elimina la necesidad de adjuntar manualmente el token en cada servicio HTTP.
 /// </summary>
 public class AuthHandler : DelegatingHandler
 {

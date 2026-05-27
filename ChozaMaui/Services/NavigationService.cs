@@ -20,15 +20,25 @@ public class NavigationService : INavigationService
     {
         if (Application.Current?.Windows.FirstOrDefault() is not Window w) return;
 
-        w.Page = string.Equals(_session.Rol, "CAJERO", StringComparison.OrdinalIgnoreCase)
-            ? _services.GetRequiredService<AppShellCajero>()
-            : _services.GetRequiredService<AppShell>();
+        w.Page?.Unfocus();
+
+        if (string.Equals(_session.Rol, "CAJERO", StringComparison.OrdinalIgnoreCase))
+        {
+            w.Page = _services.GetRequiredService<AppShellCajero>();
+        }
+        else
+        {
+            var shell = _services.GetRequiredService<AppShell>();
+            shell.AplicarVisibilidadRol(_session.Rol);   // oculta Turnos a CAMARERO/COCINA
+            w.Page = shell;
+        }
     }
 
     public void IrAlLogin()
     {
         if (Application.Current?.Windows.FirstOrDefault() is not Window w) return;
 
+        w.Page?.Unfocus();
         w.Page = new NavigationPage(_services.GetRequiredService<LoginPage>());
     }
 }

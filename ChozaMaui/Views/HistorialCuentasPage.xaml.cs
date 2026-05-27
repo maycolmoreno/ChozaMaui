@@ -16,6 +16,6 @@ public partial class HistorialCuentasPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _vm.CargarAsync();
+        await _vm.CargarSiEsNecesarioAsync();
     }
 }

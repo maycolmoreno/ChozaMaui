@@ -7,13 +7,14 @@ namespace ChozaMaui.ViewModels;
 public partial class PerfilViewModel : ObservableObject
 {
     private readonly SessionService _session;
-    private readonly ApiService _api;
+    private readonly UsuarioApiService _usuariosApi;
     private readonly INavigationService _navigation;
 
     // Datos del perfil
     [ObservableProperty] private string nombreCompleto = string.Empty;
     [ObservableProperty] private string username = string.Empty;
     [ObservableProperty] private string rol = string.Empty;
+    [ObservableProperty] private string inicialUsuario = "U";
 
     // Cambio de contraseña
     [ObservableProperty] private string passwordActual = string.Empty;
@@ -23,10 +24,10 @@ public partial class PerfilViewModel : ObservableObject
     [ObservableProperty] private bool mensajeEsError;
     [ObservableProperty] private bool isBusy;
 
-    public PerfilViewModel(SessionService session, ApiService api, INavigationService navigation)
+    public PerfilViewModel(SessionService session, UsuarioApiService usuariosApi, INavigationService navigation)
     {
         _session = session;
-        _api = api;
+        _usuariosApi = usuariosApi;
         _navigation = navigation;
     }
 
@@ -36,6 +37,9 @@ public partial class PerfilViewModel : ObservableObject
         NombreCompleto = _session.NombreCompleto ?? "—";
         Username = _session.Username ?? "—";
         Rol = _session.Rol ?? "—";
+        InicialUsuario = string.Concat(NombreCompleto.Split(' ').Take(2)
+            .Select(p => p.Length > 0 ? p[0].ToString().ToUpper() : ""));
+        if (string.IsNullOrEmpty(InicialUsuario)) InicialUsuario = "U";
     }
 
     [RelayCommand]
@@ -68,12 +72,14 @@ public partial class PerfilViewModel : ObservableObject
         MensajePassword = string.Empty;
         try
         {
-            await _api.CambiarPasswordAsync(PasswordActual, PasswordNuevo);
+            await _usuariosApi.CambiarPasswordAsync(PasswordActual, PasswordNuevo);
             MensajePassword = "Contraseña cambiada exitosamente.";
             MensajeEsError = false;
             PasswordActual = string.Empty;
             PasswordNuevo = string.Empty;
             PasswordConfirmar = string.Empty;
+
+            await IrAInicioSegunRolAsync();
         }
         catch (HttpRequestException ex) when ((int?)ex.StatusCode == 400 || (int?)ex.StatusCode == 403)
         {
@@ -96,6 +102,18 @@ public partial class PerfilViewModel : ObservableObject
     {
         _session.CerrarSesion();
         _navigation.IrAlLogin();
+    }
+
+    private Task IrAInicioSegunRolAsync()
+    {
+        var ruta = (_session.Rol ?? string.Empty).ToUpperInvariant() switch
+        {
+            "CAJERO" => "//cuentas",
+            "COCINA" => "//pedidos",
+            _ => "//mapa"
+        };
+
+        return Shell.Current.GoToAsync(ruta);
     }
 }
 

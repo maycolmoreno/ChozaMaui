@@ -15,6 +15,6 @@ public partial class PosPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _vm.CargarDatosAsync();
+        await _vm.CargarSiEsNecesarioAsync();
     }
 }

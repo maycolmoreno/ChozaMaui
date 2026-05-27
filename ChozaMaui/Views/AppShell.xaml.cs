@@ -5,11 +5,11 @@ public partial class AppShell : Shell
     public AppShell()
     {
         InitializeComponent();
-        // Ruta para detalle de pedido (pantalla 5)
-        Routing.RegisterRoute("pedidodetalle", typeof(PedidoDetallePage));
-        // Ruta para detalle de mesa
-        Routing.RegisterRoute("mesadetalle", typeof(MesaDetallePage));
-        // Ruta para pago / facturación
-        Routing.RegisterRoute("pago", typeof(PagoPage));
+        AppRoutes.Register();
+    }
+
+    public void AplicarVisibilidadRol(string? rol)
+    {
+        // Turnos ya no está en el TabBar principal — no se necesita filtrar por rol aquí
     }
 }

@@ -113,6 +113,14 @@ public class PedidoRequest
     public List<PedidoDetalleRequest> Detalles { get; set; } = [];
 }
 
+public class PendingOrderDraft
+{
+    public string LocalId { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public string EstadoDestino { get; set; } = "PENDIENTE";
+    public PedidoRequest Request { get; set; } = new();
+}
+
 public class PedidoDetalleResponse
 {
     public int Idpedidodetalle { get; set; }
@@ -161,8 +169,13 @@ public class PedidoResponse
 {
     public int Idpedido { get; set; }
     public DateTime Fecha { get; set; }
+    public DateTime? FechaEnCocina { get; set; }
+    public DateTime? FechaListoParaEntrega { get; set; }
+    public DateTime? FechaEntregado { get; set; }
     public string Estado { get; set; } = string.Empty;
     public string? Observaciones { get; set; }
+    public double Subtotal { get; set; }
+    public double Impuestos { get; set; }
     public double Total { get; set; }
     public int CantidadProductos { get; set; }
     public UsuarioResponse? Usuario { get; set; }
@@ -199,36 +212,6 @@ public class PedidoResponse
         "LISTO_PARA_ENTREGA" => "LISTO",
         "COMPLETADO"         => "COMPLETADO",
         _                    => Estado
-    };
-
-    public double BarraProgreso => Estado switch
-    {
-        "PENDIENTE"          => 0.15,
-        "EN_COCINA"          => 0.60,
-        "EN_BAR"             => 0.60,
-        "EN_PROCESO"         => 0.60,
-        "LISTO"              => 1.0,
-        "LISTO_PARA_ENTREGA" => 1.0,
-        "ENTREGADO"          => 1.0,
-        "COMPLETADO"         => 1.0,
-        "CANCELADO"          => 0.0,
-        _ => 0
-    };
-
-    public string BarraProgresoColor => EstadoBadgeColor;
-
-    public string EtapaActualLabel => Estado switch
-    {
-        "PENDIENTE"          => "RECIBIDO",
-        "EN_COCINA"          => "COCINA",
-        "EN_BAR"             => "BAR",
-        "EN_PROCESO"         => "PREPARANDO",
-        "LISTO"              => "LISTO",
-        "LISTO_PARA_ENTREGA" => "LISTO",
-        "ENTREGADO"          => "ENTREGADO",
-        "COMPLETADO"         => "COMPLETADO",
-        "CANCELADO"          => "CANCELADO",
-        _ => "---"
     };
 
     public string TiempoTranscurrido
@@ -348,7 +331,6 @@ public class ItemCarrito : ObservableObject
             if (SetProperty(ref producto, value))
             {
                 OnPropertyChanged(nameof(Subtotal));
-                OnPropertyChanged(nameof(Etiqueta));
             }
         }
     }
@@ -361,13 +343,11 @@ public class ItemCarrito : ObservableObject
             if (SetProperty(ref cantidad, value))
             {
                 OnPropertyChanged(nameof(Subtotal));
-                OnPropertyChanged(nameof(Etiqueta));
             }
         }
     }
 
     public double Subtotal => Producto.Precio * Cantidad;
-    public string Etiqueta => $"{Producto.Nombre}  x{Cantidad}  ${Subtotal:0.00}";
 }
 
 /// <summary>Foto tomada con la cámara y adjuntada a un pedido.</summary>
@@ -432,6 +412,7 @@ public class MesaVisual
     {
         get
         {
+            if (PedidosActivos.Any(p => p.Estado == "ENTREGADO")) return "Pendiente de pago";
             if (PedidosActivos.Any(p => p.EstaListoParaEntrega)) return "Lista para entregar";
             if (PedidosActivos.Any(p => p.EstaEnPreparacion)) return "En preparacion";
             if (PedidosActivos.Count > 0 || !Mesa.Estado) return "Ocupada";
@@ -445,6 +426,7 @@ public class MesaVisual
         "Ocupada"               => "#0ea5e9",
         "En preparacion"        => "#f59e0b",
         "Lista para entregar"   => "#ef4444",
+        "Pendiente de pago"     => "#8b5cf6",
         _                       => "#6b7280"
     };
 
@@ -452,6 +434,7 @@ public class MesaVisual
     {
         "En preparacion"      => "♨",
         "Lista para entregar" => "🔔",
+        "Pendiente de pago"   => "$",
         _                     => string.Empty
     };
 
@@ -527,6 +510,13 @@ public class PagoResponse
     public double SaldoPendienteCuenta { get; set; }
 }
 
+public class SaldoCuentaResponse
+{
+    public int Idcuenta { get; set; }
+    public double TotalPagado { get; set; }
+    public double SaldoPendiente { get; set; }
+}
+
 // ── Reportes / Admin ──────────────────────────────────────────────
 public class ResumenProductoVenta
 {
@@ -542,6 +532,73 @@ public class ReporteVentasDia
     public double TotalVentas { get; set; }
     public int NumeroPedidos { get; set; }
     public double TicketPromedio { get; set; }
+    public double TotalEfectivo { get; set; }
+    public double TotalTarjeta { get; set; }
+    public double TotalTransferencias { get; set; }
+    public double TotalOtros { get; set; }
     public int TotalProductos { get; set; }
     public List<ResumenProductoVenta> Productos { get; set; } = new();
+}
+
+// ── WebSocket / Notificaciones en tiempo real ─────────────────────
+
+/// <summary>Payload recibido desde el topic STOMP /topic/camarero o /topic/cocina.</summary>
+public class NotificacionPedidoWs
+{
+    public int      PedidoId    { get; set; }
+    public string   Evento      { get; set; } = string.Empty;  // CONFIRMAR|LISTO|ENTREGADO|CANCELADO
+    public string   EstadoNuevo { get; set; } = string.Empty;
+    public string   Mensaje     { get; set; } = string.Empty;
+    public string   Emisor      { get; set; } = string.Empty;
+    public DateTime Fecha       { get; set; }
+}
+
+/// <summary>
+/// Notificación visible en el historial de la pantalla de notificaciones.
+/// Instancias creadas por NotificationService y leídas por NotificacionesViewModel.
+/// </summary>
+public class Notificacion
+{
+    public int      Id          { get; set; }
+    public string   Titulo      { get; set; } = string.Empty;
+    public string   Descripcion { get; set; } = string.Empty;
+    public string   Tipo        { get; set; } = string.Empty; // PEDIDO, PAGO, CAJA, SISTEMA
+    public DateTime Fecha       { get; set; }
+    public bool     Leida       { get; set; }
+    public string?  Accion      { get; set; }
+
+    public string TiempoTexto
+    {
+        get
+        {
+            if (Fecha == default) return "";
+            var diff = DateTime.Now - Fecha;
+            if (diff.TotalMinutes < 1) return "ahora mismo";
+            if (diff.TotalMinutes < 60) return $"hace {(int)diff.TotalMinutes} min";
+            if (diff.TotalHours  < 24) return $"hace {(int)diff.TotalHours} h";
+            return $"hace {(int)diff.TotalDays} días";
+        }
+    }
+
+    public string IconoTipo => Tipo switch
+    {
+        "PEDIDO"  => "🍽",
+        "PAGO"    => "💳",
+        "CAJA"    => "🏦",
+        "SISTEMA" => "⚙️",
+        _         => "🔔"
+    };
+}
+
+/// <summary>Respuesta del backend al subir un comprobante de pago.</summary>
+public class ComprobanteResponse
+{
+    public int      Idcomprobante   { get; set; }
+    public int      Idpago          { get; set; }
+    public string   NombreArchivo   { get; set; } = string.Empty;
+    public string   UrlDescarga     { get; set; } = string.Empty;
+    public string   ContentType     { get; set; } = string.Empty;
+    public long     Tamano          { get; set; }
+    public string   UsuarioRegistro { get; set; } = string.Empty;
+    public DateTime FechaSubida     { get; set; }
 }

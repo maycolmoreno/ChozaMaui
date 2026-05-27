@@ -27,9 +27,13 @@ public class ReceiptPdfService
 #if ANDROID
     private static void GenerarPdfAndroid(PedidoResponse pedido, string mesero, string ruta)
     {
-        const int ancho = 420;
-        const int alto = 720;
+        const int ancho  = 420;
         const int margen = 28;
+
+        // Altura dinámica: cabecera fija (≈280 px) + 18 px por ítem + pie fijo (≈120 px)
+        int numItems = pedido.Detalle?.Count ?? 0;
+        int alto = 280 + (numItems * 20) + 120;
+        if (alto < 600) alto = 600;  // mínimo razonable
 
         using var documento = new PdfDocument();
         var paginaInfo = new PdfDocument.PageInfo.Builder(ancho, alto, 1).Create();

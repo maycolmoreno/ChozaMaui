@@ -3,370 +3,221 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:ChozaMaui.ViewModels"
              xmlns:models="clr-namespace:ChozaMaui.Models"
+             xmlns:controls="clr-namespace:ChozaMaui.Views.Controls"
              x:Class="ChozaMaui.Views.HistorialCuentasPage"
              x:DataType="vm:HistorialCuentasViewModel"
-             Title="Historial de Cuentas"
-             BackgroundColor="{StaticResource Gray100}">
+             Title="Cobros"
+             BackgroundColor="#F6F8FC">
 
     <Grid RowDefinitions="Auto,*">
-
-        <!-- ══ HEADER NARANJA ══ -->
-        <Grid Grid.Row="0" BackgroundColor="{StaticResource Orange}" Padding="16,48,16,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Image Grid.Column="0" Source="lachozalogo.png"
-                   HeightRequest="44" WidthRequest="44"
-                   Aspect="AspectFit"
-                   VerticalOptions="Center"
-                   Margin="0,0,10,0" />
-            <VerticalStackLayout Grid.Column="1" Spacing="2">
-                <Label Text="Historial de Cuentas"
-                       FontSize="22" FontAttributes="Bold" TextColor="White" />
-                <Label Text="{Binding Cuentas.Count, StringFormat='{0} registros encontrados'}"
-                       FontSize="13" TextColor="#ffe0b2" />
+        <Grid Grid.Row="0"
+              BackgroundColor="#F97316"
+              Padding="16,46,16,18"
+              ColumnDefinitions="*,Auto">
+            <VerticalStackLayout Grid.Column="0"
+                                 Spacing="2">
+                <Label Text="Cobros"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       TextColor="White" />
+                <Label Text="{Binding TotalPendientes, StringFormat='Caja abierta • {0} pendientes'}"
+                       FontSize="14"
+                       TextColor="#FFEDD5" />
             </VerticalStackLayout>
-            <Button Grid.Column="2" Text="↻" FontSize="20"
-                    BackgroundColor="Transparent" TextColor="White"
-                    Command="{Binding CargarCommand}"
-                    VerticalOptions="Center" />
+
+            <controls:ConnectivityActionsView Grid.Column="1"
+                                              RefreshCommand="{Binding CargarCommand}"
+                                              VerticalOptions="Center" />
         </Grid>
 
-        <!-- Contenido: CollectionView con Header para stats/filtros.
-             Elimina el antipatrón CollectionView-dentro-de-ScrollView -->
         <CollectionView Grid.Row="1"
-                        ItemsSource="{Binding Cuentas}">
-
-            <!-- ═══ HEADER: indicador + stats + filtros + detalle ═══ -->
+                        ItemsSource="{Binding Cuentas}"
+                        SelectionMode="None">
             <CollectionView.Header>
-                <VerticalStackLayout Spacing="0">
-                    <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}"
-                                       Color="{StaticResource Orange}"
-                                       HorizontalOptions="Center" Margin="0,20" />
-                    <VerticalStackLayout Padding="16" Spacing="14"
-                                         IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}">
+                <VerticalStackLayout Padding="16,14,16,10"
+                                     Spacing="14">
+                    <Border BackgroundColor="White"
+                            Stroke="#E5E7EB"
+                            StrokeShape="RoundRectangle 22"
+                            Padding="10,2">
+                        <SearchBar Placeholder="Buscar por mesa, cuenta o cliente..."
+                                   Text="{Binding TextoBusqueda}"
+                                   FontSize="14"
+                                   BackgroundColor="Transparent"
+                                   CancelButtonColor="#F97316" />
+                    </Border>
 
-                        <!-- Mensaje error -->
-                        <Label Text="{Binding Mensaje}"
-                               IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
-                               FontSize="13" TextColor="{StaticResource Primary}"
-                               HorizontalTextAlignment="Center" />
+                    <Border BackgroundColor="#FFFFFF"
+                            Stroke="#E5E7EB"
+                            StrokeShape="RoundRectangle 20"
+                            Padding="4">
+                        <Grid ColumnDefinitions="*,*,*"
+                              ColumnSpacing="6">
+                            <Button Grid.Column="0"
+                                    Command="{Binding MostrarPendientesCommand}"
+                                    Text="{Binding TotalPendientes, StringFormat='Pendientes {0}'}"
+                                    BackgroundColor="{Binding TabPendientesActivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#F97316|#FFFFFF'}"
+                                    TextColor="{Binding TabPendientesActivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFFFFF|#667085'}"
+                                    CornerRadius="16"
+                                    FontAttributes="Bold"
+                                    HeightRequest="44" />
 
-                        <!-- ── Estadísticas ── -->
-                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
-                              ColumnSpacing="12" RowSpacing="12">
-                            <Frame Grid.Row="0" Grid.Column="0"
-                                   BackgroundColor="White" CornerRadius="10" Padding="14" HasShadow="False">
-                                <VerticalStackLayout Spacing="3">
-                                    <Label Text="📋 Total Cuentas" FontSize="12"
-                                           TextColor="{StaticResource TextSecondary}" />
-                                    <Label Text="{Binding TotalCuentas}"
-                                           FontSize="22" FontAttributes="Bold"
-                                           TextColor="{StaticResource TextPrimary}" />
-                                </VerticalStackLayout>
-                            </Frame>
-                            <Frame Grid.Row="0" Grid.Column="1"
-                                   BackgroundColor="White" CornerRadius="10" Padding="14" HasShadow="False">
-                                <VerticalStackLayout Spacing="3">
-                                    <Label Text="💰 Total Facturado" FontSize="12"
-                                           TextColor="{StaticResource TextSecondary}" />
-                                    <Label Text="{Binding TotalFacturado, StringFormat='${0:F2}'}"
-                                           FontSize="22" FontAttributes="Bold"
-                                           TextColor="{StaticResource Orange}" />
-                                </VerticalStackLayout>
-                            </Frame>
-                            <Frame Grid.Row="1" Grid.Column="0"
-                                   BackgroundColor="White" CornerRadius="10" Padding="14" HasShadow="False">
-                                <VerticalStackLayout Spacing="3">
-                                    <Label Text="🟢 Abiertas" FontSize="12"
-                                           TextColor="{StaticResource TextSecondary}" />
-                                    <Label Text="{Binding CuentasAbiertas}"
-                                           FontSize="22" FontAttributes="Bold"
-                                           TextColor="{StaticResource Success}" />
-                                </VerticalStackLayout>
-                            </Frame>
-                            <Frame Grid.Row="1" Grid.Column="1"
-                                   BackgroundColor="White" CornerRadius="10" Padding="14" HasShadow="False">
-                                <VerticalStackLayout Spacing="3">
-                                    <Label Text="⚫ Cerradas" FontSize="12"
-                                           TextColor="{StaticResource TextSecondary}" />
-                                    <Label Text="{Binding CuentasCerradas}"
-                                           FontSize="22" FontAttributes="Bold"
-                                           TextColor="{StaticResource TextSecondary}" />
-                                </VerticalStackLayout>
-                            </Frame>
+                            <Button Grid.Column="1"
+                                    Command="{Binding MostrarCobradasCommand}"
+                                    Text="{Binding TotalCobradas, StringFormat='Cobradas {0}'}"
+                                    BackgroundColor="{Binding TabCobradasActivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#F97316|#FFFFFF'}"
+                                    TextColor="{Binding TabCobradasActivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFFFFF|#667085'}"
+                                    CornerRadius="16"
+                                    FontAttributes="Bold"
+                                    HeightRequest="44" />
+
+                            <Button Grid.Column="2"
+                                    Command="{Binding MostrarTodasCommand}"
+                                    Text="Todas"
+                                    BackgroundColor="{Binding TabTodasActivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#F97316|#FFFFFF'}"
+                                    TextColor="{Binding TabTodasActivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFFFFF|#667085'}"
+                                    CornerRadius="16"
+                                    FontAttributes="Bold"
+                                    HeightRequest="44" />
                         </Grid>
+                    </Border>
 
-                        <!-- ── Filtros ── -->
-                        <Frame BackgroundColor="White" CornerRadius="10" Padding="14" HasShadow="False">
-                            <VerticalStackLayout Spacing="10">
-                                <Label Text="Filtros" FontSize="14" FontAttributes="Bold"
-                                       TextColor="{StaticResource TextPrimary}" />
-                                <SearchBar Placeholder="Buscar por mesa, cliente o #cuenta..."
-                                           Text="{Binding TextoBusqueda}"
-                                           BackgroundColor="{StaticResource Gray100}"
-                                           FontSize="13" />
-                                <Picker Title="Estado"
-                                        ItemsSource="{Binding OpcionesEstado}"
-                                        SelectedItem="{Binding FiltroEstado}"
-                                        BackgroundColor="{StaticResource Gray100}"
-                                        FontSize="13" />
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                                    <VerticalStackLayout Grid.Column="0" Spacing="2">
-                                        <Label Text="Desde" FontSize="12"
-                                               TextColor="{StaticResource TextSecondary}" />
-                                        <DatePicker Date="{Binding FechaDesde}"
-                                                    BackgroundColor="{StaticResource Gray100}"
-                                                    FontSize="13" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                        <Label Text="Hasta" FontSize="12"
-                                               TextColor="{StaticResource TextSecondary}" />
-                                        <DatePicker Date="{Binding FechaHasta}"
-                                                    BackgroundColor="{StaticResource Gray100}"
-                                                    FontSize="13" />
-                                    </VerticalStackLayout>
-                                </Grid>
-                                <Button Text="Aplicar filtros"
-                                        BackgroundColor="{StaticResource Orange}"
-                                        TextColor="White" CornerRadius="8"
-                                        Command="{Binding AplicarFechasCommand}" />
-                            </VerticalStackLayout>
-                        </Frame>
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       IsVisible="{Binding IsBusy}"
+                                       Color="#F97316"
+                                       HorizontalOptions="Center" />
 
-                        <!-- ── Panel detalle ── -->
-                        <Frame IsVisible="{Binding MostrarDetalle}"
-                               BackgroundColor="{StaticResource OrangeLight}"
-                               BorderColor="{StaticResource Orange}"
-                               CornerRadius="10" Padding="16" HasShadow="False">
-                            <VerticalStackLayout Spacing="8">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0"
-                                           Text="{Binding CuentaDetalle.Idcuenta, StringFormat='Cuenta #{0}'}"
-                                           FontSize="16" FontAttributes="Bold"
-                                           TextColor="{StaticResource Orange}" />
-                                    <Button Grid.Column="1" Text="✕" FontSize="16"
-                                            BackgroundColor="Transparent"
-                                            TextColor="{StaticResource TextSecondary}"
-                                            Command="{Binding CerrarDetalleCommand}"
-                                            Padding="4" />
-                                </Grid>
-                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="1">
-                                        <Label Text="Mesa" FontSize="11" TextColor="{StaticResource TextSecondary}" />
-                                        <Label Text="{Binding CuentaDetalle.MesaTexto}"
-                                               FontSize="14" FontAttributes="Bold"
-                                               TextColor="{StaticResource TextPrimary}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="1">
-                                        <Label Text="Cliente" FontSize="11" TextColor="{StaticResource TextSecondary}" />
-                                        <Label Text="{Binding CuentaDetalle.ClienteTexto}"
-                                               FontSize="14" FontAttributes="Bold"
-                                               TextColor="{StaticResource TextPrimary}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="1">
-                                        <Label Text="Apertura" FontSize="11" TextColor="{StaticResource TextSecondary}" />
-                                        <Label Text="{Binding CuentaDetalle.FechaApertura, StringFormat='{0:dd/MM/yy HH:mm}'}"
-                                               FontSize="13" TextColor="{StaticResource TextPrimary}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="1">
-                                        <Label Text="Cierre" FontSize="11" TextColor="{StaticResource TextSecondary}" />
-                                        <Label Text="{Binding CuentaDetalle.FechaCierre, StringFormat='{0:dd/MM/yy HH:mm}'}"
-                                               FontSize="13" TextColor="{StaticResource TextPrimary}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="1">
-                                        <Label Text="Estado" FontSize="11" TextColor="{StaticResource TextSecondary}" />
-                                        <Label Text="{Binding CuentaDetalle.Estado}"
-                                               FontSize="14" FontAttributes="Bold"
-                                               TextColor="{Binding CuentaDetalle.EstadoBadgeColor}" />
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="1">
-                                        <Label Text="Total" FontSize="11" TextColor="{StaticResource TextSecondary}" />
-                                        <Label Text="{Binding CuentaDetalle.Total, StringFormat='${0:F2}'}"
-                                               FontSize="18" FontAttributes="Bold"
-                                               TextColor="{StaticResource Orange}" />
-                                    </VerticalStackLayout>
-                                </Grid>
-                                <!-- Botón asignar cliente (solo cuentas ABIERTAS) -->
-                                <Button Text="👤 Asignar / Cambiar cliente"
-                                        IsVisible="{Binding CuentaDetalleEsAbierta}"
-                                        BackgroundColor="{StaticResource Orange}"
-                                        TextColor="White" CornerRadius="8" FontSize="13"
-                                        Command="{Binding AbrirBuscadorClienteCommand}" />
-                            </VerticalStackLayout>
-                        </Frame>
-
-                        <!-- ── Buscador de cliente ── -->
-                        <Frame IsVisible="{Binding MostrarBuscadorCliente}"
-                               BackgroundColor="White"
-                               BorderColor="{StaticResource Orange}"
-                               CornerRadius="10" Padding="16" HasShadow="False">
-                            <VerticalStackLayout Spacing="10">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0" Text="Buscar cliente"
-                                           FontSize="15" FontAttributes="Bold"
-                                           TextColor="{StaticResource TextPrimary}"
-                                           VerticalOptions="Center" />
-                                    <Button Grid.Column="1" Text="✕"
-                                            BackgroundColor="Transparent"
-                                            TextColor="{StaticResource TextSecondary}"
-                                            Command="{Binding CerrarBuscadorClienteCommand}"
-                                            Padding="4" />
-                                </Grid>
-                                <SearchBar Placeholder="Nombre o cédula (mín. 2 caracteres)..."
-                                           Text="{Binding TextoBusquedaCliente}"
-                                           BackgroundColor="{StaticResource Gray100}"
-                                           FontSize="13" />
-                                <!-- Resultados -->
-                                <CollectionView ItemsSource="{Binding ClientesFiltrados}"
-                                               MaximumHeightRequest="220">
-                                    <CollectionView.ItemTemplate>
-                                        <DataTemplate x:DataType="models:ClienteResponse">
-                                            <Border Padding="12,8" Margin="0,2"
-                                                    StrokeShape="RoundRectangle 8"
-                                                    BackgroundColor="{StaticResource Gray100}"
-                                                    Stroke="Transparent">
-                                                <Border.GestureRecognizers>
-                                                    <TapGestureRecognizer
-                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HistorialCuentasViewModel}}, Path=SeleccionarClienteCommand}"
-                                                        CommandParameter="{Binding .}" />
-                                                </Border.GestureRecognizers>
-                                                <Grid ColumnDefinitions="*,Auto">
-                                                    <VerticalStackLayout Grid.Column="0" Spacing="1">
-                                                        <Label Text="{Binding Nombre}"
-                                                               FontAttributes="Bold" FontSize="13"
-                                                               TextColor="{StaticResource TextPrimary}" />
-                                                        <Label Text="{Binding Cedula}"
-                                                               FontSize="11"
-                                                               TextColor="{StaticResource TextSecondary}" />
-                                                    </VerticalStackLayout>
-                                                    <Label Grid.Column="1" Text="Seleccionar"
-                                                           FontSize="11"
-                                                           TextColor="{StaticResource Orange}"
-                                                           VerticalOptions="Center" />
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </CollectionView.ItemTemplate>
-                                </CollectionView>
-                                <!-- Sin resultados: opción crear -->
-                                <VerticalStackLayout IsVisible="{Binding SinResultadosCliente}" Spacing="6">
-                                    <Label Text="No se encontró ningún cliente con ese criterio."
-                                           FontSize="13" TextColor="{StaticResource TextSecondary}"
-                                           HorizontalTextAlignment="Center" />
-                                    <Button Text="+ Crear nuevo cliente"
-                                            BackgroundColor="Transparent"
-                                            TextColor="{StaticResource Orange}"
-                                            FontSize="13"
-                                            Command="{Binding AbrirFormNuevoClienteCommand}" />
-                                </VerticalStackLayout>
-                            </VerticalStackLayout>
-                        </Frame>
-
-                        <!-- ── Formulario nuevo cliente ── -->
-                        <Frame IsVisible="{Binding MostrarFormNuevoCliente}"
-                               BackgroundColor="White"
-                               BorderColor="{StaticResource Orange}"
-                               CornerRadius="10" Padding="16" HasShadow="False">
-                            <VerticalStackLayout Spacing="10">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0" Text="Nuevo Cliente"
-                                           FontSize="15" FontAttributes="Bold"
-                                           TextColor="{StaticResource TextPrimary}"
-                                           VerticalOptions="Center" />
-                                    <Button Grid.Column="1" Text="✕"
-                                            BackgroundColor="Transparent"
-                                            TextColor="{StaticResource TextSecondary}"
-                                            Command="{Binding CerrarFormNuevoClienteCommand}"
-                                            Padding="4" />
-                                </Grid>
-                                <Label Text="{Binding ErrorCliente}"
-                                       IsVisible="{Binding ErrorCliente, Converter={StaticResource StringToBoolConverter}}"
-                                       TextColor="{StaticResource Danger}"
-                                       FontSize="12" />
-                                <Entry Placeholder="Nombre *"
-                                       Text="{Binding NuevoNombre}"
-                                       BackgroundColor="{StaticResource Gray100}" />
-                                <Entry Placeholder="Cédula * (10-13 dígitos)"
-                                       Text="{Binding NuevaCedula}"
-                                       Keyboard="Numeric"
-                                       BackgroundColor="{StaticResource Gray100}" />
-                                <Entry Placeholder="Teléfono (10 dígitos, opcional)"
-                                       Text="{Binding NuevoTelefono}"
-                                       Keyboard="Numeric"
-                                       BackgroundColor="{StaticResource Gray100}" />
-                                <Button Text="Guardar y asignar"
-                                        BackgroundColor="{StaticResource Orange}"
-                                        TextColor="White" CornerRadius="8"
-                                        Command="{Binding GuardarNuevoClienteCommand}" />
-                            </VerticalStackLayout>
-                        </Frame>
-
-                        <Label Text="Historial" FontSize="15" FontAttributes="Bold"
-                               TextColor="{StaticResource TextPrimary}" />
-                    </VerticalStackLayout>
+                    <Label Text="{Binding Mensaje}"
+                           IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
+                           FontSize="13"
+                           TextColor="#F97316"
+                           HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </CollectionView.Header>
 
-            <!-- ═══ VACÍO ═══ -->
             <CollectionView.EmptyView>
-                <Label Text="No hay cuentas con los filtros aplicados."
-                       Padding="16,12"
-                       FontSize="14" TextColor="{StaticResource TextSecondary}"
+                <Label Text="No hay cuentas para este filtro."
+                       Padding="20"
+                       FontSize="14"
+                       TextColor="#667085"
                        HorizontalTextAlignment="Center"
                        IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}" />
             </CollectionView.EmptyView>
 
-            <!-- ═══ LISTA ═══ -->
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:CuentaResponse">
-                    <Frame BackgroundColor="White" CornerRadius="10"
-                           Padding="0" HasShadow="False" Margin="16,0,16,8">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HistorialCuentasViewModel}}, Path=VerDetalleCommand}"
-                                CommandParameter="{Binding .}" />
-                        </Frame.GestureRecognizers>
-                        <Grid ColumnDefinitions="Auto,*,Auto" Padding="12">
+                    <Border Margin="16,0,16,12"
+                            Padding="14"
+                            BackgroundColor="White"
+                            Stroke="#E9EEF5"
+                            StrokeShape="RoundRectangle 22">
+                        <Grid ColumnDefinitions="Auto,*,Auto"
+                              ColumnSpacing="14">
                             <Border Grid.Column="0"
-                                    BackgroundColor="{Binding EstadoBadgeColor}"
-                                    StrokeShape="RoundRectangle 8"
+                                    BackgroundColor="#FFF1E8"
                                     Stroke="Transparent"
-                                    WidthRequest="6"
-                                    VerticalOptions="Fill"
-                                    Margin="0,0,12,0" />
-                            <VerticalStackLayout Grid.Column="1" Spacing="3">
-                                <HorizontalStackLayout Spacing="8">
-                                    <Label Text="{Binding Idcuenta, StringFormat='#cuenta {0}'}"
-                                           FontAttributes="Bold" FontSize="14"
-                                           TextColor="{StaticResource TextPrimary}" />
-                                    <Border BackgroundColor="{Binding EstadoBadgeColor}"
-                                            StrokeShape="RoundRectangle 8"
-                                            Stroke="Transparent" Padding="6,2">
-                                        <Label Text="{Binding Estado}"
-                                               FontSize="10" TextColor="White"
-                                               FontAttributes="Bold" />
-                                    </Border>
-                                </HorizontalStackLayout>
+                                    StrokeShape="RoundRectangle 26"
+                                    WidthRequest="52"
+                                    HeightRequest="52">
+                                <Label Text="🍽"
+                                       FontSize="24"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <VerticalStackLayout Grid.Column="1"
+                                                 Spacing="4"
+                                                 VerticalOptions="Center">
                                 <Label Text="{Binding MesaTexto}"
-                                       FontSize="13" TextColor="{StaticResource TextSecondary}" />
-                                <Label Text="{Binding FechaApertura, StringFormat='Abierta: {0:dd/MM/yyyy HH:mm}'}"
-                                       FontSize="12" TextColor="{StaticResource TextSecondary}" />
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="#0F172A" />
+                                <Label Text="{Binding ClienteTexto}"
+                                       FontSize="14"
+                                       TextColor="#667085" />
+                                <Label Text="{Binding FechaApertura, StringFormat='Abierta: {0:hh:mm tt}'}"
+                                       FontSize="12"
+                                       TextColor="#94A3B8" />
+                                <Label Text="{Binding Idcuenta, StringFormat='Cuenta #{0}'}"
+                                       FontSize="12"
+                                       TextColor="#94A3B8" />
                             </VerticalStackLayout>
-                            <Label Grid.Column="2"
-                                   Text="{Binding Total, StringFormat='${0:F2}'}"
-                                   FontAttributes="Bold" FontSize="16"
-                                   TextColor="{StaticResource Orange}"
-                                   VerticalOptions="Center" />
+
+                            <VerticalStackLayout Grid.Column="2"
+                                                 Spacing="10"
+                                                 HorizontalOptions="End"
+                                                 VerticalOptions="Center">
+                                <Label Text="{Binding Total, StringFormat='${0:F2}'}"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       HorizontalTextAlignment="End"
+                                       TextColor="#F97316" />
+
+                                <Button Text="COBRAR"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.CobrarCuentaCommand}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="#F97316"
+                                        TextColor="White"
+                                        CornerRadius="14"
+                                        FontAttributes="Bold"
+                                        HeightRequest="42"
+                                        WidthRequest="120">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button"
+                                                     Binding="{Binding Estado}"
+                                                     Value="ABIERTA">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button"
+                                                     Binding="{Binding Estado}"
+                                                     Value="PAGADA">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button"
+                                                     Binding="{Binding Estado}"
+                                                     Value="CERRADA">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Button"
+                                                     Binding="{Binding Estado}"
+                                                     Value="ANULADA">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
+
+                                <Border Padding="10,6"
+                                        BackgroundColor="#F8FAFC"
+                                        Stroke="#E5E7EB"
+                                        StrokeShape="RoundRectangle 12"
+                                        IsVisible="False">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding Estado}"
+                                                     Value="PAGADA">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding Estado}"
+                                                     Value="CERRADA">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border"
+                                                     Binding="{Binding Estado}"
+                                                     Value="ANULADA">
+                                            <Setter Property="IsVisible" Value="True" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{Binding Estado}"
+                                           FontSize="11"
+                                           FontAttributes="Bold"
+                                           TextColor="#667085" />
+                                </Border>
+                            </VerticalStackLayout>
                         </Grid>
-                    </Frame>
+                    </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
-
         </CollectionView>
-
     </Grid>
-
 </ContentPage>

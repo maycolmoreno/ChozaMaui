@@ -9,7 +9,8 @@ namespace ChozaMaui.ViewModels;
 [QueryProperty(nameof(PedidoId), "id")]
 public partial class PedidoDetalleViewModel : ObservableObject
 {
-    private readonly ApiService _api;
+    private readonly PedidoPresentationService _presentation;
+    private readonly PosOrderWorkflowService _pedidoWorkflow;
     private readonly SessionService _session;
 
     [ObservableProperty] private int pedidoId;
@@ -18,7 +19,12 @@ public partial class PedidoDetalleViewModel : ObservableObject
 
     // Datos del pedido
     [ObservableProperty] private string tituloPedido = string.Empty;
-    [ObservableProperty] private string estado = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PuedeEnviarCocina))]
+    [NotifyPropertyChangedFor(nameof(PuedeMarcarListo))]
+    [NotifyPropertyChangedFor(nameof(PuedeEntregarCliente))]
+    [NotifyPropertyChangedFor(nameof(PuedeCancelarPedido))]
+    private string estado = string.Empty;
     [ObservableProperty] private string estadoColor = "#6b7280";
     [ObservableProperty] private string estadoBadgeTexto = string.Empty;
     [ObservableProperty] private string fechaTexto = string.Empty;
@@ -37,17 +43,16 @@ public partial class PedidoDetalleViewModel : ObservableObject
 
     [ObservableProperty] private string mensajeCambio = string.Empty;
 
-    public const double TasaImpuesto = 0.12;
-
     public ObservableCollection<PedidoDetalleResponse> Detalles { get; } = [];
     public ObservableCollection<PedidoTimelineItem> Historial { get; } = [];
 
     public bool PuedeIrAPagar =>
         !string.Equals(_session.Rol, "CAMARERO", StringComparison.OrdinalIgnoreCase);
 
-    public PedidoDetalleViewModel(ApiService api, SessionService session)
+    public PedidoDetalleViewModel(PedidoPresentationService presentation, PosOrderWorkflowService pedidoWorkflow, SessionService session)
     {
-        _api = api;
+        _presentation = presentation;
+        _pedidoWorkflow = pedidoWorkflow;
         _session = session;
     }
 
@@ -59,9 +64,7 @@ public partial class PedidoDetalleViewModel : ObservableObject
 
     partial void OnEstadoChanged(string value)
     {
-        EstadoBadgeTexto = MapearEstadoVisual(value);
-        NotificarEstadoAcciones();
-        ConstruirHistorialVisual();
+        EstadoBadgeTexto = _presentation.MapearEstadoVisual(value);
     }
 
     [RelayCommand]
@@ -72,32 +75,14 @@ public partial class PedidoDetalleViewModel : ObservableObject
         ErrorMessage = string.Empty;
         try
         {
-            var p = await _api.GetPedidoPorIdAsync(PedidoId);
-            TituloPedido = $"Pedido #{p.Idpedido}";
-            SubtituloPedido = $"{p.Mesa?.Etiqueta ?? "Mesa —"}" +
-                              $"  ·  {(string.IsNullOrWhiteSpace(p.Mesa?.NombreComedor) ? "Comedor" : p.Mesa.NombreComedor)}";
-            Estado = p.Estado;
-            EstadoColor = p.EstadoBadgeColor;
-            EstadoBadgeTexto = MapearEstadoVisual(p.Estado);
-            FechaTexto = p.Fecha.ToString("dd/MM/yyyy HH:mm");
-            MesaTexto = p.Mesa?.Etiqueta ?? "—";
-            MesaCapacidadTexto = p.Mesa is null ? "—" : $"{p.Mesa.Capacidad} personas";
-            ClienteTexto = p.Cliente?.NombreCompleto ?? "Sin cliente";
-            ClienteTelefonoTexto = string.IsNullOrWhiteSpace(p.Cliente?.Telefono) ? "Sin teléfono" : p.Cliente.Telefono!;
-            MeseroTexto = string.IsNullOrWhiteSpace(p.Usuario?.NombreCompleto) ? "Sin asignar" : p.Usuario.NombreCompleto;
-            MeseroHoraTexto = p.Fecha.ToString("hh:mm tt");
-            Observaciones = p.Observaciones ?? "Sin observaciones";
-            Total = p.Total;
-            Subtotal = Math.Round(Total / (1 + TasaImpuesto), 2);
-            Impuestos = Math.Round(Total - Subtotal, 2);
+            var p = await _pedidoWorkflow.ObtenerPedidoDetalleAsync(PedidoId);
             PedidoCompleto = p;
+            AplicarPresentacion(_presentation.BuildDetail(p));
 
             Detalles.Clear();
             foreach (var d in p.Detalle ?? [])
                 Detalles.Add(d);
 
-            ConstruirHistorialVisual();
-            NotificarEstadoAcciones();
         }
         catch (Exception ex)
         {
@@ -115,21 +100,26 @@ public partial class PedidoDetalleViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(nuevoEstado) || nuevoEstado == Estado)
             return;
 
+        if (nuevoEstado == "EN_COCINA" && !PuedeEnviarCocina)
+        {
+            MensajeCambio = "Tu perfil no tiene autorizacion para enviar pedidos a cocina.";
+            return;
+        }
+
+        if (nuevoEstado == "LISTO_PARA_ENTREGA" && !PuedeMarcarListo)
+        {
+            MensajeCambio = "Solo cocina o admin pueden despachar pedidos de cocina.";
+            return;
+        }
+
         IsBusy = true;
         MensajeCambio = string.Empty;
         try
         {
-            var actualizado = await _api.CambiarEstadoPedidoAsync(PedidoId, nuevoEstado);
-            Estado = actualizado.Estado;
-            EstadoColor = actualizado.EstadoBadgeColor;
-            EstadoBadgeTexto = MapearEstadoVisual(Estado);
+            var actualizado = await _pedidoWorkflow.CambiarEstadoPedidoAsync(PedidoId, nuevoEstado);
             PedidoCompleto = actualizado;
-            Total = actualizado.Total;
-            Subtotal = Math.Round(Total / (1 + TasaImpuesto), 2);
-            Impuestos = Math.Round(Total - Subtotal, 2);
+            AplicarPresentacion(_presentation.BuildDetail(actualizado));
             MensajeCambio = $"Estado actualizado: {EstadoBadgeTexto}";
-            ConstruirHistorialVisual();
-            NotificarEstadoAcciones();
         }
         catch (Exception ex)
         {
@@ -161,75 +151,40 @@ public partial class PedidoDetalleViewModel : ObservableObject
             new Dictionary<string, object> { { "Pedido", PedidoCompleto } });
     }
 
-    public bool PuedeEnviarCocina => Estado == "PENDIENTE";
-    public bool PuedeMarcarListo => Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO";
+    public bool PuedeEnviarCocina =>
+        Estado == "PENDIENTE" &&
+        !string.Equals(_session.Rol, "COCINA", StringComparison.OrdinalIgnoreCase);
+    public bool PuedeMarcarListo =>
+        (Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO") &&
+        (_session.Rol?.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) == true ||
+         _session.Rol?.Equals("COCINA", StringComparison.OrdinalIgnoreCase) == true);
     public bool PuedeEntregarCliente => Estado is "LISTO" or "LISTO_PARA_ENTREGA";
     public bool PuedeCancelarPedido => Estado is not ("COMPLETADO" or "ENTREGADO" or "CANCELADO");
 
-    private static string MapearEstadoVisual(string estado) => estado switch
+    private void AplicarPresentacion(PedidoDetailPresentationModel model)
     {
-        "PENDIENTE" => "PENDIENTE",
-        "EN_COCINA" or "EN_BAR" or "EN_PROCESO" => "EN PREPARACION",
-        "LISTO" or "LISTO_PARA_ENTREGA" => "LISTO PARA ENTREGA",
-        "COMPLETADO" or "ENTREGADO" => "ENTREGADO",
-        "CANCELADO" => "CANCELADO",
-        _ => estado
-    };
+        TituloPedido = model.TituloPedido;
+        SubtituloPedido = model.SubtituloPedido;
+        Estado = model.Estado;
+        EstadoColor = model.EstadoColor;
+        EstadoBadgeTexto = model.EstadoBadgeTexto;
+        FechaTexto = model.FechaTexto;
+        MesaTexto = model.MesaTexto;
+        MesaCapacidadTexto = model.MesaCapacidadTexto;
+        ClienteTexto = model.ClienteTexto;
+        ClienteTelefonoTexto = model.ClienteTelefonoTexto;
+        MeseroTexto = model.MeseroTexto;
+        MeseroHoraTexto = model.MeseroHoraTexto;
+        Observaciones = model.Observaciones;
+        Total = model.Total;
+        Subtotal = model.Subtotal;
+        Impuestos = model.Impuestos;
 
-    private void NotificarEstadoAcciones()
-    {
-        OnPropertyChanged(nameof(PuedeEnviarCocina));
-        OnPropertyChanged(nameof(PuedeMarcarListo));
-        OnPropertyChanged(nameof(PuedeEntregarCliente));
-        OnPropertyChanged(nameof(PuedeCancelarPedido));
-    }
-
-    private void ConstruirHistorialVisual()
-    {
         Historial.Clear();
-
-        var hora = string.IsNullOrWhiteSpace(MeseroHoraTexto) ? "--:-- --" : MeseroHoraTexto;
-        var responsable = string.IsNullOrWhiteSpace(MeseroTexto) ? "Sin asignar" : MeseroTexto;
-
-        Historial.Add(new PedidoTimelineItem
-        {
-            Hora = hora,
-            Evento = "Pedido creado",
-            Responsable = responsable,
-            DotColor = "#f59e0b",
-            MostrarLinea = true
-        });
-
-        var enCocina = Estado is not "PENDIENTE" and not "CANCELADO";
-        Historial.Add(new PedidoTimelineItem
-        {
-            Hora = enCocina ? hora : "--:-- --",
-            Evento = "Enviado a cocina",
-            Responsable = enCocina ? responsable : string.Empty,
-            DotColor = enCocina ? "#3b82f6" : "#d1d5db",
-            MostrarLinea = true
-        });
-
-        var listo = Estado is "LISTO" or "LISTO_PARA_ENTREGA" or "COMPLETADO" or "ENTREGADO";
-        Historial.Add(new PedidoTimelineItem
-        {
-            Hora = listo ? hora : "--:-- --",
-            Evento = "Listo para entregar",
-            Responsable = listo ? responsable : string.Empty,
-            DotColor = listo ? "#f59e0b" : "#d1d5db",
-            MostrarLinea = true
-        });
-
-        var entregado = Estado is "COMPLETADO" or "ENTREGADO";
-        Historial.Add(new PedidoTimelineItem
-        {
-            Hora = entregado ? hora : "--:-- --",
-            Evento = "Entregado al cliente",
-            Responsable = entregado ? responsable : string.Empty,
-            DotColor = entregado ? "#10b981" : "#d1d5db",
-            MostrarLinea = false
-        });
+        foreach (var item in model.Historial)
+            Historial.Add(item);
     }
+
 }
 
 public class PedidoTimelineItem

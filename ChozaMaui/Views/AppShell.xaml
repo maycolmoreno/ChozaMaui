@@ -4,44 +4,46 @@
        xmlns:views="clr-namespace:ChozaMaui.Views"
        x:Class="ChozaMaui.Views.AppShell"
        Title="La Choza POS"
-       Shell.NavBarIsVisible="True"
+       Shell.NavBarIsVisible="False"
        Shell.TabBarIsVisible="True">
 
-    <!-- Ruta para detalle de pedido (sin tab propio) -->
     <Shell.Resources>
+        <!-- Tab bar premium mobile-first -->
         <Style TargetType="TabBar">
-            <Setter Property="Shell.TabBarBackgroundColor" Value="#F26522" />
-            <Setter Property="Shell.TabBarForegroundColor" Value="White" />
-            <Setter Property="Shell.TabBarTitleColor" Value="White" />
-            <Setter Property="Shell.TabBarUnselectedColor" Value="#FFE3D0" />
+            <Setter Property="Shell.TabBarBackgroundColor" Value="#FFFFFF" />
+            <Setter Property="Shell.TabBarForegroundColor" Value="#F97316" />
+            <Setter Property="Shell.TabBarTitleColor" Value="#F97316" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="#94A3B8" />
+        </Style>
+        <Style TargetType="Tab">
+            <Setter Property="Shell.TabBarTitleColor" Value="#F97316" />
         </Style>
     </Shell.Resources>
 
+    <!-- Rutas modales sin tab propio -->
+    <Shell.Routes>
+    </Shell.Routes>
+
     <TabBar>
 
-        <!-- Pantalla 1: Mapa de mesas -->
-        <Tab Title="Mapa">
+        <!-- 1: Inicio / Mesas -->
+        <Tab Title="Mesas" Icon="tab_mesas.png">
             <ShellContent ContentTemplate="{DataTemplate views:MapaPage}" Route="mapa" />
         </Tab>
 
-        <!-- Pantalla 2: POS -->
-        <Tab Title="POS">
-            <ShellContent ContentTemplate="{DataTemplate views:PosPage}" Route="pos" />
-        </Tab>
-
-        <!-- Pantalla 3: Pedidos -->
-        <Tab Title="Pedidos">
+        <!-- 2: Pedidos -->
+        <Tab Title="Pedidos" Icon="tab_pedidos.png">
             <ShellContent ContentTemplate="{DataTemplate views:PedidosPage}" Route="pedidos" />
         </Tab>
 
-        <!-- Pantalla 4: Perfil -->
-        <Tab Title="Perfil">
-            <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}" Route="perfil" />
+        <!-- 3: Notificaciones -->
+        <Tab Title="Avisos" Icon="tab_notif.png">
+            <ShellContent ContentTemplate="{DataTemplate views:NotificacionesPage}" Route="notificaciones" />
         </Tab>
 
-        <!-- Pantalla 5: Turnos -->
-        <Tab Title="Turnos">
-            <ShellContent ContentTemplate="{DataTemplate views:TurnoPage}" Route="turnos" />
+        <!-- 4: Perfil -->
+        <Tab Title="Perfil" Icon="tab_perfil.png">
+            <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}" Route="perfil" />
         </Tab>
 
     </TabBar>

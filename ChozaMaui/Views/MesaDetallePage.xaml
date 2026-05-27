@@ -3,54 +3,56 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:ChozaMaui.ViewModels"
              xmlns:models="clr-namespace:ChozaMaui.Models"
+             xmlns:controls="clr-namespace:ChozaMaui.Views.Controls"
              x:Class="ChozaMaui.Views.MesaDetallePage"
              x:DataType="vm:MesaDetalleViewModel"
              Title="{Binding Titulo}"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="#f5f7fb">
+             Shell.TabBarIsVisible="True"
+             BackgroundColor="#F8FAFC">
 
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Spacing="0">
 
-                <Grid BackgroundColor="{StaticResource Orange}" Padding="18,48,18,18">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                <Grid BackgroundColor="#F97316" Padding="14,40,14,12">
+                    <Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="8">
                         <Button Grid.Column="0"
                                 Text="‹"
-                                FontSize="34"
+                                FontSize="30"
                                 TextColor="White"
                                 BackgroundColor="Transparent"
                                 Padding="0"
-                                WidthRequest="42"
+                                WidthRequest="44"
+                                HeightRequest="44"
                                 Command="{Binding VolverCommand}" />
 
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                             <Label Text="{Binding Titulo}"
-                                   FontSize="24"
+                                   FontSize="20"
                                    FontAttributes="Bold"
                                    TextColor="White" />
                             <Label Text="{Binding ComedorTexto}"
-                                   FontSize="13"
-                                   TextColor="#ffe0b2" />
+                                   FontSize="12"
+                                   TextColor="#FFEDD5" />
                         </VerticalStackLayout>
 
-                        <ActivityIndicator Grid.Column="2"
-                                           IsRunning="{Binding IsBusy}"
-                                           IsVisible="{Binding IsBusy}"
-                                           Color="White"
-                                           VerticalOptions="Center" />
+                        <controls:ConnectivityActionsView Grid.Column="2"
+                                                          RefreshCommand="{Binding CargarCommand}"
+                                                          VerticalOptions="Center" />
                     </Grid>
                 </Grid>
 
                 <VerticalStackLayout Padding="14" Spacing="14">
 
                     <Border BackgroundColor="White"
-                            Stroke="#e2e8f0"
-                            StrokeShape="RoundRectangle 16"
+                            Stroke="#E2E8F0"
+                            StrokeShape="RoundRectangle 18"
                             Padding="14">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                        <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <Border Grid.Column="0"
-                                    BackgroundColor="#ef4444"
+                                    BackgroundColor="#FEF2F2"
                                     StrokeShape="RoundRectangle 28"
                                     Stroke="Transparent"
                                     WidthRequest="56"
@@ -62,38 +64,36 @@
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
                                 <Label Text="Lista para entregar"
-                                       FontSize="20"
+                                       FontSize="18"
                                        FontAttributes="Bold"
                                        TextColor="#111827" />
                                 <Label Text="{Binding PedidosListosCount, StringFormat='{0} pedidos listos'}"
                                        FontSize="13"
                                        TextColor="#6b7280" />
                             </VerticalStackLayout>
-                            <Button Grid.Column="2"
-                                    Text="ENTREGAR TODO"
+                        </Grid>
+                            <Button Text="ENTREGAR TODO"
                                     Command="{Binding EntregarTodoCommand}"
                                     IsEnabled="{Binding TienePedidosListos}"
-                                    BackgroundColor="#16a34a"
+                                    BackgroundColor="#22C55E"
                                     TextColor="White"
                                     FontAttributes="Bold"
-                                    CornerRadius="10"
+                                    CornerRadius="16"
                                     FontSize="12"
-                                    Padding="14,0"
-                                    HeightRequest="46"
-                                    VerticalOptions="Center" />
-                        </Grid>
+                                    HeightRequest="50" />
+                        </VerticalStackLayout>
                     </Border>
 
                     <Border BackgroundColor="White"
-                            Stroke="#e2e8f0"
-                            StrokeShape="RoundRectangle 16"
+                            Stroke="#E2E8F0"
+                            StrokeShape="RoundRectangle 18"
                             Padding="14">
                         <VerticalStackLayout Spacing="14">
                             <Label Text="Resumen de la mesa"
                                    FontSize="17"
                                    FontAttributes="Bold"
                                    TextColor="#111827" />
-                            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="10">
                                 <VerticalStackLayout Grid.Column="0" Spacing="4" HorizontalOptions="Center">
                                     <Label Text="👥" FontSize="22" HorizontalTextAlignment="Center" />
                                     <Label Text="Capacidad" FontSize="11" TextColor="#6b7280" HorizontalTextAlignment="Center" />
@@ -104,12 +104,12 @@
                                     <Label Text="Pedidos" FontSize="11" TextColor="#6b7280" HorizontalTextAlignment="Center" />
                                     <Label Text="{Binding PedidosActivosCount, StringFormat='{0} activos'}" FontSize="13" FontAttributes="Bold" TextColor="#111827" />
                                 </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="Center">
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="4" HorizontalOptions="Center">
                                     <Label Text="◷" FontSize="22" HorizontalTextAlignment="Center" />
                                     <Label Text="Tiempo" FontSize="11" TextColor="#6b7280" HorizontalTextAlignment="Center" />
                                     <Label Text="{Binding TiempoMesaTexto}" FontSize="13" FontAttributes="Bold" TextColor="#111827" />
                                 </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Column="3" Spacing="4" HorizontalOptions="Center">
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="4" HorizontalOptions="Center">
                                     <Label Text="Total" FontSize="12" FontAttributes="Bold" TextColor="#f4511e" HorizontalTextAlignment="Center" />
                                     <Label Text="a cobrar" FontSize="10" TextColor="#f4511e" HorizontalTextAlignment="Center" />
                                     <Label Text="{Binding TotalMesaTexto}" FontSize="18" FontAttributes="Bold" TextColor="#f4511e" />
@@ -244,6 +244,7 @@
                     <Button Text="CERRAR MESA"
                             Command="{Binding CerrarMesaCommand}"
                             IsEnabled="{Binding PuedeCerrarMesa}"
+                            IsVisible="{Binding EsAdmin}"
                             BackgroundColor="White"
                             BorderColor="#ef4444"
                             BorderWidth="1.5"

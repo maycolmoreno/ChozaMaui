@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChozaMaui.Models;
@@ -9,19 +8,32 @@ namespace ChozaMaui.ViewModels;
 
 public partial class HistorialCuentasViewModel : ObservableObject
 {
-    private readonly ApiService _api;
+    private readonly HistorialCuentasCobroService _cobroService;
+    private readonly HistorialCuentasClienteService _clienteService;
+    private readonly HistorialCuentasLoadService _loadService;
+    private readonly HistorialCuentasPresentationService _presentation;
+    private readonly SessionService _session;
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
+    private DateTimeOffset? _ultimaCargaUtc;
+    private static readonly TimeSpan VentanaMinimaRecarga = TimeSpan.FromSeconds(10);
 
     // ── Datos ─────────────────────────────────────────────────────
     [ObservableProperty] private ObservableCollection<CuentaResponse> cuentas = new();
     private List<CuentaResponse> _todas = [];
 
     // ── Filtros ───────────────────────────────────────────────────
-    [ObservableProperty] private string filtroEstado = "TODAS";
+    [ObservableProperty] private string filtroEstado = "ABIERTA";
     [ObservableProperty] private DateTime fechaDesde = DateTime.Today.AddDays(-30);
     [ObservableProperty] private DateTime fechaHasta = DateTime.Today;
     [ObservableProperty] private string textoBusqueda = string.Empty;
 
-    partial void OnFiltroEstadoChanged(string value) => AplicarFiltro();
+    partial void OnFiltroEstadoChanged(string value)
+    {
+        AplicarFiltro();
+        OnPropertyChanged(nameof(TabPendientesActivo));
+        OnPropertyChanged(nameof(TabCobradasActivo));
+        OnPropertyChanged(nameof(TabTodasActivo));
+    }
     partial void OnTextoBusquedaChanged(string value) => AplicarFiltro();
 
     // ── Estadísticas rápidas ──────────────────────────────────────
@@ -36,7 +48,10 @@ public partial class HistorialCuentasViewModel : ObservableObject
     [ObservableProperty] private bool cuentaDetalleEsAbierta;
 
     partial void OnCuentaDetalleChanged(CuentaResponse? value)
-        => CuentaDetalleEsAbierta = value?.Estado == "ABIERTA";
+    {
+        CuentaDetalleEsAbierta = value?.Estado == "ABIERTA";
+        OnPropertyChanged(nameof(PuedeCobrarCuenta));
+    }
 
     // ── Estado UI ─────────────────────────────────────────────────
     [ObservableProperty] private bool isBusy;
@@ -59,25 +74,31 @@ public partial class HistorialCuentasViewModel : ObservableObject
 
     private void FiltrarClientes(string termino)
     {
-        if (string.IsNullOrWhiteSpace(termino) || termino.Length < 2)
-        {
-            ClientesFiltrados = new();
-            SinResultadosCliente = false;
-            return;
-        }
-        var lower = termino.ToLowerInvariant();
-        var lista = _todosClientes
-            .Where(c => c.Nombre.ToLowerInvariant().Contains(lower) ||
-                        (c.Cedula != null && c.Cedula.Contains(termino)))
-            .Take(20).ToList();
-        ClientesFiltrados = new ObservableCollection<ClienteResponse>(lista);
+        var lista = _clienteService.FiltrarClientes(_todosClientes, termino);
+        ReemplazarItems(ClientesFiltrados, lista);
         SinResultadosCliente = lista.Count == 0;
     }
 
     // Opciones de filtro de estado
-    public List<string> OpcionesEstado { get; } = ["TODAS", "ABIERTA", "CERRADA", "ANULADA"];
+    public List<string> OpcionesEstado { get; } = ["ABIERTA", "COBRADAS", "TODAS", "ANULADA"];
 
-    public HistorialCuentasViewModel(ApiService api) => _api = api;
+    // Control por rol
+    public bool EsCajero => _session.Rol == "CAJERO";
+    public bool PuedeCobrarCuenta => EsCajero && CuentaDetalleEsAbierta;
+    public int TotalPendientes => _todas.Count(_presentation.EsCuentaPendiente);
+    public int TotalCobradas => _todas.Count(_presentation.EsCuentaCobrada);
+    public bool TabPendientesActivo => FiltroEstado == "ABIERTA";
+    public bool TabCobradasActivo => FiltroEstado == "COBRADAS";
+    public bool TabTodasActivo => FiltroEstado == "TODAS";
+
+    public HistorialCuentasViewModel(SessionService session, HistorialCuentasPresentationService presentation, HistorialCuentasClienteService clienteService, HistorialCuentasCobroService cobroService, HistorialCuentasLoadService loadService)
+    {
+        _session = session;
+        _presentation = presentation;
+        _clienteService = clienteService;
+        _cobroService = cobroService;
+        _loadService = loadService;
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // Carga
@@ -85,16 +106,46 @@ public partial class HistorialCuentasViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        await CargarInternoAsync(force: true);
+    }
+
+    public Task CargarSiEsNecesarioAsync()
+        => CargarInternoAsync(force: false);
+
+    private async Task CargarInternoAsync(bool force)
+    {
+        if (!await _refreshLock.WaitAsync(0))
+            return;
+
+        if (!force && _ultimaCargaUtc is not null && DateTimeOffset.UtcNow - _ultimaCargaUtc < VentanaMinimaRecarga)
+        {
+            _refreshLock.Release();
+            return;
+        }
+
         IsBusy = true;
         Mensaje = string.Empty;
         try
         {
-            _todas = await _api.GetTodasCuentasAsync();
+            var resultado = await _loadService.CargarAsync(_session.Rol);
+            if (resultado.RequiereAperturaCaja)
+            {
+                Mensaje = resultado.Mensaje;
+                await Shell.Current.GoToAsync("turnos");
+                return;
+            }
+
+            _todas = resultado.Cuentas.ToList();
             RecalcularEstadisticas();
             AplicarFiltro();
+            _ultimaCargaUtc = DateTimeOffset.UtcNow;
         }
         catch (Exception ex) { Mensaje = $"Error: {ex.Message}"; }
-        finally { IsBusy = false; }
+        finally
+        {
+            IsBusy = false;
+            _refreshLock.Release();
+        }
     }
 
     [RelayCommand]
@@ -103,44 +154,46 @@ public partial class HistorialCuentasViewModel : ObservableObject
         await CargarAsync();
     }
 
+    [RelayCommand]
+    private void MostrarPendientes() => FiltroEstado = "ABIERTA";
+
+    [RelayCommand]
+    private void MostrarCobradas() => FiltroEstado = "COBRADAS";
+
+    [RelayCommand]
+    private void MostrarTodas() => FiltroEstado = "TODAS";
+
     // ═══════════════════════════════════════════════════════════════
     // Filtrado
     // ═══════════════════════════════════════════════════════════════
     private void AplicarFiltro()
     {
-        var lista = _todas.AsEnumerable();
+        var lista = _presentation.Filtrar(
+            _todas,
+            FiltroEstado,
+            FechaDesde,
+            FechaHasta,
+            TextoBusqueda);
 
-        // Filtro por estado
-        if (FiltroEstado != "TODAS")
-            lista = lista.Where(c => c.Estado.Equals(FiltroEstado, StringComparison.OrdinalIgnoreCase));
+        ReemplazarItems(Cuentas, lista);
+    }
 
-        // Filtro por fecha
-        lista = lista.Where(c =>
-            c.FechaApertura.HasValue &&
-            c.FechaApertura.Value.Date >= FechaDesde.Date &&
-            c.FechaApertura.Value.Date <= FechaHasta.Date);
-
-        // Búsqueda por mesa o cliente
-        if (!string.IsNullOrWhiteSpace(TextoBusqueda))
-        {
-            lista = lista.Where(c =>
-                c.MesaTexto.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase) ||
-                c.ClienteTexto.Contains(TextoBusqueda, StringComparison.OrdinalIgnoreCase) ||
-                c.Idcuenta.ToString().Contains(TextoBusqueda));
-        }
-
-        // Ordenar por fecha desc
-        lista = lista.OrderByDescending(c => c.FechaApertura);
-
-        Cuentas = new ObservableCollection<CuentaResponse>(lista);
+    private static void ReemplazarItems<T>(ObservableCollection<T> destino, IEnumerable<T> origen)
+    {
+        destino.Clear();
+        foreach (var item in origen)
+            destino.Add(item);
     }
 
     private void RecalcularEstadisticas()
     {
-        TotalCuentas    = _todas.Count;
-        CuentasAbiertas = _todas.Count(c => c.Estado == "ABIERTA");
-        CuentasCerradas = _todas.Count(c => c.Estado == "CERRADA");
-        TotalFacturado  = _todas.Where(c => c.Estado == "CERRADA").Sum(c => c.Total);
+        var stats = _presentation.CalcularStats(_todas);
+        TotalCuentas = stats.TotalCuentas;
+        CuentasAbiertas = stats.CuentasAbiertas;
+        CuentasCerradas = stats.CuentasCerradas;
+        TotalFacturado = stats.TotalFacturado;
+        OnPropertyChanged(nameof(TotalPendientes));
+        OnPropertyChanged(nameof(TotalCobradas));
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -151,8 +204,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
     {
         CuentaDetalle = cuenta;
         MostrarDetalle = true;
-        MostrarBuscadorCliente = false;
-        MostrarFormNuevoCliente = false;
+        CerrarModalesCliente();
     }
 
     [RelayCommand]
@@ -160,8 +212,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
     {
         MostrarDetalle = false;
         CuentaDetalle = null;
-        MostrarBuscadorCliente = false;
-        MostrarFormNuevoCliente = false;
+        CerrarModalesCliente();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -173,12 +224,12 @@ public partial class HistorialCuentasViewModel : ObservableObject
         if (_todosClientes.Count == 0)
         {
             IsBusy = true;
-            try { _todosClientes = await _api.GetClientesAsync(); }
+            try { _todosClientes = await _clienteService.CargarClientesAsync(); }
             catch { _todosClientes = []; }
             finally { IsBusy = false; }
         }
         TextoBusquedaCliente = string.Empty;
-        ClientesFiltrados = new();
+        ClientesFiltrados.Clear();
         SinResultadosCliente = false;
         ErrorCliente = string.Empty;
         MostrarFormNuevoCliente = false;
@@ -188,8 +239,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
     [RelayCommand]
     private void CerrarBuscadorCliente()
     {
-        MostrarBuscadorCliente = false;
-        MostrarFormNuevoCliente = false;
+        CerrarModalesCliente();
         TextoBusquedaCliente = string.Empty;
     }
 
@@ -201,13 +251,12 @@ public partial class HistorialCuentasViewModel : ObservableObject
         Mensaje = string.Empty;
         try
         {
-            var actualizada = await _api.AsignarClienteCuentaAsync(CuentaDetalle.Idcuenta, cliente.Idcliente);
+            var actualizada = await _clienteService.AsignarClienteAsync(CuentaDetalle.Idcuenta, cliente.Idcliente);
             var idx = _todas.FindIndex(c => c.Idcuenta == actualizada.Idcuenta);
             if (idx >= 0) _todas[idx] = actualizada;
             CuentaDetalle = actualizada;
             AplicarFiltro();
-            MostrarBuscadorCliente = false;
-            MostrarFormNuevoCliente = false;
+            CerrarModalesCliente();
             Mensaje = $"Cliente '{cliente.Nombre}' asignado correctamente.";
         }
         catch (Exception ex) { Mensaje = $"Error al asignar cliente: {ex.Message}"; }
@@ -227,31 +276,47 @@ public partial class HistorialCuentasViewModel : ObservableObject
     [RelayCommand]
     private void CerrarFormNuevoCliente() => MostrarFormNuevoCliente = false;
 
+    private void CerrarModalesCliente()
+    {
+        MostrarBuscadorCliente = false;
+        MostrarFormNuevoCliente = false;
+    }
+
     [RelayCommand]
     private async Task GuardarNuevoClienteAsync()
     {
-        ErrorCliente = string.Empty;
-        if (string.IsNullOrWhiteSpace(NuevoNombre))
-        { ErrorCliente = "El nombre es obligatorio."; return; }
-        if (!Regex.IsMatch(NuevaCedula.Trim(), @"^\d{10,13}$"))
-        { ErrorCliente = "La cédula debe tener entre 10 y 13 dígitos."; return; }
-        if (!string.IsNullOrEmpty(NuevoTelefono) && !Regex.IsMatch(NuevoTelefono.Trim(), @"^\d{10}$"))
-        { ErrorCliente = "El teléfono debe tener 10 dígitos."; return; }
+        var validacion = _clienteService.ValidarNuevoCliente(NuevoNombre, NuevaCedula, NuevoTelefono);
+        ErrorCliente = validacion.Error;
+        if (!validacion.EsValido)
+            return;
 
         IsBusy = true;
         try
         {
-            var nuevo = await _api.CrearClienteAsync(new ClienteRequest
-            {
-                Nombre   = NuevoNombre.Trim(),
-                Cedula   = NuevaCedula.Trim(),
-                Telefono = string.IsNullOrEmpty(NuevoTelefono) ? null : NuevoTelefono.Trim(),
-                Estado   = true
-            });
+            var nuevo = await _clienteService.CrearClienteAsync(NuevoNombre, NuevaCedula, NuevoTelefono);
             _todosClientes.Add(nuevo);
             await SeleccionarClienteAsync(nuevo);
         }
         catch (Exception ex) { ErrorCliente = $"Error al crear cliente: {ex.Message}"; }
+        finally { IsBusy = false; }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Pago (cajero)
+    // ═══════════════════════════════════════════════════════════════
+    [RelayCommand]
+    private async Task CobrarCuentaAsync(CuentaResponse cuenta)
+    {
+        IsBusy = true;
+        Mensaje = string.Empty;
+        try
+        {
+            var pedido = await _cobroService.ObtenerPedidoParaCobroAsync(cuenta);
+            MostrarDetalle = false;
+            await Shell.Current.GoToAsync("pago",
+                new Dictionary<string, object> { { "Pedido", pedido } });
+        }
+        catch (Exception ex) { Mensaje = $"Error: {ex.Message}"; }
         finally { IsBusy = false; }
     }
 }

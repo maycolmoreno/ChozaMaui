@@ -2,17 +2,46 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!-- Paleta institucional La Choza (equivalente a custom-modern.css) -->
-    <Color x:Key="Primary">#F26522</Color>
-    <Color x:Key="Secondary">#1f1f1f</Color>
-    <Color x:Key="Accent">#FF9F68</Color>
-    <Color x:Key="Orange">#F26522</Color>
-    <Color x:Key="OrangeLight">#FFE3D0</Color>
-    <Color x:Key="Success">#7DBE31</Color>
-    <Color x:Key="Danger">#E74C3C</Color>
-    <Color x:Key="White">White</Color>
-    <Color x:Key="Gray100">#F5F7FB</Color>
-    <Color x:Key="TextPrimary">#444444</Color>
-    <Color x:Key="TextSecondary">#888888</Color>
+    <!-- ═══════════════════════════════════════════════════
+         LA CHOZA — DESIGN SYSTEM v2.0
+         Mobile-First POS — Paleta Premium
+    ════════════════════════════════════════════════════ -->
 
+    <!-- PRIMARIOS -->
+    <Color x:Key="Primary">#F97316</Color>
+    <Color x:Key="PrimaryLight">#FFEDD5</Color>
+
+    <!-- Alias legado (compatibilidad) -->
+    <Color x:Key="Orange">#F97316</Color>
+    <Color x:Key="OrangeLight">#FFEDD5</Color>
+
+    <!-- FONDOS -->
+    <Color x:Key="Surface">#F8FAFC</Color>
+    <Color x:Key="SurfaceCard">#FFFFFF</Color>
+    <Color x:Key="SurfaceSunken">#F1F5F9</Color>
+    <Color x:Key="Gray100">#F1F5F9</Color>
+
+    <!-- TEXTO -->
+    <Color x:Key="TextPrimary">#0F172A</Color>
+    <Color x:Key="TextSecondary">#64748B</Color>
+    <Color x:Key="TextMuted">#94A3B8</Color>
+
+    <!-- BORDES -->
+    <Color x:Key="Border">#E2E8F0</Color>
+
+    <!-- ESTADOS (semánticos) -->
+    <Color x:Key="Success">#22C55E</Color>
+    <Color x:Key="SuccessLight">#DCFCE7</Color>
+    <Color x:Key="Warning">#F59E0B</Color>
+    <Color x:Key="WarningLight">#FEF3C7</Color>
+    <Color x:Key="Danger">#EF4444</Color>
+    <Color x:Key="DangerLight">#FEE2E2</Color>
+    <Color x:Key="Info">#3B82F6</Color>
+
+    <!-- ESTADOS MESA -->
+    <Color x:Key="MesaLibre">#22C55E</Color>
+    <Color x:Key="MesaOcupada">#F97316</Color>
+    <Color x:Key="MesaPreparando">#3B82F6</Color>
+    <Color x:Key="MesaLista">#F59E0B</Color>
+    <Color x:Key="MesaPendientePago">#8B5CF6</Color>
 </ResourceDictionary>

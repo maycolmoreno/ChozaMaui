@@ -16,6 +16,12 @@ public partial class MapaPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _vm.CargarAsync();
+        await _vm.IniciarPollingAsync();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _vm.DetenerPolling();
     }
 }
