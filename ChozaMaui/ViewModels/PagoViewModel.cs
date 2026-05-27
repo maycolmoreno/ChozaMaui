@@ -16,6 +16,7 @@ public partial class PagoViewModel : ObservableObject
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private DateTimeOffset? _ultimaCargaUtc;
     private int? _pedidoCargadoId;
+    private string? _rutaVistaPreviaComprobante;
     private static readonly TimeSpan VentanaMinimaRecarga = TimeSpan.FromSeconds(10);
 
     // ── Datos del pedido recibido ─────────────────────────────────
@@ -30,6 +31,7 @@ public partial class PagoViewModel : ObservableObject
 
     // ── Estado de la cuenta ───────────────────────────────────────
     [NotifyPropertyChangedFor(nameof(PuedeSubirComprobante))]
+    [NotifyPropertyChangedFor(nameof(PuedeAccionarSubidaComprobante))]
     [NotifyCanExecuteChangedFor(nameof(SubirComprobanteCommand))]
     [NotifyPropertyChangedFor(nameof(SubtituloPantalla))]
     [NotifyPropertyChangedFor(nameof(HoraAperturaTexto))]
@@ -60,6 +62,7 @@ public partial class PagoViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(Saldo))]
     [NotifyPropertyChangedFor(nameof(PagadoCompleto))]
     [NotifyPropertyChangedFor(nameof(PuedeSubirComprobante))]
+    [NotifyPropertyChangedFor(nameof(PuedeAccionarSubidaComprobante))]
     [NotifyCanExecuteChangedFor(nameof(SubirComprobanteCommand))]
     private PagoResponse? ultimoPago;
     [ObservableProperty] private bool pagoRegistrado;
@@ -81,6 +84,7 @@ public partial class PagoViewModel : ObservableObject
     // ── Comprobante: captura ──────────────────────────────────────
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TieneComprobante))]
+    [NotifyPropertyChangedFor(nameof(PuedeAccionarSubidaComprobante))]
     [NotifyCanExecuteChangedFor(nameof(SubirComprobanteCommand))]
     private string? rutaArchivoComprobante;
     [ObservableProperty] private ImageSource? imagenComprobante;
@@ -88,12 +92,14 @@ public partial class PagoViewModel : ObservableObject
     // ── Comprobante: estados de subida ────────────────────────────
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PuedeSubirComprobante))]
+    [NotifyPropertyChangedFor(nameof(PuedeAccionarSubidaComprobante))]
     [NotifyPropertyChangedFor(nameof(PuedeCobrar))]
     [NotifyCanExecuteChangedFor(nameof(SubirComprobanteCommand))]
     private bool subiendoComprobante;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PuedeSubirComprobante))]
+    [NotifyPropertyChangedFor(nameof(PuedeAccionarSubidaComprobante))]
     [NotifyPropertyChangedFor(nameof(PuedeCobrar))]
     [NotifyCanExecuteChangedFor(nameof(SubirComprobanteCommand))]
     private bool comprobanteSubido;
@@ -106,6 +112,9 @@ public partial class PagoViewModel : ObservableObject
 
     // ── Propiedades derivadas ─────────────────────────────────────
     public bool TieneComprobante       => !string.IsNullOrEmpty(RutaArchivoComprobante);
+        public bool PuedeAccionarSubidaComprobante => TieneComprobante
+                                                      && !SubiendoComprobante
+                                                      && !ComprobanteSubido;
     public bool PuedeSubirComprobante  => TieneComprobante
                                           && Cuenta is not null
                                           && UltimoPago is not null
@@ -176,6 +185,7 @@ public partial class PagoViewModel : ObservableObject
 
     private void ReiniciarEstadoPago(PedidoResponse? pedidoActual)
     {
+        LimpiarComprobanteTemporalActual();
         Cuenta = null;
         TieneCuenta = false;
         UltimoPago = null;
@@ -454,17 +464,29 @@ public partial class PagoViewModel : ObservableObject
     /// Subida manual del comprobante (permite reintentar si falla).
     /// Requiere que ya exista un <see cref="UltimoPago"/> registrado.
     /// </summary>
-    [RelayCommand(CanExecute = nameof(PuedeSubirComprobante))]
+        [RelayCommand]
     public async Task SubirComprobanteAsync()
     {
+            if (!PuedeAccionarSubidaComprobante)
+                return;
+
         if (UltimoPago is null || Cuenta is null)
         {
-            ErrorComprobante = "Primero registra el pago antes de subir el comprobante.";
+                ErrorComprobante = "Primero registra el pago con el boton verde y luego sube el comprobante.";
             Mensaje = ErrorComprobante;
             return;
         }
+
         var usuario = _session.Username ?? "desconocido";
-        await SubirComprobanteInternoAsync(Cuenta.Idcuenta, UltimoPago.Idpago, usuario);
+            var subidaExitosa = await SubirComprobanteInternoAsync(Cuenta.Idcuenta, UltimoPago.Idpago, usuario);
+            if (subidaExitosa)
+            {
+                Mensaje = "Comprobante subido correctamente.";
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(ErrorComprobante))
+                Mensaje = ErrorComprobante;
     }
 
     /// <summary>
@@ -510,12 +532,15 @@ public partial class PagoViewModel : ObservableObject
     private void RefrescarEstadoComprobante()
     {
         OnPropertyChanged(nameof(TieneComprobante));
+           OnPropertyChanged(nameof(PuedeAccionarSubidaComprobante));
         OnPropertyChanged(nameof(PuedeSubirComprobante));
     }
 
     private void AplicarArchivoComprobante(PagoComprobanteArchivo archivo)
     {
+        LimpiarComprobanteTemporalActual();
         RutaArchivoComprobante = archivo.RutaArchivo;
+        _rutaVistaPreviaComprobante = archivo.RutaVistaPrevia;
         ImagenComprobante = archivo.VistaPrevia;
     }
 
@@ -536,6 +561,12 @@ public partial class PagoViewModel : ObservableObject
         ErrorComprobante = string.Empty;
         IntentosSubida = 0;
         UltimoComprobante = null;
+    }
+
+    private void LimpiarComprobanteTemporalActual()
+    {
+        _comprobantes.LimpiarArchivoTemporal(RutaArchivoComprobante, _rutaVistaPreviaComprobante);
+        _rutaVistaPreviaComprobante = null;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

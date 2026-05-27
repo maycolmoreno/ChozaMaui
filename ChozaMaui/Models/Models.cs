@@ -602,3 +602,9 @@ public class ComprobanteResponse
     public string   UsuarioRegistro { get; set; } = string.Empty;
     public DateTime FechaSubida     { get; set; }
 }
+
+public class DropboxEstadoResponse
+{
+    public bool   Disponible { get; set; }
+    public string Mensaje    { get; set; } = string.Empty;
+}

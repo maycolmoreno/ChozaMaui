@@ -27,22 +27,22 @@
     <TabBar>
 
         <!-- 1: Inicio / Mesas -->
-        <Tab Title="Mesas" Icon="tab_mesas.png">
+        <Tab Title="Mesas" Icon="tab_mesas.svg">
             <ShellContent ContentTemplate="{DataTemplate views:MapaPage}" Route="mapa" />
         </Tab>
 
         <!-- 2: Pedidos -->
-        <Tab Title="Pedidos" Icon="tab_pedidos.png">
+        <Tab Title="Pedidos" Icon="tab_pedidos.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PedidosPage}" Route="pedidos" />
         </Tab>
 
         <!-- 3: Notificaciones -->
-        <Tab Title="Avisos" Icon="tab_notif.png">
+        <Tab Title="Avisos" Icon="tab_notif.svg">
             <ShellContent ContentTemplate="{DataTemplate views:NotificacionesPage}" Route="notificaciones" />
         </Tab>
 
         <!-- 4: Perfil -->
-        <Tab Title="Perfil" Icon="tab_perfil.png">
+        <Tab Title="Perfil" Icon="tab_perfil.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}" Route="perfil" />
         </Tab>
 

@@ -458,7 +458,7 @@
                                 <Button Grid.Column="1"
                                         Text="{Binding HayErrorComprobante, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Reintentar subida|Subir ahora'}"
                                         Command="{Binding SubirComprobanteCommand}"
-                                        IsEnabled="{Binding PuedeSubirComprobante}"
+                                           IsEnabled="{Binding PuedeAccionarSubidaComprobante}"
                                         BackgroundColor="#8B5CF6"
                                         TextColor="White"
                                         CornerRadius="16"

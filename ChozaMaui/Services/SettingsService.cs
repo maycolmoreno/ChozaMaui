@@ -10,7 +10,7 @@ public class SettingsService
     private const string PortKey = "server_port";
 
     // Valores por defecto: emulador Android → 10.0.2.2 (localhost del PC)
-    private const string DefaultHost = "192.168.0.1";
+    private const string DefaultHost = "192.168.0.168";
     private const string DefaultPort = "8081";
 
     public string Host

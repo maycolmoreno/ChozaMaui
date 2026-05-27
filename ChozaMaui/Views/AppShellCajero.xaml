@@ -19,22 +19,22 @@
     <TabBar>
 
         <!-- 1: Cuentas / Inicio cajero -->
-        <Tab Title="Cuentas" Icon="tab_cuentas.png">
+        <Tab Title="Cuentas" Icon="tab_cuentas.svg">
             <ShellContent ContentTemplate="{DataTemplate views:HistorialCuentasPage}" Route="cuentas" />
         </Tab>
 
         <!-- 2: Pedidos -->
-        <Tab Title="Pedidos" Icon="tab_pedidos.png">
+        <Tab Title="Pedidos" Icon="tab_pedidos.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PedidosPage}" Route="pedidos" />
         </Tab>
 
         <!-- 3: Notificaciones -->
-        <Tab Title="Avisos" Icon="tab_notif.png">
+        <Tab Title="Avisos" Icon="tab_notif.svg">
             <ShellContent ContentTemplate="{DataTemplate views:NotificacionesPage}" Route="notificaciones" />
         </Tab>
 
         <!-- 4: Perfil -->
-        <Tab Title="Perfil" Icon="tab_perfil.png">
+        <Tab Title="Perfil" Icon="tab_perfil.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}" Route="perfil" />
         </Tab>
 

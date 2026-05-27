@@ -75,6 +75,27 @@ public class PagoApiService
         return await r.Content.ReadFromJsonAsync<ComprobanteResponse>(_camelCase);
     }
 
+    public async Task<DropboxEstadoResponse> ObtenerEstadoDropboxAsync(int idCuenta,
+        CancellationToken cancellationToken = default)
+    {
+        var r = await _http.GetAsync($"/api/cuentas/{idCuenta}/pagos/dropbox/estado", cancellationToken);
+
+        if (r.IsSuccessStatusCode)
+        {
+            return (await r.Content.ReadFromJsonAsync<DropboxEstadoResponse>(_camelCase, cancellationToken))
+                   ?? new DropboxEstadoResponse { Disponible = true, Mensaje = "Dropbox disponible." };
+        }
+
+        var mensaje = await r.Content.ReadAsStringAsync(cancellationToken);
+        return new DropboxEstadoResponse
+        {
+            Disponible = false,
+            Mensaje = string.IsNullOrWhiteSpace(mensaje)
+                ? "Dropbox no disponible en este momento."
+                : mensaje
+        };
+    }
+
     /// <summary>
     /// Elimina el comprobante del pago (solo ADMIN). Lo borra de Dropbox y de la BD.
     /// </summary>
