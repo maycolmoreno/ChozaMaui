@@ -11,4 +11,10 @@ public interface INavigationService
 
     /// <summary>Vuelve a la pantalla de login (cierre de sesión).</summary>
     void IrAlLogin();
+
+    /// <summary>Navega a una ruta Shell (//tab, ruta relativa o ruta con query string).</summary>
+    Task GoToAsync(string route);
+
+    /// <summary>Navega a una ruta Shell pasando parámetros de query como diccionario.</summary>
+    Task GoToAsync(string route, IDictionary<string, object> parameters);
 }

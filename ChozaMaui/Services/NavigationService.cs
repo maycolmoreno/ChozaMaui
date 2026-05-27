@@ -41,4 +41,10 @@ public class NavigationService : INavigationService
         w.Page?.Unfocus();
         w.Page = new NavigationPage(_services.GetRequiredService<LoginPage>());
     }
+
+    public Task GoToAsync(string route)
+        => Shell.Current.GoToAsync(route);
+
+    public Task GoToAsync(string route, IDictionary<string, object> parameters)
+        => Shell.Current.GoToAsync(route, parameters);
 }

@@ -12,6 +12,7 @@ public partial class PagoViewModel : ObservableObject
     private readonly PagoComprobanteService _comprobantes;
     private readonly PagoValidationService _validation;
     private readonly PagoWorkflowService _workflow;
+    private readonly INavigationService _navigation;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private DateTimeOffset? _ultimaCargaUtc;
     private int? _pedidoCargadoId;
@@ -55,7 +56,12 @@ public partial class PagoViewModel : ObservableObject
     private double montoRecibido;
 
     // ── Resultado pago ────────────────────────────────────────────
-    [ObservableProperty] private PagoResponse? ultimoPago;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Saldo))]
+    [NotifyPropertyChangedFor(nameof(PagadoCompleto))]
+    [NotifyPropertyChangedFor(nameof(PuedeSubirComprobante))]
+    [NotifyCanExecuteChangedFor(nameof(SubirComprobanteCommand))]
+    private PagoResponse? ultimoPago;
     [ObservableProperty] private bool pagoRegistrado;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PuedeCobrar))]
@@ -187,19 +193,10 @@ public partial class PagoViewModel : ObservableObject
         SaldoPendienteActual = pedidoActual?.Total ?? 0;
     }
 
-    partial void OnCuentaChanged(CuentaResponse? value)
-    {
-    }
-
     partial void OnSaldoPendienteActualChanged(double value)
     {
-        RefrescarEstadoCobro();
-
         if (!PagoRegistrado && value > 0)
-        {
             MontoStr = value.ToString("F2");
-            
-        }
     }
 
     partial void OnMetodoSeleccionadoChanged(string value)
@@ -210,13 +207,6 @@ public partial class PagoViewModel : ObservableObject
         OnPropertyChanged(nameof(TieneMontoRecibido));
         RefrescarEstadoCobro();
         OnPropertyChanged(nameof(TextoBotonCobro));
-    }
-
-    partial void OnUltimoPagoChanged(PagoResponse? value)
-    {
-        RefrescarEstadoCobro();
-        OnPropertyChanged(nameof(PagadoCompleto));
-        RefrescarEstadoComprobante();
     }
 
     partial void OnPagoRegistradoChanged(bool value)
@@ -232,12 +222,14 @@ public partial class PagoViewModel : ObservableObject
     }
 
     public PagoViewModel(SessionService session, PagoWorkflowService workflow,
-                         PagoComprobanteService comprobantes, PagoValidationService validation)
+                         PagoComprobanteService comprobantes, PagoValidationService validation,
+                         INavigationService navigation)
     {
         _session = session;
         _workflow = workflow;
         _comprobantes = comprobantes;
         _validation = validation;
+        _navigation = navigation;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -501,7 +493,7 @@ public partial class PagoViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task Volver() => await Shell.Current.GoToAsync("..");
+    public Task Volver() => _navigation.GoToAsync("..");
 
     private void RefrescarEstadoCobro()
     {

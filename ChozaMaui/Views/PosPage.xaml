@@ -62,10 +62,18 @@
             </Grid>
 
             <!-- ── SCROLL DE CONTENIDO ── -->
-            <ScrollView Grid.Row="1"
-                        VerticalScrollBarVisibility="Never">
-                <VerticalStackLayout Padding="16,14,16,32"
-                                     Spacing="16">
+            <CollectionView Grid.Row="1"
+                            ItemsSource="{Binding ProductosFiltrados}"
+                            SelectionMode="None"
+                            Margin="16,0">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical"
+                                     Span="2"
+                                     HorizontalItemSpacing="10"
+                                     VerticalItemSpacing="10" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.Header>
+                    <VerticalStackLayout Padding="0,14,0,10" Spacing="16">
 
                     <!-- Alerta pedido listo (banner top) -->
                     <Border BackgroundColor="{StaticResource WarningLight}"
@@ -189,18 +197,10 @@
                                            HeightRequest="22" WidthRequest="22" />
                     </Grid>
 
-                    <!-- Grid 2 columnas de productos populares -->
-                    <CollectionView ItemsSource="{Binding ProductosFiltrados}"
-                                    SelectionMode="None"
-                                    HeightRequest="290">
-                        <CollectionView.ItemsLayout>
-                            <GridItemsLayout Orientation="Vertical"
-                                             Span="2"
-                                             HorizontalItemSpacing="10"
-                                             VerticalItemSpacing="10" />
-                        </CollectionView.ItemsLayout>
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="models:ProductoResponse">
+                    </VerticalStackLayout>
+                </CollectionView.Header>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:ProductoResponse">
                                 <Border BackgroundColor="White"
                                         Stroke="{StaticResource Border}"
                                         StrokeShape="RoundRectangle 16"
@@ -271,9 +271,10 @@
 
                                     </Grid>
                                 </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.Footer>
+                    <VerticalStackLayout Padding="0,10,0,32" Spacing="16">
 
                     <!-- ── PEDIDO ACTUAL ── -->
                     <Border BackgroundColor="White"
@@ -523,8 +524,9 @@
                         </VerticalStackLayout>
                     </Border>
 
-                </VerticalStackLayout>
-            </ScrollView>
+                    </VerticalStackLayout>
+                </CollectionView.Footer>
+            </CollectionView>
 
         </Grid>
 

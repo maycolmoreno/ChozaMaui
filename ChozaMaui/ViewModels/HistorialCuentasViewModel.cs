@@ -13,6 +13,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
     private readonly HistorialCuentasLoadService _loadService;
     private readonly HistorialCuentasPresentationService _presentation;
     private readonly SessionService _session;
+    private readonly INavigationService _navigation;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private DateTimeOffset? _ultimaCargaUtc;
     private static readonly TimeSpan VentanaMinimaRecarga = TimeSpan.FromSeconds(10);
@@ -22,18 +23,16 @@ public partial class HistorialCuentasViewModel : ObservableObject
     private List<CuentaResponse> _todas = [];
 
     // ── Filtros ───────────────────────────────────────────────────
-    [ObservableProperty] private string filtroEstado = "ABIERTA";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TabPendientesActivo))]
+    [NotifyPropertyChangedFor(nameof(TabCobradasActivo))]
+    [NotifyPropertyChangedFor(nameof(TabTodasActivo))]
+    private string filtroEstado = "ABIERTA";
     [ObservableProperty] private DateTime fechaDesde = DateTime.Today.AddDays(-30);
     [ObservableProperty] private DateTime fechaHasta = DateTime.Today;
     [ObservableProperty] private string textoBusqueda = string.Empty;
 
-    partial void OnFiltroEstadoChanged(string value)
-    {
-        AplicarFiltro();
-        OnPropertyChanged(nameof(TabPendientesActivo));
-        OnPropertyChanged(nameof(TabCobradasActivo));
-        OnPropertyChanged(nameof(TabTodasActivo));
-    }
+    partial void OnFiltroEstadoChanged(string value) => AplicarFiltro();
     partial void OnTextoBusquedaChanged(string value) => AplicarFiltro();
 
     // ── Estadísticas rápidas ──────────────────────────────────────
@@ -91,13 +90,14 @@ public partial class HistorialCuentasViewModel : ObservableObject
     public bool TabCobradasActivo => FiltroEstado == "COBRADAS";
     public bool TabTodasActivo => FiltroEstado == "TODAS";
 
-    public HistorialCuentasViewModel(SessionService session, HistorialCuentasPresentationService presentation, HistorialCuentasClienteService clienteService, HistorialCuentasCobroService cobroService, HistorialCuentasLoadService loadService)
+    public HistorialCuentasViewModel(SessionService session, HistorialCuentasPresentationService presentation, HistorialCuentasClienteService clienteService, HistorialCuentasCobroService cobroService, HistorialCuentasLoadService loadService, INavigationService navigation)
     {
         _session = session;
         _presentation = presentation;
         _clienteService = clienteService;
         _cobroService = cobroService;
         _loadService = loadService;
+        _navigation = navigation;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -131,7 +131,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
             if (resultado.RequiereAperturaCaja)
             {
                 Mensaje = resultado.Mensaje;
-                await Shell.Current.GoToAsync("turnos");
+                await _navigation.GoToAsync("turnos");
                 return;
             }
 
@@ -313,7 +313,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
         {
             var pedido = await _cobroService.ObtenerPedidoParaCobroAsync(cuenta);
             MostrarDetalle = false;
-            await Shell.Current.GoToAsync("pago",
+            await _navigation.GoToAsync("pago",
                 new Dictionary<string, object> { { "Pedido", pedido } });
         }
         catch (Exception ex) { Mensaje = $"Error: {ex.Message}"; }

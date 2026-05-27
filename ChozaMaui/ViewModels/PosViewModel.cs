@@ -20,6 +20,7 @@ public partial class PosViewModel : ObservableObject
     private readonly PosOrderStateService _orderStateService;
     private readonly PosOrderWorkflowService _posWorkflow;
     private readonly SessionService _session;
+    private readonly INavigationService _navigation;
     private PedidoResponse? _ultimoPedidoParaRecibo;
     private bool _cargandoDatos;
     private bool _actualizandoCarrito;
@@ -142,7 +143,8 @@ public partial class PosViewModel : ObservableObject
         PosMediaService mediaService,
         PosOrderStateService orderStateService,
         SessionService session,
-        PosOrderWorkflowService posWorkflow)
+        PosOrderWorkflowService posWorkflow,
+        INavigationService navigation)
     {
         _catalogService = catalogService;
         _clientService = clientService;
@@ -152,6 +154,7 @@ public partial class PosViewModel : ObservableObject
         _orderStateService = orderStateService;
         _session = session;
         _posWorkflow = posWorkflow;
+        _navigation = navigation;
 
         Carrito.CollectionChanged += OnCarritoCollectionChanged;
     }
@@ -447,31 +450,31 @@ public partial class PosViewModel : ObservableObject
 
     // Volver al mapa de mesas
     [RelayCommand]
-    public async Task VolverAsync()
-        => await Shell.Current.GoToAsync("//mapa");
+    public Task VolverAsync()
+        => _navigation.GoToAsync("//mapa");
 
     [RelayCommand]
-    public async Task IrMesasAsync()
-        => await Shell.Current.GoToAsync("//mapa");
+    public Task IrMesasAsync()
+        => _navigation.GoToAsync("//mapa");
 
     [RelayCommand]
-    public async Task IrPedidosAsync()
-        => await Shell.Current.GoToAsync("//pedidos");
+    public Task IrPedidosAsync()
+        => _navigation.GoToAsync("//pedidos");
 
     [RelayCommand]
-    public async Task IrCocinaAsync()
-        => await Shell.Current.GoToAsync("//pedidos");
+    public Task IrCocinaAsync()
+        => _navigation.GoToAsync("//pedidos");
 
     [RelayCommand]
-    public async Task IrPerfilAsync()
-        => await Shell.Current.GoToAsync("//perfil");
+    public Task IrPerfilAsync()
+        => _navigation.GoToAsync("//perfil");
 
     // Ver detalle del pedido en curso
     [RelayCommand]
     public async Task VerDetallePedidoAsync()
     {
         if (PedidoEnCurso is null) return;
-        await Shell.Current.GoToAsync($"pedidodetalle?id={PedidoEnCurso.Idpedido}");
+        await _navigation.GoToAsync($"pedidodetalle?id={PedidoEnCurso.Idpedido}");
     }
 
     // Cerrar mesa tras entrega: oculta éxito, limpia y vuelve al mapa
@@ -482,7 +485,7 @@ public partial class PosViewModel : ObservableObject
         LimpiarCarrito();
         PedidoEnCurso   = null;
         MesaSeleccionada = null;
-        await Shell.Current.GoToAsync("//mapa");
+        await _navigation.GoToAsync("//mapa");
     }
 
     [RelayCommand]
