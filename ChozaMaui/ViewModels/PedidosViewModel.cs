@@ -178,11 +178,14 @@ public partial class PedidosViewModel : ObservableObject
 
     public async Task IniciarPollingAsync()
     {
+        await CargarAsync();
+
         await _refreshCoordinator.StartAsync(
             CargarAsync,
             ObtenerTopicsActivos(),
             OnNotificacionRecibida,
-            PollingIntervalSeconds);
+            PollingIntervalSeconds,
+            minInitialRefreshIntervalSeconds: 0);
     }
 
     private void OnNotificacionRecibida(NotificacionPedidoWs notif)

@@ -71,7 +71,7 @@ public sealed class PosOrderWorkflowService
         await InvalidarPedidoCacheAsync(pedido);
         await InvalidarCachesTrasCerrarPedidoAsync(actualizado.Mesa, actualizado.Estado);
         await GuardarPedidoEnCacheAsync(actualizado);
-        await LiberarMesaSiNoTienePedidosActivosAsync(actualizado.Mesa, actualizado.Estado);
+        await InvalidarMesasSiPedidoFinalizoAsync(actualizado.Mesa, actualizado.Estado);
         return actualizado;
     }
 
@@ -82,7 +82,7 @@ public sealed class PosOrderWorkflowService
         await InvalidarPedidoCacheAsync(pedidoAnterior);
         await InvalidarCachesTrasCerrarPedidoAsync(actualizado.Mesa, actualizado.Estado);
         await GuardarPedidoEnCacheAsync(actualizado);
-        await LiberarMesaSiNoTienePedidosActivosAsync(actualizado.Mesa, actualizado.Estado);
+        await InvalidarMesasSiPedidoFinalizoAsync(actualizado.Mesa, actualizado.Estado);
         return actualizado;
     }
 
@@ -117,17 +117,12 @@ public sealed class PosOrderWorkflowService
         return PosOrderSubmissionResult.Queued(totalPendientes);
     }
 
-    private async Task LiberarMesaSiNoTienePedidosActivosAsync(MesaResponse? mesa, string estadoPedido)
+    private async Task InvalidarMesasSiPedidoFinalizoAsync(MesaResponse? mesa, string estadoPedido)
     {
         if (mesa is null || estadoPedido is not ("CANCELADO" or "COMPLETADO" or "ENTREGADO"))
             return;
 
-        var pedidos = await _pedidosApi.GetPedidosAsync();
-        var tieneActivos = pedidos.Any(p => p.EsActivo && p.Mesa?.Idmesa == mesa.Idmesa);
-        if (tieneActivos)
-            return;
-
-        await _mesas.ActualizarEstadoMesaAsync(mesa, true);
+        await _mesas.InvalidarAsync();
     }
 
     private async Task InvalidarCachesTrasCrearPedidoAsync(int mesaId)

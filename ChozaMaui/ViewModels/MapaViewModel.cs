@@ -44,6 +44,7 @@ public partial class MapaViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(SheetEstadoColor))]
     [NotifyPropertyChangedFor(nameof(SheetEsPendientePago))]
     [NotifyPropertyChangedFor(nameof(PuedeCobrar))]
+    [NotifyPropertyChangedFor(nameof(SheetPuedeAbrirPos))]
     [NotifyPropertyChangedFor(nameof(SheetTienePedido))]
     private MesaVisual? mesaSheet;
 
@@ -54,6 +55,7 @@ public partial class MapaViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(SheetPedidoObservaciones))]
     [NotifyPropertyChangedFor(nameof(SheetPedidoTotalTexto))]
     [NotifyPropertyChangedFor(nameof(SheetPuedeEnviarACocina))]
+    [NotifyPropertyChangedFor(nameof(SheetPuedeAbrirPos))]
     private PedidoResponse? pedidoSheet;
 
     [ObservableProperty] private bool mostrarSheet;
@@ -65,6 +67,9 @@ public partial class MapaViewModel : ObservableObject
     public string SheetEstadoColor   => MesaSheet?.EstadoColor ?? "#6b7280";
     public bool   SheetEsPendientePago => MesaSheet?.EstadoVisual == "Pendiente de pago";
     public bool   PuedeCobrar          => SheetEsPendientePago && _capabilities.PuedeCobrarCuenta(_session.Rol);
+    public bool   SheetPuedeAbrirPos   => MesaSheet is not null
+                                          && !SheetEsPendientePago
+                                          && _capabilities.PuedeCrearPedido(_session.Rol);
     public bool   SheetTienePedido     => PedidoSheet is not null;
     public string SheetPedidoTitulo    => PedidoSheet is null ? string.Empty : $"Pedido #{PedidoSheet.Idpedido}";
     public string SheetPedidoResumen   => _presentation.BuildSheetPedidoResumen(PedidoSheet);

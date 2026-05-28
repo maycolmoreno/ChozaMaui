@@ -8,9 +8,11 @@ public sealed class PedidoPresentationService
     public PedidosPresentationSnapshot BuildList(IReadOnlyList<PedidoResponse> pedidos, string filtroEstado, string? busqueda)
     {
         var hoy = DateTime.Today;
-        var todosHoy = pedidos.Where(p => p.Fecha.Date == hoy).ToList();
+        var visibles = pedidos
+            .Where(p => p.EsActivo || p.Fecha.Date == hoy)
+            .ToList();
 
-        IEnumerable<PedidoResponse> resultado = todosHoy;
+        IEnumerable<PedidoResponse> resultado = visibles;
 
         resultado = filtroEstado switch
         {
@@ -35,11 +37,11 @@ public sealed class PedidoPresentationService
 
         var lista = resultado.OrderByDescending(p => p.Fecha).ToList();
 
-        var totalEnPreparacion = todosHoy.Count(p =>
+        var totalEnPreparacion = visibles.Count(p =>
             p.Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO" or "PENDIENTE");
-        var totalListos = todosHoy.Count(p => p.Estado is "LISTO_PARA_ENTREGA" or "LISTO");
-        var totalEntregados = todosHoy.Count(p => p.Estado is "COMPLETADO" or "ENTREGADO");
-        var totalCancelados = todosHoy.Count(p => p.Estado == "CANCELADO");
+        var totalListos = visibles.Count(p => p.Estado is "LISTO_PARA_ENTREGA" or "LISTO");
+        var totalEntregados = visibles.Count(p => p.Fecha.Date == hoy && p.Estado is ("COMPLETADO" or "ENTREGADO"));
+        var totalCancelados = visibles.Count(p => p.Fecha.Date == hoy && p.Estado == "CANCELADO");
 
         return new PedidosPresentationSnapshot(
             lista,
