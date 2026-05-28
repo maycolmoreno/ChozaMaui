@@ -12,6 +12,7 @@ namespace ChozaMaui.ViewModels;
 [QueryProperty(nameof(PedidoId), "PedidoId")]
 public partial class PosViewModel : ObservableObject
 {
+    private readonly RoleCapabilityService _capabilities;
     private readonly PosCatalogService _catalogService;
     private readonly PosClientService _clientService;
     private readonly PosDataService _dataService;
@@ -105,14 +106,11 @@ public partial class PosViewModel : ObservableObject
         PedidoEnCurso?.EstadoBadgeColor ?? (Carrito.Count > 0 ? "#f59e0b" : "#6b7280");
 
     public bool TienePedidoEnCurso => PedidoEnCurso is not null;
-    public bool PuedeEnviarACocina =>
-        _session.Rol?.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) == true ||
-        _session.Rol?.Equals("CAMARERO", StringComparison.OrdinalIgnoreCase) == true;
+    public bool PuedeEnviarACocina => _capabilities.PuedeConfirmarPedido(_session.Rol);
     public bool PuedeMarcarListo =>
         (PedidoEnCurso?.Estado is "EN_COCINA" or "EN_BAR") &&
-        (_session.Rol?.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) == true ||
-         _session.Rol?.Equals("COCINA", StringComparison.OrdinalIgnoreCase) == true);
-    public bool PuedeEntregarPedido => PedidoEnCurso?.PuedeEntregarse == true;
+        _capabilities.PuedeMarcarPedidoListo(_session.Rol);
+    public bool PuedeEntregarPedido => PedidoEnCurso?.PuedeEntregarse == true && _capabilities.PuedeEntregarPedido(_session.Rol);
     public bool MostrarPedidoListo => PuedeEntregarPedido;
     public string PedidoEnCursoTotalTexto => PedidoEnCurso is null ? "$0.00" : $"${PedidoEnCurso.Total:0.00}";
     public string TotalPedidoActualTexto => PedidoEnCurso is null ? TotalTexto : PedidoEnCursoTotalTexto;
@@ -136,6 +134,7 @@ public partial class PosViewModel : ObservableObject
     [ObservableProperty] private string pedidoEntregadoTotalTexto = "$0.00";
 
     public PosViewModel(
+        RoleCapabilityService capabilities,
         PosCatalogService catalogService,
         PosClientService clientService,
         PosDataService dataService,
@@ -146,6 +145,7 @@ public partial class PosViewModel : ObservableObject
         PosOrderWorkflowService posWorkflow,
         INavigationService navigation)
     {
+        _capabilities = capabilities;
         _catalogService = catalogService;
         _clientService = clientService;
         _dataService = dataService;
@@ -513,9 +513,14 @@ public partial class PosViewModel : ObservableObject
     [RelayCommand]
     public async Task EnviarPedidoAsync()
     {
-        var esCajero = _session.Rol?.Equals("CAJERO", StringComparison.OrdinalIgnoreCase) == true;
-        var estadoDestino = esCajero ? "EN_COCINA" : "PENDIENTE";
-        var mensajeExito = esCajero ? "Pedido enviado a cocina" : "Pedido";
+        if (!_capabilities.PuedeCrearPedido(_session.Rol))
+        {
+            await MostrarMensajeAsync("Tu perfil no tiene autorizacion para crear pedidos.", error: true);
+            return;
+        }
+
+        var estadoDestino = "PENDIENTE";
+        var mensajeExito = "Pedido";
 
         await CrearPedidoAsync(estadoDestino, mensajeExito);
     }
@@ -525,7 +530,7 @@ public partial class PosViewModel : ObservableObject
     {
         if (!PuedeEnviarACocina)
         {
-            await MostrarMensajeAsync("Solo admin o camarero pueden enviar pedidos a cocina.", error: true);
+            await MostrarMensajeAsync("Tu perfil no tiene autorizacion para enviar pedidos a cocina.", error: true);
             return;
         }
 
@@ -543,7 +548,7 @@ public partial class PosViewModel : ObservableObject
 
         if (!PuedeMarcarListo)
         {
-            await MostrarMensajeAsync("Solo cocina o admin pueden despachar pedidos de cocina.", error: true);
+            await MostrarMensajeAsync("Tu perfil no tiene autorizacion para marcar pedidos como listos.", error: true);
             return;
         }
 
@@ -561,7 +566,7 @@ public partial class PosViewModel : ObservableObject
 
         if (!PuedeEntregarPedido)
         {
-            await MostrarMensajeAsync("Solo se puede entregar un pedido listo.", error: true);
+            await MostrarMensajeAsync("Tu perfil no tiene autorizacion para entregar este pedido.", error: true);
             return;
         }
 
@@ -618,7 +623,10 @@ public partial class PosViewModel : ObservableObject
             PedidoEnCurso = pedido;
             ClienteSeleccionado = null;
             await CargarDatosAsync();
-            await MostrarMensajeAsync($"{mensajeExito} #{pedido.Idpedido}.", error: false);
+            var mensaje = string.IsNullOrWhiteSpace(resultado.VinculoCuentaAdvertencia)
+                ? $"{mensajeExito} #{pedido.Idpedido}."
+                : $"{mensajeExito} #{pedido.Idpedido}. {resultado.VinculoCuentaAdvertencia}";
+            await MostrarMensajeAsync(mensaje, error: false);
         }
         catch (Exception ex)
         {

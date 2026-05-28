@@ -8,6 +8,7 @@ namespace ChozaMaui.ViewModels;
 
 public partial class MapaViewModel : ObservableObject
 {
+    private readonly RoleCapabilityService _capabilities;
     private readonly PedidoApiService _pedidosApi;
     private readonly MesaStateService _mesas;
     private readonly MapaPresentationService _presentation;
@@ -63,7 +64,7 @@ public partial class MapaViewModel : ObservableObject
     public string SheetEstadoTexto   => MesaSheet?.EstadoVisual ?? "";
     public string SheetEstadoColor   => MesaSheet?.EstadoColor ?? "#6b7280";
     public bool   SheetEsPendientePago => MesaSheet?.EstadoVisual == "Pendiente de pago";
-    public bool   PuedeCobrar          => SheetEsPendientePago && _session.Rol != "CAMARERO";
+    public bool   PuedeCobrar          => SheetEsPendientePago && _capabilities.PuedeCobrarCuenta(_session.Rol);
     public bool   SheetTienePedido     => PedidoSheet is not null;
     public string SheetPedidoTitulo    => PedidoSheet is null ? string.Empty : $"Pedido #{PedidoSheet.Idpedido}";
     public string SheetPedidoResumen   => _presentation.BuildSheetPedidoResumen(PedidoSheet);
@@ -73,10 +74,11 @@ public partial class MapaViewModel : ObservableObject
     public string SheetPedidoTotalTexto => PedidoSheet is null ? string.Empty : $"${PedidoSheet.Total:0.00}";
     public bool SheetPuedeEnviarACocina =>
         PedidoSheet?.Estado == "PENDIENTE" &&
-        !string.Equals(_session.Rol, "COCINA", StringComparison.OrdinalIgnoreCase);
+        _capabilities.PuedeConfirmarPedido(_session.Rol);
 
-    public MapaViewModel(PedidoApiService pedidosApi, MesaStateService mesas, MapaPresentationService presentation, NotificationService notifications, SessionService session, LiveRefreshCoordinator refreshCoordinator)
+    public MapaViewModel(RoleCapabilityService capabilities, PedidoApiService pedidosApi, MesaStateService mesas, MapaPresentationService presentation, NotificationService notifications, SessionService session, LiveRefreshCoordinator refreshCoordinator)
     {
+        _capabilities = capabilities;
         _pedidosApi = pedidosApi;
         _mesas = mesas;
         _presentation = presentation;
@@ -250,9 +252,9 @@ public partial class MapaViewModel : ObservableObject
     private IEnumerable<string> ObtenerTopicsActivos()
     {
         var rol = _session.Rol ?? string.Empty;
-        if (rol is "CAMARERO" or "ADMIN" or "CAJERO")
+        if (_capabilities.PuedeConfirmarPedido(rol))
             yield return TopicCamarero;
-        if (rol is "COCINA" or "ADMIN")
+        if (_capabilities.PuedeMarcarPedidoListo(rol))
             yield return TopicCocina;
     }
 

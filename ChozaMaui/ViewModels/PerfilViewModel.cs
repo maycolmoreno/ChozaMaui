@@ -108,7 +108,7 @@ public partial class PerfilViewModel : ObservableObject
     {
         var ruta = (_session.Rol ?? string.Empty).ToUpperInvariant() switch
         {
-            "CAJERO" => "//cuentas",
+            "CAJERO" => "//turnos",
             "COCINA" => "//pedidos",
             _ => "//mapa"
         };

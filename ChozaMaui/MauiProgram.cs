@@ -24,6 +24,7 @@ public static class MauiProgram
         // ── Servicios de infraestructura ──────────────────────────────
         builder.Services.AddSingleton<SettingsService>();
         builder.Services.AddSingleton<SessionService>();
+        builder.Services.AddSingleton<RoleCapabilityService>();
         builder.Services.AddTransient<AuthHandler>();
         builder.Services.AddSingleton<INavigationService, NavigationService>();
         builder.Services.AddSingleton<ReceiptPdfService>();

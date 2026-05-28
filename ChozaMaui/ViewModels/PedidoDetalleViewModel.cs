@@ -9,6 +9,7 @@ namespace ChozaMaui.ViewModels;
 [QueryProperty(nameof(PedidoId), "id")]
 public partial class PedidoDetalleViewModel : ObservableObject
 {
+    private readonly RoleCapabilityService _capabilities;
     private readonly PedidoPresentationService _presentation;
     private readonly PosOrderWorkflowService _pedidoWorkflow;
     private readonly SessionService _session;
@@ -47,10 +48,11 @@ public partial class PedidoDetalleViewModel : ObservableObject
     public ObservableCollection<PedidoTimelineItem> Historial { get; } = [];
 
     public bool PuedeIrAPagar =>
-        !string.Equals(_session.Rol, "CAMARERO", StringComparison.OrdinalIgnoreCase);
+        _capabilities.PuedeCobrarCuenta(_session.Rol);
 
-    public PedidoDetalleViewModel(PedidoPresentationService presentation, PosOrderWorkflowService pedidoWorkflow, SessionService session)
+    public PedidoDetalleViewModel(RoleCapabilityService capabilities, PedidoPresentationService presentation, PosOrderWorkflowService pedidoWorkflow, SessionService session)
     {
+        _capabilities = capabilities;
         _presentation = presentation;
         _pedidoWorkflow = pedidoWorkflow;
         _session = session;
@@ -153,13 +155,15 @@ public partial class PedidoDetalleViewModel : ObservableObject
 
     public bool PuedeEnviarCocina =>
         Estado == "PENDIENTE" &&
-        !string.Equals(_session.Rol, "COCINA", StringComparison.OrdinalIgnoreCase);
+        _capabilities.PuedeConfirmarPedido(_session.Rol);
     public bool PuedeMarcarListo =>
         (Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO") &&
-        (_session.Rol?.Equals("ADMIN", StringComparison.OrdinalIgnoreCase) == true ||
-         _session.Rol?.Equals("COCINA", StringComparison.OrdinalIgnoreCase) == true);
-    public bool PuedeEntregarCliente => Estado is "LISTO" or "LISTO_PARA_ENTREGA";
-    public bool PuedeCancelarPedido => Estado is not ("COMPLETADO" or "ENTREGADO" or "CANCELADO");
+        _capabilities.PuedeMarcarPedidoListo(_session.Rol);
+    public bool PuedeEntregarCliente =>
+        (Estado is "LISTO" or "LISTO_PARA_ENTREGA") &&
+        _capabilities.PuedeEntregarPedido(_session.Rol);
+    public bool PuedeCancelarPedido =>
+        Estado is not ("COMPLETADO" or "ENTREGADO" or "CANCELADO") && _capabilities.PuedeCancelarPedido(_session.Rol);
 
     private void AplicarPresentacion(PedidoDetailPresentationModel model)
     {

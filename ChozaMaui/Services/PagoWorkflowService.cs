@@ -78,6 +78,36 @@ public sealed class PagoWorkflowService
             pago.SaldoPendienteCuenta <= 0);
     }
 
+    public async Task<PagoRegistroCobroResult> RegistrarCobroConComprobanteAsync(
+        PedidoResponse pedido,
+        CuentaResponse? cuentaActual,
+        double monto,
+        string metodo,
+        string usuario,
+        string rutaArchivo,
+        string? referencia)
+    {
+        var (cuenta, saldoPendiente) = await PrepararCuentaParaCobroAsync(pedido, cuentaActual);
+        var pago = await _pagosApi.RegistrarPagoConComprobanteAsync(
+            cuenta.Idcuenta,
+            monto,
+            metodo,
+            usuario,
+            rutaArchivo,
+            referencia);
+
+        await InvalidarResumenCuentaAsync(cuenta.Idcuenta);
+
+        if (pedido.Mesa is not null)
+            await _cache.RemoveAsync(BuildCuentaMesaKey(pedido.Mesa.Idmesa));
+
+        return new PagoRegistroCobroResult(
+            cuenta,
+            pago,
+            saldoPendiente,
+            pago.SaldoPendienteCuenta <= 0);
+    }
+
     public async Task<PagoCierreMesaResult> CerrarMesaCobradaAsync(CuentaResponse cuenta, PedidoResponse pedido)
     {
         var cuentaCerrada = await CerrarCuentaAsync(cuenta);

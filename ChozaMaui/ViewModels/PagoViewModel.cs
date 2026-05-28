@@ -8,6 +8,7 @@ namespace ChozaMaui.ViewModels;
 [QueryProperty(nameof(Pedido), "Pedido")]
 public partial class PagoViewModel : ObservableObject
 {
+    private readonly RoleCapabilityService _capabilities;
     private readonly SessionService _session;
     private readonly PagoComprobanteService _comprobantes;
     private readonly PagoValidationService _validation;
@@ -141,6 +142,7 @@ public partial class PagoViewModel : ObservableObject
     public double Saldo             => UltimoPago?.SaldoPendienteCuenta ?? TotalCobro;
     public bool   PagadoCompleto    => PagoRegistrado && Saldo <= 0;
     public bool   PuedeCobrar       => !IsBusy
+                                       && _capabilities.PuedeCobrarCuenta(_session.Rol)
                                        && Pedido is not null
                                        && TotalCobro > 0
                                        && (!EsMetodoEfectivo || MontoRecibido >= TotalCobro)
@@ -231,10 +233,11 @@ public partial class PagoViewModel : ObservableObject
         OnPropertyChanged(nameof(PuedeCobrar));
     }
 
-    public PagoViewModel(SessionService session, PagoWorkflowService workflow,
+    public PagoViewModel(RoleCapabilityService capabilities, SessionService session, PagoWorkflowService workflow,
                          PagoComprobanteService comprobantes, PagoValidationService validation,
                          INavigationService navigation)
     {
+        _capabilities = capabilities;
         _session = session;
         _workflow = workflow;
         _comprobantes = comprobantes;
@@ -291,6 +294,12 @@ public partial class PagoViewModel : ObservableObject
     public async Task PagarAsync()
     {
         if (Pedido is null) return;
+        if (!_capabilities.PuedeCobrarCuenta(_session.Rol))
+        {
+            Mensaje = "Tu perfil no tiene autorizacion para cobrar cuentas.";
+            return;
+        }
+
         var pedidoActual = Pedido;
         var parseoMonto = _validation.ParsearMonto(MontoStr);
         if (!parseoMonto.EsValido)
@@ -321,8 +330,8 @@ public partial class PagoViewModel : ObservableObject
             PagoRegistrado = true;
             if (cobro.PagoCompleto)
             {
-                var cierre = await _workflow.CerrarMesaCobradaAsync(cobro.Cuenta, pedidoActual);
-                pedidoActual.Mesa = cierre.MesaLiberada;
+                if (pedidoActual.Mesa is not null)
+                    pedidoActual.Mesa.Estado = true;
                 NotificarPedidoActualizado();
                 Mensaje = "¡Pago completado! Cuenta cerrada.";
             }
@@ -342,12 +351,18 @@ public partial class PagoViewModel : ObservableObject
     public void SeleccionarMetodo(string metodo) => MetodoSeleccionado = metodo;
 
     /// <summary>
-    /// Flujo completo: registrar pago + subir comprobante (si es TRANSFERENCIA) + cerrar mesa.
+    /// Flujo completo: registrar pago y delegar al backend el comprobante y el cierre final.
     /// </summary>
     [RelayCommand]
     public async Task CobrarYCerrarMesaAsync()
     {
         if (Pedido is null) return;
+        if (!_capabilities.PuedeCobrarCuenta(_session.Rol))
+        {
+            Mensaje = "Tu perfil no tiene autorizacion para cobrar cuentas.";
+            return;
+        }
+
         var pedidoActual = Pedido;
 
         var validacion = _validation.ValidarCobro(new PagoCobroValidationInput(
@@ -377,55 +392,68 @@ public partial class PagoViewModel : ObservableObject
 
             var usuario = _session.Username ?? "desconocido";
             CuentaResponse? cuentaActual = Cuenta;
-            if (UltimoPago is null || UltimoPago.SaldoPendienteCuenta > 0 || cuentaActual is null)
+            var requiereRegistrarPago = UltimoPago is null || UltimoPago.SaldoPendienteCuenta > 0 || cuentaActual is null;
+            if (requiereRegistrarPago)
             {
-                var cobro = await _workflow.RegistrarCobroAsync(
-                    pedidoActual,
-                    Cuenta,
-                    TotalCobro,
-                    MetodoSeleccionado,
-                    usuario,
-                    Referencia);
+                PagoRegistroCobroResult cobro;
+                if (MetodoSeleccionado == "TRANSFERENCIA")
+                {
+                    if (string.IsNullOrEmpty(RutaArchivoComprobante))
+                    {
+                        Mensaje = "Debes adjuntar el comprobante de transferencia para completar el cobro.";
+                        return;
+                    }
+
+                    cobro = await _workflow.RegistrarCobroConComprobanteAsync(
+                        pedidoActual,
+                        Cuenta,
+                        TotalCobro,
+                        MetodoSeleccionado,
+                        usuario,
+                        RutaArchivoComprobante,
+                        Referencia);
+                    ComprobanteSubido = true;
+                    ErrorComprobante = string.Empty;
+                }
+                else
+                {
+                    cobro = await _workflow.RegistrarCobroAsync(
+                        pedidoActual,
+                        Cuenta,
+                        TotalCobro,
+                        MetodoSeleccionado,
+                        usuario,
+                        Referencia);
+                }
 
                 cuentaActual = cobro.Cuenta;
                 Cuenta = cobro.Cuenta;
                 TieneCuenta = true;
                 SaldoPendienteActual = cobro.Pago.SaldoPendienteCuenta;
                 UltimoPago = cobro.Pago;
+                PagoRegistrado = true;
             }
 
             if (cuentaActual is null)
                 return;
 
-            // Subir comprobante si es TRANSFERENCIA y hay foto capturada
-            if (MetodoSeleccionado == "TRANSFERENCIA" && TieneComprobante)
-            {
-                var pagoActual = UltimoPago;
-                if (pagoActual is null)
-                    return;
-
-                var subidaExitosa = await SubirComprobanteInternoAsync(cuentaActual.Idcuenta, pagoActual.Idpago, usuario);
-                if (!subidaExitosa)
-                {
-                    PagoRegistrado = true;
-                    Mensaje = "Pago registrado, pero el comprobante no se subió a Dropbox. Reintenta la subida antes de cerrar la mesa.";
-                    return;
-                }
-            }
-
-            var cierre = await _workflow.CerrarMesaCobradaAsync(cuentaActual, pedidoActual);
-            pedidoActual.Mesa = cierre.MesaLiberada;
+            if (pedidoActual.Mesa is not null)
+                pedidoActual.Mesa.Estado = true;
             NotificarPedidoActualizado();
             PagoRegistrado = true;
             Mensaje = EsMetodoTransferencia
-                ? "¡Mesa cobrada! Comprobante guardado en Dropbox."
+                ? "¡Mesa cobrada! Comprobante guardado y cuenta cerrada en backend."
                 : HayCambio
                     ? $"¡Mesa cobrada y liberada! Cambio a entregar: ${Cambio:F2}"
                     : "¡Mesa cobrada y liberada exitosamente!";
         }
         catch (Exception ex)
         {
-            Mensaje = $"Error: {ex.Message}";
+            Mensaje = ComprobanteSubido && EsMetodoTransferencia
+                ? $"El pago se registró en backend, pero no se pudo completar la actualización local: {ex.Message}"
+                : PagoRegistrado
+                    ? $"El pago se registró, pero ocurrió un error posterior: {ex.Message}"
+                    : $"Error: {ex.Message}";
         }
         finally { IsBusy = false; }
     }

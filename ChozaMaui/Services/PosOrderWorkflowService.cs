@@ -41,10 +41,10 @@ public sealed class PosOrderWorkflowService
 
         try
         {
-            var pedido = await _orderWorkflow.SubmitPedidoAsync(request, estadoDestino);
+            var resultado = await _orderWorkflow.SubmitPedidoAsync(request, estadoDestino);
             await InvalidarCachesTrasCrearPedidoAsync(request.IdMesa);
-            await GuardarPedidoEnCacheAsync(pedido);
-            return PosOrderSubmissionResult.Submitted(pedido);
+            await GuardarPedidoEnCacheAsync(resultado.Pedido);
+            return PosOrderSubmissionResult.Submitted(resultado.Pedido, resultado.VinculoCuentaAdvertencia);
         }
         catch (Exception ex) when (PendingOrderService.IsRecoverable(ex))
         {
@@ -203,11 +203,11 @@ public sealed class PosOrderWorkflowService
     private static string BuildPedidoDetalleKey(int pedidoId) => $"pedido:detalle:{pedidoId}";
 }
 
-public sealed record PosOrderSubmissionResult(PedidoResponse? Pedido, bool SeEncoloOffline, int Pendientes)
+public sealed record PosOrderSubmissionResult(PedidoResponse? Pedido, bool SeEncoloOffline, int Pendientes, string? VinculoCuentaAdvertencia)
 {
-    public static PosOrderSubmissionResult Submitted(PedidoResponse pedido)
-        => new(pedido, false, 0);
+    public static PosOrderSubmissionResult Submitted(PedidoResponse pedido, string? vinculoCuentaAdvertencia)
+        => new(pedido, false, 0, vinculoCuentaAdvertencia);
 
     public static PosOrderSubmissionResult Queued(int pendientes)
-        => new(null, true, pendientes);
+        => new(null, true, pendientes, null);
 }

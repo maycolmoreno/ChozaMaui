@@ -8,6 +8,7 @@ namespace ChozaMaui.ViewModels;
 
 public partial class TurnoViewModel : ObservableObject
 {
+    private readonly RoleCapabilityService _capabilities;
     private readonly SessionService _session;
     private readonly TurnoWorkflowService _workflow;
     private DateTimeOffset? _ultimaCargaUtc;
@@ -94,14 +95,15 @@ public partial class TurnoViewModel : ObservableObject
     public bool   EsMetodoTarjeta         => MetodoPago == "TARJETA";
     public bool   EsMetodoTransferencia   => MetodoPago == "TRANSFERENCIA";
     public bool   EsMetodoMixto           => MetodoPago == "MIXTO";
-    public bool   PuedeGestionarCaja      => (_session.Rol ?? string.Empty).ToUpperInvariant() is "ADMIN" or "CAJERO";
+    public bool   PuedeGestionarCaja      => _capabilities.PuedeGestionarCaja(_session.Rol);
     public bool   MostrarAclaracionMetodos => ResumenTurnoCargado && !IsBusy;
     public string AclaracionMetodosTexto => MetricaPagosCount == 0
         ? "Sin pagos registrados hoy. Los montos en $0.00 ya corresponden al cierre real del dia hasta ahora."
         : "Los metodos que siguen en $0.00 no registran movimientos hoy.";
 
-    public TurnoViewModel(SessionService session, TurnoWorkflowService workflow)
+    public TurnoViewModel(RoleCapabilityService capabilities, SessionService session, TurnoWorkflowService workflow)
     {
+        _capabilities = capabilities;
         _session = session;
         _workflow = workflow;
     }

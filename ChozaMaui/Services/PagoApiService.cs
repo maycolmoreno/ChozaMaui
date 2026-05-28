@@ -20,21 +20,55 @@ public class PagoApiService
     {
         var r = await _http.PostAsJsonAsync($"/api/cuentas/{idCuenta}/pagos",
             new PagoRequest { Monto = monto, Metodo = metodo, Usuario = usuario, Referencia = referencia }, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await EnsureSuccessStatusCodeAsync(r);
         return (await r.Content.ReadFromJsonAsync<PagoResponse>())!;
+    }
+
+    public async Task<PagoResponse> RegistrarPagoConComprobanteAsync(
+        int idCuenta,
+        double monto,
+        string metodo,
+        string usuario,
+        string rutaArchivo,
+        string? referencia = null,
+        CancellationToken cancellationToken = default)
+    {
+        using var content = new MultipartFormDataContent();
+
+        var fileBytes = await File.ReadAllBytesAsync(rutaArchivo, cancellationToken);
+        var fileName = Path.GetFileName(rutaArchivo);
+        var mimeType = fileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+            ? "image/png"
+            : fileName.EndsWith(".webp", StringComparison.OrdinalIgnoreCase)
+                ? "image/webp"
+                : "image/jpeg";
+
+        content.Add(new StringContent(monto.ToString(System.Globalization.CultureInfo.InvariantCulture)), "monto");
+        content.Add(new StringContent(metodo), "metodo");
+        content.Add(new StringContent(usuario), "usuario");
+        if (!string.IsNullOrWhiteSpace(referencia))
+            content.Add(new StringContent(referencia), "referencia");
+
+        var fileContent = new ByteArrayContent(fileBytes);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
+        content.Add(fileContent, "archivo", fileName);
+
+        var r = await _http.PostAsync($"/api/cuentas/{idCuenta}/pagos/con-comprobante", content, cancellationToken);
+        await EnsureSuccessStatusCodeAsync(r, cancellationToken);
+        return (await r.Content.ReadFromJsonAsync<PagoResponse>(_camelCase, cancellationToken))!;
     }
 
     public async Task<List<PagoResponse>> ListarPagosCuentaAsync(int idCuenta)
     {
         var r = await _http.GetAsync($"/api/cuentas/{idCuenta}/pagos");
-        r.EnsureSuccessStatusCode();
+        await EnsureSuccessStatusCodeAsync(r);
         return (await r.Content.ReadFromJsonAsync<List<PagoResponse>>(_camelCase)) ?? [];
     }
 
     public async Task<SaldoCuentaResponse> ObtenerResumenCuentaAsync(int idCuenta)
     {
         var r = await _http.GetAsync($"/api/cuentas/{idCuenta}/pagos/resumen");
-        r.EnsureSuccessStatusCode();
+        await EnsureSuccessStatusCodeAsync(r);
         return (await r.Content.ReadFromJsonAsync<SaldoCuentaResponse>(_camelCase))!;
     }
 
@@ -60,7 +94,7 @@ public class PagoApiService
 
         var r = await _http.PostAsync(
             $"/api/cuentas/{idCuenta}/pagos/{idPago}/comprobante", content, cancellationToken);
-        r.EnsureSuccessStatusCode();
+        await EnsureSuccessStatusCodeAsync(r, cancellationToken);
         return (await r.Content.ReadFromJsonAsync<ComprobanteResponse>(_camelCase, cancellationToken))!;
     }
 
@@ -71,7 +105,7 @@ public class PagoApiService
     {
         var r = await _http.GetAsync($"/api/cuentas/{idCuenta}/pagos/{idPago}/comprobante");
         if (r.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
-        r.EnsureSuccessStatusCode();
+        await EnsureSuccessStatusCodeAsync(r);
         return await r.Content.ReadFromJsonAsync<ComprobanteResponse>(_camelCase);
     }
 
@@ -102,6 +136,45 @@ public class PagoApiService
     public async Task EliminarComprobanteAsync(int idCuenta, int idPago)
     {
         var r = await _http.DeleteAsync($"/api/cuentas/{idCuenta}/pagos/{idPago}/comprobante");
-        r.EnsureSuccessStatusCode();
+        await EnsureSuccessStatusCodeAsync(r);
+    }
+
+    private static async Task EnsureSuccessStatusCodeAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+        var message = ExtractErrorMessage(raw)
+            ?? $"Error del servidor ({(int)response.StatusCode}).";
+
+        throw new HttpRequestException(message, null, response.StatusCode);
+    }
+
+    private static string? ExtractErrorMessage(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(raw);
+            var root = doc.RootElement;
+
+            foreach (var property in new[] { "message", "mensaje", "error", "title", "detail" })
+            {
+                if (root.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String)
+                {
+                    var text = value.GetString();
+                    if (!string.IsNullOrWhiteSpace(text))
+                        return text;
+                }
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return raw.Trim();
     }
 }

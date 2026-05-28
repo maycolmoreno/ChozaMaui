@@ -503,7 +503,8 @@
 
                                     <Button Grid.Column="1"
                                             Text="Abrir"
-                                            IsVisible="{Binding EsAbrible}"
+                                            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PuedeAbrirPedidos}"
+                                            IsEnabled="{Binding EsAbrible}"
                                             BackgroundColor="{StaticResource Primary}"
                                             TextColor="White"
                                             CornerRadius="12"
@@ -516,7 +517,8 @@
 
                                     <Button Grid.Column="1"
                                             Text="✓ Entregar"
-                                            IsVisible="{Binding EsEntregable}"
+                                            IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PuedeEntregarPedidos}"
+                                            IsEnabled="{Binding EsEntregable}"
                                             BackgroundColor="{StaticResource Success}"
                                             TextColor="White"
                                             CornerRadius="12"

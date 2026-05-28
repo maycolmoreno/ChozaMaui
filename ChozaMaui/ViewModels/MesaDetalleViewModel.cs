@@ -9,6 +9,7 @@ namespace ChozaMaui.ViewModels;
 [QueryProperty(nameof(Mesa), "Mesa")]
 public partial class MesaDetalleViewModel : ObservableObject
 {
+    private readonly RoleCapabilityService _capabilities;
     private readonly MesaDetailWorkflowService _workflow;
     private readonly SessionService _session;
     private DateTimeOffset? _ultimaCargaUtc;
@@ -42,12 +43,14 @@ public partial class MesaDetalleViewModel : ObservableObject
     public string ComedorTexto => Mesa?.NombreComedor ?? "Sin comedor";
     public bool TienePedidosActivos => PedidosActivosCount > 0;
     public bool TienePedidosListos => PedidosListosCount > 0;
-    public bool EsAdmin => _session.Rol == "ADMIN";
-    public bool PuedeCerrarMesa => Mesa is not null && !TienePedidosActivos && EsAdmin;
+    public bool PuedeGestionarCierreMesa => _capabilities.PuedeCerrarMesa(_session.Rol);
+    public bool PuedeCerrarMesa => Mesa is not null && !TienePedidosActivos && PuedeGestionarCierreMesa;
+    public bool PuedeEntregarPedidos => _capabilities.PuedeEntregarPedido(_session.Rol);
     public string TotalMesaTexto => $"${TotalMesa:0.00}";
 
-    public MesaDetalleViewModel(MesaDetailWorkflowService workflow, SessionService session)
+    public MesaDetalleViewModel(RoleCapabilityService capabilities, MesaDetailWorkflowService workflow, SessionService session)
     {
+        _capabilities = capabilities;
         _workflow = workflow;
         _session = session;
     }
@@ -122,6 +125,13 @@ public partial class MesaDetalleViewModel : ObservableObject
     [RelayCommand]
     public async Task EntregarPedidoAsync(PedidoResponse pedido)
     {
+        if (!PuedeEntregarPedidos)
+        {
+            MensajeEsError = true;
+            Mensaje = "Tu perfil no tiene autorizacion para entregar pedidos.";
+            return;
+        }
+
         if (!pedido.PuedeEntregarse)
         {
             MensajeEsError = true;
@@ -136,6 +146,13 @@ public partial class MesaDetalleViewModel : ObservableObject
     [RelayCommand]
     public async Task EntregarTodoAsync()
     {
+        if (!PuedeEntregarPedidos)
+        {
+            MensajeEsError = true;
+            Mensaje = "Tu perfil no tiene autorizacion para entregar pedidos.";
+            return;
+        }
+
         if (PedidosListos.Count == 0)
         {
             MensajeEsError = true;
@@ -169,6 +186,13 @@ public partial class MesaDetalleViewModel : ObservableObject
     public async Task CerrarMesaAsync()
     {
         if (Mesa is null) return;
+
+        if (!PuedeGestionarCierreMesa)
+        {
+            MensajeEsError = true;
+            Mensaje = "Tu perfil no tiene autorizacion para cerrar mesas.";
+            return;
+        }
 
         if (TienePedidosActivos)
         {

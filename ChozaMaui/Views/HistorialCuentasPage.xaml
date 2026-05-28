@@ -95,15 +95,7 @@
                 </VerticalStackLayout>
             </CollectionView.Header>
 
-            <CollectionView.EmptyView>
-                <Label Text="No hay cuentas para este filtro."
-                       Padding="20"
-                       FontSize="14"
-                       TextColor="#667085"
-                       HorizontalTextAlignment="Center"
-                       IsVisible="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}" />
-            </CollectionView.EmptyView>
-
+           
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:CuentaResponse">
                     <Border Margin="16,0,16,12"

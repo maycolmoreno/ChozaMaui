@@ -35,7 +35,7 @@ public class CajaApiService
         var client = CreateClient();
         var response = await client.GetAsync("/api/caja/abierta");
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
-        if (!response.IsSuccessStatusCode) return null;
+        response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<CajaTurnoResponse>();
     }
 

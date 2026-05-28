@@ -8,6 +8,7 @@ namespace ChozaMaui.ViewModels;
 
 public partial class HistorialCuentasViewModel : ObservableObject
 {
+    private readonly RoleCapabilityService _capabilities;
     private readonly HistorialCuentasCobroService _cobroService;
     private readonly HistorialCuentasClienteService _clienteService;
     private readonly HistorialCuentasLoadService _loadService;
@@ -82,16 +83,16 @@ public partial class HistorialCuentasViewModel : ObservableObject
     public List<string> OpcionesEstado { get; } = ["ABIERTA", "COBRADAS", "TODAS", "ANULADA"];
 
     // Control por rol
-    public bool EsCajero => _session.Rol == "CAJERO";
-    public bool PuedeCobrarCuenta => EsCajero && CuentaDetalleEsAbierta;
+    public bool PuedeCobrarCuenta => _capabilities.PuedeCobrarCuenta(_session.Rol) && CuentaDetalleEsAbierta;
     public int TotalPendientes => _todas.Count(_presentation.EsCuentaPendiente);
     public int TotalCobradas => _todas.Count(_presentation.EsCuentaCobrada);
     public bool TabPendientesActivo => FiltroEstado == "ABIERTA";
     public bool TabCobradasActivo => FiltroEstado == "COBRADAS";
     public bool TabTodasActivo => FiltroEstado == "TODAS";
 
-    public HistorialCuentasViewModel(SessionService session, HistorialCuentasPresentationService presentation, HistorialCuentasClienteService clienteService, HistorialCuentasCobroService cobroService, HistorialCuentasLoadService loadService, INavigationService navigation)
+    public HistorialCuentasViewModel(RoleCapabilityService capabilities, SessionService session, HistorialCuentasPresentationService presentation, HistorialCuentasClienteService clienteService, HistorialCuentasCobroService cobroService, HistorialCuentasLoadService loadService, INavigationService navigation)
     {
+        _capabilities = capabilities;
         _session = session;
         _presentation = presentation;
         _clienteService = clienteService;

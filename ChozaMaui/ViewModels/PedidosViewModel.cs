@@ -8,6 +8,7 @@ namespace ChozaMaui.ViewModels;
 
 public partial class PedidosViewModel : ObservableObject
 {
+    private readonly RoleCapabilityService _capabilities;
     private readonly PedidoApiService _pedidosApi;
     private readonly NotificationService _notifications;
     private readonly PosOrderWorkflowService _pedidoWorkflow;
@@ -36,8 +37,12 @@ public partial class PedidosViewModel : ObservableObject
     [ObservableProperty] private int totalEntregadosHoy;
     [ObservableProperty] private int totalCancelados;
 
-    public PedidosViewModel(PedidoApiService pedidosApi, NotificationService notifications, PosOrderWorkflowService pedidoWorkflow, PedidoPresentationService presentation, SessionService session, LiveRefreshCoordinator refreshCoordinator)
+    public bool PuedeAbrirPedidos => _capabilities.PuedeCrearPedido(_session.Rol);
+    public bool PuedeEntregarPedidos => _capabilities.PuedeEntregarPedido(_session.Rol);
+
+    public PedidosViewModel(RoleCapabilityService capabilities, PedidoApiService pedidosApi, NotificationService notifications, PosOrderWorkflowService pedidoWorkflow, PedidoPresentationService presentation, SessionService session, LiveRefreshCoordinator refreshCoordinator)
     {
+        _capabilities = capabilities;
         _pedidosApi = pedidosApi;
         _notifications = notifications;
         _pedidoWorkflow = pedidoWorkflow;
@@ -122,6 +127,12 @@ public partial class PedidosViewModel : ObservableObject
     [RelayCommand]
     public async Task AbrirEnPosAsync(PedidoResponse pedido)
     {
+        if (!PuedeAbrirPedidos)
+        {
+            ErrorMessage = "Tu perfil no tiene autorizacion para abrir pedidos en POS.";
+            return;
+        }
+
         if (pedido.Mesa is null) return;
         await Shell.Current.GoToAsync("pos",
             new Dictionary<string, object>
@@ -135,6 +146,18 @@ public partial class PedidosViewModel : ObservableObject
     [RelayCommand]
     public async Task EntregarRapidoAsync(PedidoResponse pedido)
     {
+        if (!PuedeEntregarPedidos)
+        {
+            ErrorMessage = "Tu perfil no tiene autorizacion para entregar pedidos.";
+            return;
+        }
+
+        if (!pedido.PuedeEntregarse)
+        {
+            ErrorMessage = "Solo se pueden entregar pedidos en estado LISTO_PARA_ENTREGA.";
+            return;
+        }
+
         IsBusy = true;
         try
         {
@@ -193,9 +216,9 @@ public partial class PedidosViewModel : ObservableObject
     private IEnumerable<string> ObtenerTopicsActivos()
     {
         var rol = _session.Rol ?? string.Empty;
-        if (rol is "CAMARERO" or "ADMIN")
+        if (_capabilities.PuedeConfirmarPedido(rol) || _capabilities.PuedeEntregarPedido(rol))
             yield return TopicCamarero;
-        if (rol is "COCINA" or "ADMIN")
+        if (_capabilities.PuedeMarcarPedidoListo(rol))
             yield return TopicCocina;
     }
 }

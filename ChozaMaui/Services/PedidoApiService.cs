@@ -31,6 +31,14 @@ public class PedidoApiService
         return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
     }
 
+    public async Task<PedidoResponse> CrearPedidoConCuentaAsync(PedidoRequest request, string estadoDestino)
+    {
+        var estado = Uri.EscapeDataString((estadoDestino ?? string.Empty).Trim().ToUpperInvariant());
+        var response = await _http.PostAsJsonAsync($"/api/pedidos/con-cuenta?estadoDestino={estado}", request, _camelCase);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+    }
+
     public async Task<PedidoResponse> CambiarEstadoPedidoAsync(int id, string nuevoEstado)
     {
         var estado = (nuevoEstado ?? string.Empty).Trim().ToUpperInvariant();
