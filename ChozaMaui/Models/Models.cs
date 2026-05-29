@@ -117,7 +117,7 @@ public class PendingOrderDraft
 {
     public string LocalId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
-    public string EstadoDestino { get; set; } = "PENDIENTE";
+    public string EstadoDestino { get; set; } = PedidoEstados.Pendiente;
     public PedidoRequest Request { get; set; } = new();
 }
 
@@ -185,32 +185,32 @@ public class PedidoResponse
 
     public string EstadoBadgeColor => Estado switch
     {
-        "PENDIENTE"           => "#0ea5e9",
-        "EN_COCINA"           => "#f59e0b",
-        "EN_BAR"              => "#f59e0b",
-        "EN_PROCESO"          => "#f59e0b",
-        "LISTO"               => "#ef4444",
-        "LISTO_PARA_ENTREGA"  => "#ef4444",
-        "ENTREGADO"           => "#6b7280",
-        "COMPLETADO"          => "#6b7280",
-        "CANCELADO"           => "#ef4444",
+        PedidoEstados.Pendiente          => "#0ea5e9",
+        PedidoEstados.EnCocina           => "#f59e0b",
+        PedidoEstados.EnBar              => "#f59e0b",
+        PedidoEstados.EnProceso          => "#f59e0b",
+        PedidoEstados.Listo              => "#ef4444",
+        PedidoEstados.ListoParaEntrega   => "#ef4444",
+        PedidoEstados.Entregado          => "#6b7280",
+        PedidoEstados.Completado         => "#6b7280",
+        PedidoEstados.Cancelado          => "#ef4444",
         _ => "#6b7280"
     };
 
     public string EstadoBorderColor => EstadoBadgeColor;
     public string EstadoBadgeBackground => EstadoBadgeColor;
-    public bool EsActivo => Estado is not ("COMPLETADO" or "ENTREGADO" or "CANCELADO" or "CERRADO");
-    public bool EstaEnPreparacion => Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO";
-    public bool EstaListoParaEntrega => Estado is "LISTO_PARA_ENTREGA" or "LISTO";
+    public bool EsActivo => Estado is not (PedidoEstados.Completado or PedidoEstados.Entregado or PedidoEstados.Cancelado or "CERRADO");
+    public bool EstaEnPreparacion => Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso;
+    public bool EstaListoParaEntrega => Estado is PedidoEstados.ListoParaEntrega or PedidoEstados.Listo;
     public bool PuedeEntregarse => EstaListoParaEntrega;
 
     public string EstadoTextoVisual => Estado switch
     {
-        "EN_COCINA"          => "EN PREPARACION",
-        "EN_BAR"             => "EN BAR",
-        "EN_PROCESO"         => "EN PREPARACION",
-        "LISTO_PARA_ENTREGA" => "LISTO",
-        "COMPLETADO"         => "COMPLETADO",
+        PedidoEstados.EnCocina         => "EN PREPARACION",
+        PedidoEstados.EnBar            => "EN BAR",
+        PedidoEstados.EnProceso        => "EN PREPARACION",
+        PedidoEstados.ListoParaEntrega => "LISTO",
+        PedidoEstados.Completado       => "COMPLETADO",
         _                    => Estado
     };
 
@@ -236,54 +236,54 @@ public class PedidoResponse
     }
 
     /// <summary>True cuando el pedido puede cobrarse (estado LISTO o ENTREGADO).</summary>
-    public bool EsCobrable => Estado == "LISTO" || Estado == "ENTREGADO" ||
-                              Estado == "LISTO_PARA_ENTREGA" || Estado == "COMPLETADO";
+    public bool EsCobrable => Estado == PedidoEstados.Listo || Estado == PedidoEstados.Entregado ||
+                              Estado == PedidoEstados.ListoParaEntrega || Estado == PedidoEstados.Completado;
 
     // ── Propiedades para tarjetas de PedidosPage ──────────────────────
 
     /// Color del círculo de ícono por estado.
     public string CircleColor => Estado switch
     {
-        "PENDIENTE"                      => "#0ea5e9",
-        "EN_COCINA" or "EN_BAR"
-            or "EN_PROCESO"              => "#f59e0b",
-        "LISTO" or "LISTO_PARA_ENTREGA"  => "#28b779",
-        "COMPLETADO" or "ENTREGADO"      => "#28b779",
-        "CANCELADO"                      => "#ef4444",
+        PedidoEstados.Pendiente                     => "#0ea5e9",
+        PedidoEstados.EnCocina or PedidoEstados.EnBar
+            or PedidoEstados.EnProceso              => "#f59e0b",
+        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega => "#28b779",
+        PedidoEstados.Completado or PedidoEstados.Entregado   => "#28b779",
+        PedidoEstados.Cancelado                     => "#ef4444",
         _ => "#6b7280"
     };
 
     /// Fondo claro del badge de estado.
     public string BadgeLightBackground => Estado switch
     {
-        "EN_COCINA" or "EN_BAR" or "EN_PROCESO" => "#FFF3E0",
-        "LISTO" or "LISTO_PARA_ENTREGA"         => "#E8F5E9",
-        "COMPLETADO" or "ENTREGADO"             => "#E8F5E9",
-        "CANCELADO"                             => "#FFEBEE",
-        "PENDIENTE"                             => "#E3F2FD",
+        PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso => "#FFF3E0",
+        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega                    => "#E8F5E9",
+        PedidoEstados.Completado or PedidoEstados.Entregado                      => "#E8F5E9",
+        PedidoEstados.Cancelado                                                  => "#FFEBEE",
+        PedidoEstados.Pendiente                                                  => "#E3F2FD",
         _ => "#F5F5F5"
     };
 
     /// Color del texto del badge (mismo tono que el color principal del estado).
     public string BadgeTextColor => Estado switch
     {
-        "EN_COCINA" or "EN_BAR" or "EN_PROCESO" => "#F59E0B",
-        "LISTO" or "LISTO_PARA_ENTREGA"         => "#28B779",
-        "COMPLETADO" or "ENTREGADO"             => "#28B779",
-        "CANCELADO"                             => "#EF4444",
-        "PENDIENTE"                             => "#0EA5E9",
+        PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso => "#F59E0B",
+        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega                    => "#28B779",
+        PedidoEstados.Completado or PedidoEstados.Entregado                      => "#28B779",
+        PedidoEstados.Cancelado                                                  => "#EF4444",
+        PedidoEstados.Pendiente                                                  => "#0EA5E9",
         _ => "#6B7280"
     };
 
     /// Texto con ícono para el badge de estado.
     public string BadgeTexto => Estado switch
     {
-        "EN_COCINA" or "EN_BAR"
-            or "EN_PROCESO"             => "🍳 EN PREPARACIÓN",
-        "LISTO" or "LISTO_PARA_ENTREGA" => "✓ LISTO",
-        "COMPLETADO" or "ENTREGADO"     => "✓ ENTREGADO",
-        "CANCELADO"                     => "✗ CANCELADO",
-        "PENDIENTE"                     => "⏱ PENDIENTE",
+        PedidoEstados.EnCocina or PedidoEstados.EnBar
+            or PedidoEstados.EnProceso             => "🍳 EN PREPARACIÓN",
+        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega => "✓ LISTO",
+        PedidoEstados.Completado or PedidoEstados.Entregado   => "✓ ENTREGADO",
+        PedidoEstados.Cancelado                              => "✗ CANCELADO",
+        PedidoEstados.Pendiente                              => "⏱ PENDIENTE",
         _ => Estado
     };
 
@@ -300,7 +300,7 @@ public class PedidoResponse
     public string TextoBotonPrincipal => EsActivo ? "Ver pedido" : "Ver detalle";
 
     /// True si se puede "Abrir" el pedido en POS (está activo y en cocina/bar/pendiente).
-    public bool EsAbrible => Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO" or "PENDIENTE";
+    public bool EsAbrible => Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso or PedidoEstados.Pendiente;
 
     /// True si se puede entregar directamente (listo para entrega).
     public bool EsEntregable => PuedeEntregarse;
@@ -412,7 +412,7 @@ public class MesaVisual
     {
         get
         {
-            if (PedidosActivos.Any(p => p.Estado == "ENTREGADO")) return "Pendiente de pago";
+            if (PedidosActivos.Any(p => p.Estado == PedidoEstados.Entregado)) return "Pendiente de pago";
             if (PedidosActivos.Any(p => p.EstaListoParaEntrega)) return "Lista para entregar";
             if (PedidosActivos.Any(p => p.EstaEnPreparacion)) return "En preparacion";
             if (PedidosActivos.Count > 0 || !Mesa.Estado) return "Ocupada";
@@ -473,9 +473,9 @@ public class CuentaResponse
 
     public Color EstadoBadgeColor => Estado switch
     {
-        "ABIERTA"  => Color.FromArgb("#28b779"),
+        CuentaEstados.Abierta  => Color.FromArgb("#28b779"),
         "CERRADA"  => Color.FromArgb("#6b7280"),
-        "ANULADA"  => Color.FromArgb("#e94560"),
+        CuentaEstados.Anulada  => Color.FromArgb("#e94560"),
         _          => Color.FromArgb("#fb8c00")
     };
     public string MesaTexto => Mesa is not null ? $"Mesa {Mesa.Numero}" : "Sin mesa";

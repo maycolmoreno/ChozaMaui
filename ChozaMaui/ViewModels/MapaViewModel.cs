@@ -78,7 +78,7 @@ public partial class MapaViewModel : ObservableObject
         : PedidoSheet!.Observaciones!;
     public string SheetPedidoTotalTexto => PedidoSheet is null ? string.Empty : $"${PedidoSheet.Total:0.00}";
     public bool SheetPuedeEnviarACocina =>
-        PedidoSheet?.Estado == "PENDIENTE" &&
+        PedidoSheet?.Estado == PedidoEstados.Pendiente &&
         _capabilities.PuedeConfirmarPedido(_session.Rol);
 
     public MapaViewModel(RoleCapabilityService capabilities, PedidoApiService pedidosApi, MesaStateService mesas, MapaPresentationService presentation, NotificationService notifications, SessionService session, LiveRefreshCoordinator refreshCoordinator)
@@ -186,7 +186,7 @@ public partial class MapaViewModel : ObservableObject
     {
         if (MesaSheet is null) return;
         var pedidoEntregado = MesaSheet.PedidosActivos
-            .FirstOrDefault(p => p.Estado == "ENTREGADO");
+            .FirstOrDefault(p => p.Estado is PedidoEstados.Entregado or PedidoEstados.Completado);
         MostrarSheet = false;
         if (pedidoEntregado is not null)
         {
@@ -218,7 +218,7 @@ public partial class MapaViewModel : ObservableObject
 
         try
         {
-            PedidoSheet = await _pedidosApi.CambiarEstadoPedidoAsync(PedidoSheet.Idpedido, "EN_COCINA");
+            PedidoSheet = await _pedidosApi.CambiarEstadoPedidoAsync(PedidoSheet.Idpedido, PedidoEstados.EnCocina);
             await CargarAsync();
         }
         catch (Exception ex)

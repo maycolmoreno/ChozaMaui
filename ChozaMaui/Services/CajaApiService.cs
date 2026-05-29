@@ -35,7 +35,7 @@ public class CajaApiService
         var client = CreateClient();
         var response = await client.GetAsync("/api/caja/abierta");
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return await response.Content.ReadFromJsonAsync<CajaTurnoResponse>();
     }
 
@@ -44,7 +44,7 @@ public class CajaApiService
         var client = CreateClient();
         var response = await client.PostAsJsonAsync("/api/caja/apertura",
             new AperturaCajaRequest { MontoInicial = monto, UsuarioApertura = usuario }, _camelCase);
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<CajaTurnoResponse>())!;
     }
 
@@ -53,7 +53,15 @@ public class CajaApiService
         var client = CreateClient();
         var response = await client.PostAsJsonAsync("/api/caja/cierre",
             new CierreCajaRequest { MontoDeclaradoCierre = monto, UsuarioCierre = usuario }, _camelCase);
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<CajaTurnoResponse>())!;
+    }
+
+    public async Task<List<PagoResponse>> ListarPagosCajaAsync(int idCaja)
+    {
+        var client = CreateClient();
+        var response = await client.GetAsync($"/api/caja/{idCaja}/pagos");
+        await ApiErrorHelper.EnsureSuccessAsync(response);
+        return (await response.Content.ReadFromJsonAsync<List<PagoResponse>>(_camelCase)) ?? [];
     }
 }

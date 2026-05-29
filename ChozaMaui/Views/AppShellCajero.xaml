@@ -23,27 +23,22 @@
             <ShellContent ContentTemplate="{DataTemplate views:TurnoPage}" Route="turnos" />
         </Tab>
 
-        <!-- 2: Mesas / Nuevo pedido -->
-        <Tab Title="Mesas" Icon="tab_mesas.svg">
-            <ShellContent ContentTemplate="{DataTemplate views:MapaPage}" Route="mapa" />
-        </Tab>
-
-        <!-- 3: Cuentas -->
+        <!-- 2: Cuentas -->
         <Tab Title="Cuentas" Icon="tab_cuentas.svg">
             <ShellContent ContentTemplate="{DataTemplate views:HistorialCuentasPage}" Route="cuentas" />
         </Tab>
 
-        <!-- 4: Pedidos -->
+        <!-- 3: Pedidos -->
         <Tab Title="Pedidos" Icon="tab_pedidos.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PedidosPage}" Route="pedidos" />
         </Tab>
 
-        <!-- 5: Notificaciones -->
+        <!-- 4: Notificaciones -->
         <Tab Title="Avisos" Icon="tab_notif.svg">
             <ShellContent ContentTemplate="{DataTemplate views:NotificacionesPage}" Route="notificaciones" />
         </Tab>
 
-        <!-- 6: Perfil -->
+        <!-- 5: Perfil -->
         <Tab Title="Perfil" Icon="tab_perfil.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}" Route="perfil" />
         </Tab>

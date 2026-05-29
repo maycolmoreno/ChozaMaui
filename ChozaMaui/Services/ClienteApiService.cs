@@ -18,27 +18,27 @@ public class ClienteApiService
     public async Task<List<ClienteResponse>> GetClientesAsync()
     {
         var r = await _http.GetAsync("/api/clientes");
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<List<ClienteResponse>>()) ?? [];
     }
 
     public async Task<ClienteResponse> CrearClienteAsync(ClienteRequest req)
     {
         var r = await _http.PostAsJsonAsync("/api/clientes", req, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<ClienteResponse>())!;
     }
 
     public async Task<ClienteResponse> ActualizarClienteAsync(int id, ClienteRequest req)
     {
         var r = await _http.PutAsJsonAsync($"/api/clientes/{id}", req, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<ClienteResponse>())!;
     }
 
     public async Task EliminarClienteAsync(int id)
     {
         var r = await _http.DeleteAsync($"/api/clientes/{id}");
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
     }
 }

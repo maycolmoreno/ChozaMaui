@@ -46,7 +46,7 @@ public partial class PagoViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(EsMetodoTarjeta))]
     [NotifyPropertyChangedFor(nameof(EsMetodoTransferencia))]
     [NotifyPropertyChangedFor(nameof(EsMetodoOtro))]
-    private string metodoSeleccionado = "EFECTIVO";
+    private string metodoSeleccionado = ChozaMaui.Models.MetodosPago.Efectivo;
     [ObservableProperty] private string referencia = string.Empty;
 
     // ── Monto recibido y cambio (efectivo) ────────────────────────
@@ -123,11 +123,11 @@ public partial class PagoViewModel : ObservableObject
                                           && !ComprobanteSubido;
     public bool HayErrorComprobante    => !string.IsNullOrEmpty(ErrorComprobante);
 
-    public List<string> MetodosPago { get; } = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "OTRO"];
-    public bool EsMetodoEfectivo      => MetodoSeleccionado == "EFECTIVO";
-    public bool EsMetodoTarjeta       => MetodoSeleccionado == "TARJETA";
-    public bool EsMetodoTransferencia => MetodoSeleccionado == "TRANSFERENCIA";
-    public bool EsMetodoOtro          => MetodoSeleccionado == "OTRO";
+    public List<string> MetodosPago { get; } = [ChozaMaui.Models.MetodosPago.Efectivo, ChozaMaui.Models.MetodosPago.Tarjeta, ChozaMaui.Models.MetodosPago.Transferencia, ChozaMaui.Models.MetodosPago.Otro];
+    public bool EsMetodoEfectivo      => MetodoSeleccionado == ChozaMaui.Models.MetodosPago.Efectivo;
+    public bool EsMetodoTarjeta       => MetodoSeleccionado == ChozaMaui.Models.MetodosPago.Tarjeta;
+    public bool EsMetodoTransferencia => MetodoSeleccionado == ChozaMaui.Models.MetodosPago.Transferencia;
+    public bool EsMetodoOtro          => MetodoSeleccionado == ChozaMaui.Models.MetodosPago.Otro;
     public bool TieneMontoRecibido    => EsMetodoEfectivo;
 
     public double Consumo     => Pedido?.Subtotal ?? 0;
@@ -201,7 +201,7 @@ public partial class PagoViewModel : ObservableObject
         IntentosSubida = 0;
         UltimoComprobante = null;
         Mensaje = string.Empty;
-        MetodoSeleccionado = "EFECTIVO";
+        MetodoSeleccionado = ChozaMaui.Models.MetodosPago.Efectivo;
         SaldoPendienteActual = pedidoActual?.Total ?? 0;
     }
 
@@ -213,7 +213,7 @@ public partial class PagoViewModel : ObservableObject
 
     partial void OnMetodoSeleccionadoChanged(string value)
     {
-        if (value == "EFECTIVO" && MontoRecibido <= 0 && TotalPedido > 0)
+        if (value == ChozaMaui.Models.MetodosPago.Efectivo && MontoRecibido <= 0 && TotalPedido > 0)
             MontoRecibido = TotalPedido;
 
         OnPropertyChanged(nameof(TieneMontoRecibido));
@@ -396,7 +396,7 @@ public partial class PagoViewModel : ObservableObject
             if (requiereRegistrarPago)
             {
                 PagoRegistroCobroResult cobro;
-                if (MetodoSeleccionado == "TRANSFERENCIA")
+                if (MetodoSeleccionado == ChozaMaui.Models.MetodosPago.Transferencia)
                 {
                     if (string.IsNullOrEmpty(RutaArchivoComprobante))
                     {

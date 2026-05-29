@@ -111,13 +111,13 @@ public sealed class PagoWorkflowService
     public async Task<PagoCierreMesaResult> CerrarMesaCobradaAsync(CuentaResponse cuenta, PedidoResponse pedido)
     {
         var cuentaCerrada = await CerrarCuentaAsync(cuenta);
-        var mesaLiberada = await LiberarMesaAsync(pedido);
+        await InvalidarMesasSiAplicaAsync(pedido);
         await InvalidarResumenCuentaAsync(cuenta.Idcuenta);
 
         if (pedido.Mesa is not null)
             await _cache.RemoveAsync(BuildCuentaMesaKey(pedido.Mesa.Idmesa));
 
-        return new PagoCierreMesaResult(cuentaCerrada, mesaLiberada);
+        return new PagoCierreMesaResult(cuentaCerrada, pedido.Mesa);
     }
 
     public Task<PagoResponse> RegistrarPagoAsync(
@@ -143,8 +143,12 @@ public sealed class PagoWorkflowService
         if (pedido.Mesa is null)
             return null;
 
-        return await _mesas.ActualizarEstadoMesaAsync(pedido.Mesa, true);
+        await _mesas.InvalidarAsync();
+        return pedido.Mesa;
     }
+
+    private Task InvalidarMesasSiAplicaAsync(PedidoResponse pedido)
+        => pedido.Mesa is null ? Task.CompletedTask : _mesas.InvalidarAsync();
 
     private Task<CuentaResponse?> ObtenerCuentaAbiertaPorMesaAsync(int idMesa)
         => _cache.GetOrCreateAsync(

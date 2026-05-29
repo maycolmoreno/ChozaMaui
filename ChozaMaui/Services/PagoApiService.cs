@@ -20,7 +20,7 @@ public class PagoApiService
     {
         var r = await _http.PostAsJsonAsync($"/api/cuentas/{idCuenta}/pagos",
             new PagoRequest { Monto = monto, Metodo = metodo, Usuario = usuario, Referencia = referencia }, _camelCase);
-        await EnsureSuccessStatusCodeAsync(r);
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<PagoResponse>())!;
     }
 
@@ -54,21 +54,21 @@ public class PagoApiService
         content.Add(fileContent, "archivo", fileName);
 
         var r = await _http.PostAsync($"/api/cuentas/{idCuenta}/pagos/con-comprobante", content, cancellationToken);
-        await EnsureSuccessStatusCodeAsync(r, cancellationToken);
+        await ApiErrorHelper.EnsureSuccessAsync(r, cancellationToken);
         return (await r.Content.ReadFromJsonAsync<PagoResponse>(_camelCase, cancellationToken))!;
     }
 
     public async Task<List<PagoResponse>> ListarPagosCuentaAsync(int idCuenta)
     {
         var r = await _http.GetAsync($"/api/cuentas/{idCuenta}/pagos");
-        await EnsureSuccessStatusCodeAsync(r);
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<List<PagoResponse>>(_camelCase)) ?? [];
     }
 
     public async Task<SaldoCuentaResponse> ObtenerResumenCuentaAsync(int idCuenta)
     {
         var r = await _http.GetAsync($"/api/cuentas/{idCuenta}/pagos/resumen");
-        await EnsureSuccessStatusCodeAsync(r);
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<SaldoCuentaResponse>(_camelCase))!;
     }
 
@@ -94,7 +94,7 @@ public class PagoApiService
 
         var r = await _http.PostAsync(
             $"/api/cuentas/{idCuenta}/pagos/{idPago}/comprobante", content, cancellationToken);
-        await EnsureSuccessStatusCodeAsync(r, cancellationToken);
+        await ApiErrorHelper.EnsureSuccessAsync(r, cancellationToken);
         return (await r.Content.ReadFromJsonAsync<ComprobanteResponse>(_camelCase, cancellationToken))!;
     }
 
@@ -105,7 +105,7 @@ public class PagoApiService
     {
         var r = await _http.GetAsync($"/api/cuentas/{idCuenta}/pagos/{idPago}/comprobante");
         if (r.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
-        await EnsureSuccessStatusCodeAsync(r);
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return await r.Content.ReadFromJsonAsync<ComprobanteResponse>(_camelCase);
     }
 
@@ -120,7 +120,8 @@ public class PagoApiService
                    ?? new DropboxEstadoResponse { Disponible = true, Mensaje = "Dropbox disponible." };
         }
 
-        var mensaje = await r.Content.ReadAsStringAsync(cancellationToken);
+        var raw = await r.Content.ReadAsStringAsync(cancellationToken);
+        var mensaje = ApiErrorHelper.ExtractMessage(raw);
         return new DropboxEstadoResponse
         {
             Disponible = false,
@@ -136,45 +137,6 @@ public class PagoApiService
     public async Task EliminarComprobanteAsync(int idCuenta, int idPago)
     {
         var r = await _http.DeleteAsync($"/api/cuentas/{idCuenta}/pagos/{idPago}/comprobante");
-        await EnsureSuccessStatusCodeAsync(r);
-    }
-
-    private static async Task EnsureSuccessStatusCodeAsync(HttpResponseMessage response, CancellationToken cancellationToken = default)
-    {
-        if (response.IsSuccessStatusCode)
-            return;
-
-        var raw = await response.Content.ReadAsStringAsync(cancellationToken);
-        var message = ExtractErrorMessage(raw)
-            ?? $"Error del servidor ({(int)response.StatusCode}).";
-
-        throw new HttpRequestException(message, null, response.StatusCode);
-    }
-
-    private static string? ExtractErrorMessage(string raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw))
-            return null;
-
-        try
-        {
-            using var doc = JsonDocument.Parse(raw);
-            var root = doc.RootElement;
-
-            foreach (var property in new[] { "message", "mensaje", "error", "title", "detail" })
-            {
-                if (root.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String)
-                {
-                    var text = value.GetString();
-                    if (!string.IsNullOrWhiteSpace(text))
-                        return text;
-                }
-            }
-        }
-        catch (JsonException)
-        {
-        }
-
-        return raw.Trim();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
     }
 }

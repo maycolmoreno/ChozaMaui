@@ -48,10 +48,10 @@ public sealed class HistorialCuentasPresentationService
     }
 
     public bool EsCuentaPendiente(CuentaResponse cuenta)
-        => string.Equals(cuenta.Estado, "ABIERTA", StringComparison.OrdinalIgnoreCase);
+        => string.Equals(cuenta.Estado, CuentaEstados.Abierta, StringComparison.OrdinalIgnoreCase);
 
     public bool EsCuentaCobrada(CuentaResponse cuenta)
-        => string.Equals(cuenta.Estado, "PAGADA", StringComparison.OrdinalIgnoreCase)
+        => string.Equals(cuenta.Estado, CuentaEstados.Pagada, StringComparison.OrdinalIgnoreCase)
         || string.Equals(cuenta.Estado, "CERRADA", StringComparison.OrdinalIgnoreCase);
 }
 

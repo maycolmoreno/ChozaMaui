@@ -17,12 +17,12 @@ public sealed class PedidoPresentationService
         resultado = filtroEstado switch
         {
             "EN_PREPARACION" => resultado.Where(p =>
-                p.Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO" or "PENDIENTE"),
+                p.Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso or PedidoEstados.Pendiente),
             "LISTOS" => resultado.Where(p =>
-                p.Estado is "LISTO_PARA_ENTREGA" or "LISTO"),
+                p.Estado is PedidoEstados.ListoParaEntrega or PedidoEstados.Listo),
             "ENTREGADOS" => resultado.Where(p =>
-                p.Estado is "COMPLETADO" or "ENTREGADO"),
-            "CANCELADOS" => resultado.Where(p => p.Estado == "CANCELADO"),
+                p.Estado is PedidoEstados.Completado or PedidoEstados.Entregado),
+            "CANCELADOS" => resultado.Where(p => p.Estado == PedidoEstados.Cancelado),
             _ => resultado
         };
 
@@ -38,10 +38,10 @@ public sealed class PedidoPresentationService
         var lista = resultado.OrderByDescending(p => p.Fecha).ToList();
 
         var totalEnPreparacion = visibles.Count(p =>
-            p.Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO" or "PENDIENTE");
-        var totalListos = visibles.Count(p => p.Estado is "LISTO_PARA_ENTREGA" or "LISTO");
-        var totalEntregados = visibles.Count(p => p.Fecha.Date == hoy && p.Estado is ("COMPLETADO" or "ENTREGADO"));
-        var totalCancelados = visibles.Count(p => p.Fecha.Date == hoy && p.Estado == "CANCELADO");
+            p.Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso or PedidoEstados.Pendiente);
+        var totalListos = visibles.Count(p => p.Estado is PedidoEstados.ListoParaEntrega or PedidoEstados.Listo);
+        var totalEntregados = visibles.Count(p => p.Fecha.Date == hoy && p.Estado is (PedidoEstados.Completado or PedidoEstados.Entregado));
+        var totalCancelados = visibles.Count(p => p.Fecha.Date == hoy && p.Estado == PedidoEstados.Cancelado);
 
         return new PedidosPresentationSnapshot(
             lista,
@@ -81,11 +81,11 @@ public sealed class PedidoPresentationService
 
     public string MapearEstadoVisual(string estado) => estado switch
     {
-        "PENDIENTE" => "PENDIENTE",
-        "EN_COCINA" or "EN_BAR" or "EN_PROCESO" => "EN PREPARACION",
-        "LISTO" or "LISTO_PARA_ENTREGA" => "LISTO PARA ENTREGA",
-        "COMPLETADO" or "ENTREGADO" => "ENTREGADO",
-        "CANCELADO" => "CANCELADO",
+        PedidoEstados.Pendiente => "PENDIENTE",
+        PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso => "EN PREPARACION",
+        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega => "LISTO PARA ENTREGA",
+        PedidoEstados.Completado or PedidoEstados.Entregado => "ENTREGADO",
+        PedidoEstados.Cancelado => "CANCELADO",
         _ => estado
     };
 
@@ -103,7 +103,7 @@ public sealed class PedidoPresentationService
             }
         };
 
-        var enCocina = estado is not "PENDIENTE" and not "CANCELADO";
+        var enCocina = estado is not PedidoEstados.Pendiente and not PedidoEstados.Cancelado;
         historial.Add(new PedidoTimelineItem
         {
             Hora = enCocina ? FormatearHora(pedido.FechaEnCocina) : "--:-- --",
@@ -113,7 +113,7 @@ public sealed class PedidoPresentationService
             MostrarLinea = true
         });
 
-        var listo = estado is "LISTO" or "LISTO_PARA_ENTREGA" or "COMPLETADO" or "ENTREGADO";
+        var listo = estado is PedidoEstados.Listo or PedidoEstados.ListoParaEntrega or PedidoEstados.Completado or PedidoEstados.Entregado;
         historial.Add(new PedidoTimelineItem
         {
             Hora = listo ? FormatearHora(pedido.FechaListoParaEntrega) : "--:-- --",
@@ -123,7 +123,7 @@ public sealed class PedidoPresentationService
             MostrarLinea = true
         });
 
-        var entregado = estado is "COMPLETADO" or "ENTREGADO";
+        var entregado = estado is PedidoEstados.Completado or PedidoEstados.Entregado;
         historial.Add(new PedidoTimelineItem
         {
             Hora = entregado ? FormatearHora(pedido.FechaEntregado) : "--:-- --",

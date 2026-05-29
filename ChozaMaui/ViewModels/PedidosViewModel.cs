@@ -161,7 +161,7 @@ public partial class PedidosViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            await _pedidoWorkflow.CambiarEstadoPedidoAsync(pedido, "COMPLETADO");
+            await _pedidoWorkflow.CambiarEstadoPedidoAsync(pedido, PedidoEstados.Completado);
             await CargarAsync();
         }
         catch (Exception ex)
@@ -199,9 +199,9 @@ public partial class PedidosViewModel : ObservableObject
         // 3. Mostrar alerta visual según evento
         var titulo = notif.Evento switch
         {
-            "LISTO"     => "🔔 ¡Pedido listo para entregar!",
+            PedidoEstados.Listo => "🔔 ¡Pedido listo para entregar!",
             "CONFIRMAR" => "🍳 Nuevo pedido en cocina",
-            "CANCELADO" => "❌ Pedido cancelado",
+            PedidoEstados.Cancelado => "❌ Pedido cancelado",
             _           => "📋 Cambio en pedido"
         };
         _ = MainThread.InvokeOnMainThreadAsync(async () =>

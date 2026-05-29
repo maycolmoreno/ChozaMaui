@@ -119,7 +119,7 @@ public sealed class PosOrderWorkflowService
 
     private async Task InvalidarMesasSiPedidoFinalizoAsync(MesaResponse? mesa, string estadoPedido)
     {
-        if (mesa is null || estadoPedido is not ("CANCELADO" or "COMPLETADO" or "ENTREGADO"))
+        if (mesa is null || estadoPedido is not (PedidoEstados.Cancelado or PedidoEstados.Completado or PedidoEstados.Entregado))
             return;
 
         await _mesas.InvalidarAsync();
@@ -140,7 +140,7 @@ public sealed class PosOrderWorkflowService
 
         await _cache.RemoveAsync(BuildCuentaMesaKey(mesa.Idmesa));
 
-        if (estadoPedido is "CANCELADO" or "COMPLETADO" or "ENTREGADO")
+        if (estadoPedido is PedidoEstados.Cancelado or PedidoEstados.Completado or PedidoEstados.Entregado)
             await _cache.RemoveAsync(BuildPedidoMesaKey(mesa.Idmesa));
     }
 

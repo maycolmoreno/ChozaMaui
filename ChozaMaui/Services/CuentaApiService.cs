@@ -18,14 +18,14 @@ public class CuentaApiService
     public async Task<List<CuentaResponse>> GetTodasCuentasAsync()
     {
         var r = await _http.GetAsync("/api/cuentas");
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<List<CuentaResponse>>()) ?? [];
     }
 
     public async Task<List<CuentaResponse>> ObtenerCuentasAbiertasAsync()
     {
         var r = await _http.GetAsync("/api/cuentas/abiertas");
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<List<CuentaResponse>>()) ?? [];
     }
 
@@ -35,7 +35,7 @@ public class CuentaApiService
         if (r.StatusCode == System.Net.HttpStatusCode.NotFound)
             return null;
 
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return await r.Content.ReadFromJsonAsync<CuentaResponse>();
     }
 
@@ -43,14 +43,14 @@ public class CuentaApiService
     {
         var r = await _http.PostAsJsonAsync("/api/cuentas",
             new CuentaRequest { IdMesa = idMesa, IdCliente = idCliente, Total = total }, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<CuentaResponse>())!;
     }
 
     public async Task<CuentaResponse> AgregarPedidoACuentaAsync(int idCuenta, int idPedido)
     {
         var r = await _http.PostAsync($"/api/cuentas/{idCuenta}/pedidos/{idPedido}", null);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<CuentaResponse>())!;
     }
 
@@ -58,15 +58,15 @@ public class CuentaApiService
     {
         var r = await _http.PatchAsJsonAsync($"/api/cuentas/{idCuenta}/cliente",
             new { idCliente }, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<CuentaResponse>())!;
     }
 
     public async Task<CuentaResponse> CerrarCuentaAsync(int idCuenta)
     {
         var r = await _http.PatchAsJsonAsync($"/api/cuentas/{idCuenta}/estado",
-            new CambiarEstadoRequest { Estado = "PAGADA" }, _camelCase);
-        r.EnsureSuccessStatusCode();
+            new CambiarEstadoRequest { Estado = CuentaEstados.Pagada }, _camelCase);
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<CuentaResponse>())!;
     }
 }

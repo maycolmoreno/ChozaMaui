@@ -1,5 +1,13 @@
 Auditoria focal MAUI vs Web/API para CAMARERO y CAJERO
 
+Nota de actualizacion
+
+El estado tecnico actualizado de lo ya corregido y lo pendiente despues de esta auditoria esta documentado en:
+
+`Documentacion/ESTADO_ACTUAL_ESTABILIZACION.md`
+
+Ese documento debe usarse como tablero vigente de avance. Esta auditoria se mantiene como diagnostico base de CAMARERO/CAJERO.
+
 Fecha
 
 28 de mayo de 2026

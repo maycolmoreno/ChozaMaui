@@ -28,7 +28,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(TabPendientesActivo))]
     [NotifyPropertyChangedFor(nameof(TabCobradasActivo))]
     [NotifyPropertyChangedFor(nameof(TabTodasActivo))]
-    private string filtroEstado = "ABIERTA";
+    private string filtroEstado = CuentaEstados.Abierta;
     [ObservableProperty] private DateTime fechaDesde = DateTime.Today.AddDays(-30);
     [ObservableProperty] private DateTime fechaHasta = DateTime.Today;
     [ObservableProperty] private string textoBusqueda = string.Empty;
@@ -49,7 +49,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
 
     partial void OnCuentaDetalleChanged(CuentaResponse? value)
     {
-        CuentaDetalleEsAbierta = value?.Estado == "ABIERTA";
+        CuentaDetalleEsAbierta = value?.Estado == CuentaEstados.Abierta;
         OnPropertyChanged(nameof(PuedeCobrarCuenta));
     }
 
@@ -80,13 +80,13 @@ public partial class HistorialCuentasViewModel : ObservableObject
     }
 
     // Opciones de filtro de estado
-    public List<string> OpcionesEstado { get; } = ["ABIERTA", "COBRADAS", "TODAS", "ANULADA"];
+    public List<string> OpcionesEstado { get; } = [CuentaEstados.Abierta, "COBRADAS", "TODAS", CuentaEstados.Anulada];
 
     // Control por rol
     public bool PuedeCobrarCuenta => _capabilities.PuedeCobrarCuenta(_session.Rol) && CuentaDetalleEsAbierta;
     public int TotalPendientes => _todas.Count(_presentation.EsCuentaPendiente);
     public int TotalCobradas => _todas.Count(_presentation.EsCuentaCobrada);
-    public bool TabPendientesActivo => FiltroEstado == "ABIERTA";
+    public bool TabPendientesActivo => FiltroEstado == CuentaEstados.Abierta;
     public bool TabCobradasActivo => FiltroEstado == "COBRADAS";
     public bool TabTodasActivo => FiltroEstado == "TODAS";
 
@@ -156,7 +156,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void MostrarPendientes() => FiltroEstado = "ABIERTA";
+    private void MostrarPendientes() => FiltroEstado = CuentaEstados.Abierta;
 
     [RelayCommand]
     private void MostrarCobradas() => FiltroEstado = "COBRADAS";

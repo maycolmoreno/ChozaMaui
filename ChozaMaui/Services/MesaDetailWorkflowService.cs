@@ -35,12 +35,12 @@ public sealed class MesaDetailWorkflowService
     }
 
     public Task<PedidoResponse> EntregarPedidoAsync(PedidoResponse pedido)
-        => _pedidoWorkflow.CambiarEstadoPedidoAsync(pedido, "COMPLETADO");
+        => _pedidoWorkflow.CambiarEstadoPedidoAsync(pedido, PedidoEstados.Completado);
 
     public async Task EntregarPedidosAsync(IEnumerable<PedidoResponse> pedidos)
     {
         foreach (var pedido in pedidos)
-            await _pedidoWorkflow.CambiarEstadoPedidoAsync(pedido, "COMPLETADO");
+            await _pedidoWorkflow.CambiarEstadoPedidoAsync(pedido, PedidoEstados.Completado);
     }
 
     public Task<MesaResponse> CerrarMesaAsync(MesaResponse mesa)

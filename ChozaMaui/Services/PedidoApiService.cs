@@ -16,18 +16,30 @@ public class PedidoApiService
     public PedidoApiService(HttpClient http) => _http = http;
 
     public async Task<List<PedidoResponse>> GetPedidosAsync()
-        => await _http.GetFromJsonAsync<List<PedidoResponse>>("/api/pedidos") ?? [];
+    {
+        var response = await _http.GetAsync("/api/pedidos");
+        await ApiErrorHelper.EnsureSuccessAsync(response);
+        return (await response.Content.ReadFromJsonAsync<List<PedidoResponse>>()) ?? [];
+    }
 
     public async Task<PedidoResponse> GetPedidoPorIdAsync(int id)
-        => (await _http.GetFromJsonAsync<PedidoResponse>($"/api/pedidos/{id}"))!;
+    {
+        var response = await _http.GetAsync($"/api/pedidos/{id}");
+        await ApiErrorHelper.EnsureSuccessAsync(response);
+        return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+    }
 
     public async Task<PedidoResponse> GetPedidoRecientePorCuentaAsync(int idCuenta)
-        => (await _http.GetFromJsonAsync<PedidoResponse>($"/api/pedidos/cuenta/{idCuenta}/reciente"))!;
+    {
+        var response = await _http.GetAsync($"/api/pedidos/cuenta/{idCuenta}/reciente");
+        await ApiErrorHelper.EnsureSuccessAsync(response);
+        return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+    }
 
     public async Task<PedidoResponse> CrearPedidoAsync(PedidoRequest request)
     {
         var response = await _http.PostAsJsonAsync("/api/pedidos", request, _camelCase);
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
     }
 
@@ -35,7 +47,7 @@ public class PedidoApiService
     {
         var estado = Uri.EscapeDataString((estadoDestino ?? string.Empty).Trim().ToUpperInvariant());
         var response = await _http.PostAsJsonAsync($"/api/pedidos/con-cuenta?estadoDestino={estado}", request, _camelCase);
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
     }
 
@@ -44,10 +56,10 @@ public class PedidoApiService
         var estado = (nuevoEstado ?? string.Empty).Trim().ToUpperInvariant();
         var rutaSemantica = estado switch
         {
-            "EN_COCINA" => $"/api/pedidos/{id}/confirmar",
-            "LISTO" or "LISTO_PARA_ENTREGA" => $"/api/pedidos/{id}/listo",
-            "COMPLETADO" or "ENTREGADO" => $"/api/pedidos/{id}/entregado",
-            "CANCELADO" => $"/api/pedidos/{id}/cancelar",
+            PedidoEstados.EnCocina => $"/api/pedidos/{id}/confirmar",
+            PedidoEstados.Listo or PedidoEstados.ListoParaEntrega => $"/api/pedidos/{id}/listo",
+            PedidoEstados.Completado or PedidoEstados.Entregado => $"/api/pedidos/{id}/entregado",
+            PedidoEstados.Cancelado => $"/api/pedidos/{id}/cancelar",
             _ => null
         };
 
@@ -64,7 +76,7 @@ public class PedidoApiService
                 _camelCase);
         }
 
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
     }
 }

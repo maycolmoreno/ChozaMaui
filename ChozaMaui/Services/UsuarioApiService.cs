@@ -35,7 +35,7 @@ public class UsuarioApiService
         var client = CreateClient();
         var response = await client.PostAsJsonAsync("/api/usuarios/login",
             new LoginRequest { Username = username, Password = password }, _camelCase);
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<LoginResponse>())!;
     }
 
@@ -44,6 +44,6 @@ public class UsuarioApiService
         var client = CreateClient();
         var response = await client.PostAsJsonAsync("/api/usuarios/cambiar-password",
             new CambiarPasswordRequest { PasswordActual = passwordActual, PasswordNuevo = passwordNuevo }, _camelCase);
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
     }
 }

@@ -16,7 +16,7 @@ public class ReporteApiService
     {
         var query = fecha.HasValue ? $"?fecha={fecha.Value:yyyy-MM-dd}" : string.Empty;
         var response = await _http.GetAsync($"/api/reportes/ventas-dia{query}");
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<ReporteVentasDia>()) ?? new();
     }
 }

@@ -20,28 +20,28 @@ public class MesaApiService
     public async Task<List<MesaResponse>> ObtenerMesasAsync()
     {
         var response = await _http.GetAsync("/api/mesas");
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<List<MesaResponse>>()) ?? [];
     }
 
     public async Task<MesaResponse> CrearMesaAsync(MesaUpdateRequest req)
     {
         var r = await _http.PostAsJsonAsync("/api/mesas", req, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<MesaResponse>())!;
     }
 
     public async Task<MesaResponse> ActualizarMesaAsync(int id, MesaUpdateRequest req)
     {
         var r = await _http.PutAsJsonAsync($"/api/mesas/{id}", req, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<MesaResponse>())!;
     }
 
     public async Task EliminarMesaAsync(int id)
     {
         var r = await _http.DeleteAsync($"/api/mesas/{id}");
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
     }
 
     public async Task<MesaResponse> ActualizarEstadoMesaAsync(MesaResponse mesa, bool nuevoEstado)
@@ -54,31 +54,35 @@ public class MesaApiService
                 Estado    = nuevoEstado,
                 Idcomedor = mesa.Idcomedor
             }, _camelCase);
-        response.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<MesaResponse>())!;
     }
 
     // ── Comedores ──────────────────────────────────────────────────
     public async Task<List<ComedorResponse>> GetComedoresAsync()
-        => await _http.GetFromJsonAsync<List<ComedorResponse>>("/api/comedores") ?? [];
+    {
+        var r = await _http.GetAsync("/api/comedores");
+        await ApiErrorHelper.EnsureSuccessAsync(r);
+        return (await r.Content.ReadFromJsonAsync<List<ComedorResponse>>()) ?? [];
+    }
 
     public async Task<ComedorResponse> CrearComedorAsync(ComedorRequest req)
     {
         var r = await _http.PostAsJsonAsync("/api/comedores", req, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<ComedorResponse>())!;
     }
 
     public async Task<ComedorResponse> ActualizarComedorAsync(int id, ComedorRequest req)
     {
         var r = await _http.PutAsJsonAsync($"/api/comedores/{id}", req, _camelCase);
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
         return (await r.Content.ReadFromJsonAsync<ComedorResponse>())!;
     }
 
     public async Task EliminarComedorAsync(int id)
     {
         var r = await _http.DeleteAsync($"/api/comedores/{id}");
-        r.EnsureSuccessStatusCode();
+        await ApiErrorHelper.EnsureSuccessAsync(r);
     }
 }

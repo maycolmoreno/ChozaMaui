@@ -108,7 +108,7 @@ public partial class PosViewModel : ObservableObject
     public bool TienePedidoEnCurso => PedidoEnCurso is not null;
     public bool PuedeEnviarACocina => _capabilities.PuedeConfirmarPedido(_session.Rol);
     public bool PuedeMarcarListo =>
-        (PedidoEnCurso?.Estado is "EN_COCINA" or "EN_BAR") &&
+        (PedidoEnCurso?.Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar) &&
         _capabilities.PuedeMarcarPedidoListo(_session.Rol);
     public bool PuedeEntregarPedido => PedidoEnCurso?.PuedeEntregarse == true && _capabilities.PuedeEntregarPedido(_session.Rol);
     public bool MostrarPedidoListo => PuedeEntregarPedido;
@@ -519,7 +519,7 @@ public partial class PosViewModel : ObservableObject
             return;
         }
 
-        var estadoDestino = "PENDIENTE";
+        var estadoDestino = PedidoEstados.Pendiente;
         var mensajeExito = "Pedido";
 
         await CrearPedidoAsync(estadoDestino, mensajeExito);
@@ -534,7 +534,7 @@ public partial class PosViewModel : ObservableObject
             return;
         }
 
-        await CrearPedidoAsync("EN_COCINA", "Pedido enviado a cocina");
+        await CrearPedidoAsync(PedidoEstados.EnCocina, "Pedido enviado a cocina");
     }
 
     [RelayCommand]
@@ -552,7 +552,7 @@ public partial class PosViewModel : ObservableObject
             return;
         }
 
-        await CambiarEstadoPedidoActualAsync("LISTO_PARA_ENTREGA", "Pedido marcado como listo.");
+        await CambiarEstadoPedidoActualAsync(PedidoEstados.ListoParaEntrega, "Pedido marcado como listo.");
     }
 
     [RelayCommand]
@@ -573,7 +573,7 @@ public partial class PosViewModel : ObservableObject
         _ultimoPedidoParaRecibo = PedidoEnCurso;
         PedidoEntregadoTotalTexto = $"${PedidoEnCurso.Total:0.00}";
 
-        await CambiarEstadoPedidoActualAsync("COMPLETADO", "Pedido entregado al cliente.");
+        await CambiarEstadoPedidoActualAsync(PedidoEstados.Completado, "Pedido entregado al cliente.");
         MostrarExito = true;
     }
 

@@ -102,13 +102,13 @@ public partial class PedidoDetalleViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(nuevoEstado) || nuevoEstado == Estado)
             return;
 
-        if (nuevoEstado == "EN_COCINA" && !PuedeEnviarCocina)
+        if (nuevoEstado == PedidoEstados.EnCocina && !PuedeEnviarCocina)
         {
             MensajeCambio = "Tu perfil no tiene autorizacion para enviar pedidos a cocina.";
             return;
         }
 
-        if (nuevoEstado == "LISTO_PARA_ENTREGA" && !PuedeMarcarListo)
+        if (nuevoEstado == PedidoEstados.ListoParaEntrega && !PuedeMarcarListo)
         {
             MensajeCambio = "Solo cocina o admin pueden despachar pedidos de cocina.";
             return;
@@ -136,7 +136,7 @@ public partial class PedidoDetalleViewModel : ObservableObject
     [RelayCommand]
     public async Task CancelarPedidoAsync()
     {
-        await CambiarEstadoRapidoAsync("CANCELADO");
+        await CambiarEstadoRapidoAsync(PedidoEstados.Cancelado);
     }
 
     [RelayCommand]
@@ -154,16 +154,16 @@ public partial class PedidoDetalleViewModel : ObservableObject
     }
 
     public bool PuedeEnviarCocina =>
-        Estado == "PENDIENTE" &&
+        Estado == PedidoEstados.Pendiente &&
         _capabilities.PuedeConfirmarPedido(_session.Rol);
     public bool PuedeMarcarListo =>
-        (Estado is "EN_COCINA" or "EN_BAR" or "EN_PROCESO") &&
+        (Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso) &&
         _capabilities.PuedeMarcarPedidoListo(_session.Rol);
     public bool PuedeEntregarCliente =>
-        (Estado is "LISTO" or "LISTO_PARA_ENTREGA") &&
+        (Estado is PedidoEstados.Listo or PedidoEstados.ListoParaEntrega) &&
         _capabilities.PuedeEntregarPedido(_session.Rol);
     public bool PuedeCancelarPedido =>
-        Estado is not ("COMPLETADO" or "ENTREGADO" or "CANCELADO") && _capabilities.PuedeCancelarPedido(_session.Rol);
+        Estado is not (PedidoEstados.Completado or PedidoEstados.Entregado or PedidoEstados.Cancelado) && _capabilities.PuedeCancelarPedido(_session.Rol);
 
     private void AplicarPresentacion(PedidoDetailPresentationModel model)
     {

@@ -57,19 +57,19 @@ public class NotificationService
 
         if (ws.PedidoId > 0)
         {
-            if (ws.Evento == "LISTO")
+            if (ws.Evento == PedidoEstados.Listo)
                 _notificados.Add(ws.PedidoId);
 
-            if (ws.Evento is "ENTREGADO" or "CANCELADO")
+            if (ws.Evento == PedidoEstados.Entregado || ws.Evento == PedidoEstados.Cancelado)
                 _notificados.Remove(ws.PedidoId);
         }
 
         var (titulo, tipo) = ws.Evento switch
         {
-            "LISTO"     => ("¡Pedido listo para entregar!", "PEDIDO"),
+            PedidoEstados.Listo => ("¡Pedido listo para entregar!", "PEDIDO"),
             "CONFIRMAR" => ("Nuevo pedido en cocina",       "PEDIDO"),
-            "ENTREGADO" => ("Pedido entregado",             "PEDIDO"),
-            "CANCELADO" => ("Pedido cancelado",             "PEDIDO"),
+            PedidoEstados.Entregado => ("Pedido entregado", "PEDIDO"),
+            PedidoEstados.Cancelado => ("Pedido cancelado", "PEDIDO"),
             _           => ("Cambio en pedido",             "PEDIDO"),
         };
 
@@ -102,7 +102,7 @@ public class NotificationService
 
         // 2. Limpiar del set los pedidos ya terminados / cancelados
         var idsTerminados = lista
-            .Where(p => p.Estado is "COMPLETADO" or "ENTREGADO" or "CANCELADO")
+            .Where(p => p.Estado is PedidoEstados.Completado or PedidoEstados.Entregado or PedidoEstados.Cancelado)
             .Select(p => p.Idpedido)
             .ToHashSet();
         _notificados.RemoveWhere(id => idsTerminados.Contains(id));
@@ -191,7 +191,10 @@ public class NotificationService
             if (!_eventosWebSocketProcesados.Add(key))
                 return false;
 
-            if (ws.PedidoId > 0 && ws.Evento is "ENTREGADO" or "CANCELADO" or "COMPLETADO")
+            if (ws.PedidoId > 0 &&
+                (ws.Evento == PedidoEstados.Entregado ||
+                 ws.Evento == PedidoEstados.Cancelado ||
+                 ws.Evento == PedidoEstados.Completado))
             {
                 var prefijo = $"{ws.PedidoId}:";
                 _eventosWebSocketProcesados.RemoveWhere(k => k.StartsWith(prefijo, StringComparison.Ordinal));
