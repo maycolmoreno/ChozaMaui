@@ -48,7 +48,7 @@
 
             <!-- Error -->
             <Label Text="{Binding ErrorMessage}"
-                   TextColor="#ff6b6b"
+                   TextColor="{StaticResource Danger}"
                    FontSize="13"
                    IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
                    HorizontalOptions="Center" />
@@ -73,13 +73,13 @@
             <!-- ══════════════════════════════════════════════════════════════ -->
             <!-- Panel de configuración del servidor                           -->
             <!-- ══════════════════════════════════════════════════════════════ -->
-            <BoxView HeightRequest="1" Color="#e5e7eb" Margin="0,16,0,0" />
+            <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,16,0,0" />
 
             <!-- Botón desplegable -->
             <Button Text="⚙ Configurar servidor"
                     Command="{Binding TogglePanelServidorCommand}"
                     BackgroundColor="Transparent"
-                    TextColor="#9ca3af"
+                    TextColor="{StaticResource TextMuted}"
                     FontSize="13"
                     HorizontalOptions="Center"
                     Padding="8,4" />
@@ -87,39 +87,39 @@
             <!-- Panel colapsable -->
             <Border IsVisible="{Binding PanelServidorVisible}"
                     BackgroundColor="White"
-                    Stroke="#e2e8f0"
+                    Stroke="{StaticResource Border}"
                     StrokeShape="RoundRectangle 12"
                     Padding="16">
                 <VerticalStackLayout Spacing="10">
 
                     <Label Text="Dirección del servidor"
                            FontSize="13" FontAttributes="Bold"
-                           TextColor="#374151" />
+                           TextColor="{StaticResource TextSecondary}" />
 
                     <!-- IP y Puerto en fila -->
                     <Grid ColumnDefinitions="*,Auto,80" ColumnSpacing="8">
                         <Border Grid.Column="0"
-                                BackgroundColor="#f3f4f6"
-                                StrokeShape="RoundRectangle 8" Stroke="#e5e7eb" Padding="10,6">
+                                BackgroundColor="{StaticResource SurfaceSunken}"
+                                StrokeShape="RoundRectangle 8" Stroke="{StaticResource Border}" Padding="10,6">
                             <Entry Placeholder="192.168.1.x"
                                    Text="{Binding ServidorHost}"
                                    Keyboard="Url"
-                                   TextColor="#111827"
-                                   PlaceholderColor="#9ca3af"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   PlaceholderColor="{StaticResource TextMuted}"
                                    BackgroundColor="Transparent"
                                    FontSize="14" />
                         </Border>
                         <Label Grid.Column="1" Text=":"
-                               FontSize="20" TextColor="#6b7280"
+                               FontSize="20" TextColor="{StaticResource TextSecondary}"
                                VerticalOptions="Center" />
                         <Border Grid.Column="2"
-                                BackgroundColor="#f3f4f6"
-                                StrokeShape="RoundRectangle 8" Stroke="#e5e7eb" Padding="10,6">
+                                BackgroundColor="{StaticResource SurfaceSunken}"
+                                StrokeShape="RoundRectangle 8" Stroke="{StaticResource Border}" Padding="10,6">
                             <Entry Placeholder="8081"
                                    Text="{Binding ServidorPuerto}"
                                    Keyboard="Numeric"
-                                   TextColor="#111827"
-                                   PlaceholderColor="#9ca3af"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   PlaceholderColor="{StaticResource TextMuted}"
                                    BackgroundColor="Transparent"
                                    FontSize="14" />
                         </Border>
@@ -127,7 +127,7 @@
 
                     <!-- Preview URL -->
                     <Label Text="{Binding UrlPreview}"
-                           FontSize="11" TextColor="#9ca3af"
+                           FontSize="11" TextColor="{StaticResource TextMuted}"
                            HorizontalOptions="Center" />
 
                     <!-- Botones Guardar / Probar -->
@@ -135,7 +135,7 @@
                         <Button Grid.Column="0"
                                 Text="💾 Guardar"
                                 Command="{Binding GuardarServidorCommand}"
-                                BackgroundColor="#6b7280"
+                                BackgroundColor="{StaticResource TextSecondary}"
                                 TextColor="White"
                                 CornerRadius="8"
                                 FontSize="13"

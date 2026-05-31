@@ -9,7 +9,7 @@ public class ComedorResponse
     public string? Descripcion { get; set; }
     public bool Estado { get; set; }
     public string EstadoTexto => Estado ? "Activo" : "Inactivo";
-    public string EstadoColor => Estado ? "#28b779" : "#e94560";
+    public string EstadoColor => Estado ? "#16A34A" : "#DC2626";
 }
 
 public class ComedorRequest
@@ -42,7 +42,7 @@ public class CategoriaResponse
     public string Descripcion { get; set; } = string.Empty;
     public bool Estado { get; set; }
     public string EstadoTexto => Estado ? "Activa" : "Inactiva";
-    public string EstadoColor => Estado ? "#28b779" : "#e94560";
+    public string EstadoColor => Estado ? "#16A34A" : "#DC2626";
 }
 
 public class CategoriaRequest
@@ -63,7 +63,7 @@ public class ProductoResponse
     public bool Estado { get; set; }
     public int CategoriaId { get; set; }
     public string EstadoTexto => Estado ? "Activo" : "Inactivo";
-    public string EstadoColor => Estado ? "#28b779" : "#e94560";
+    public string EstadoColor => Estado ? "#16A34A" : "#DC2626";
 }
 
 public class ProductoRequest
@@ -90,9 +90,9 @@ public class MesaResponse
 
     // Helpers para la UI — estado visual
     public string EstadoTexto => Estado ? "LIBRE" : "OCUPADA";
-    public string EstadoColor => Estado ? "#28b779" : "#e94560";
+    public string EstadoColor => Estado ? "#16A34A" : "#DC2626";
     public string CardBackground => Estado ? "#ffffff" : "#fff1f2";
-    public string StrokeColor => Estado ? "#28b779" : "#e94560";
+    public string StrokeColor => Estado ? "#16A34A" : "#DC2626";
 }
 
 public class PedidoDetalleRequest
@@ -152,7 +152,7 @@ public class ClienteResponse
     // Helper para listado
     public string NombreCompleto => Nombre;
     public string EstadoTexto => Estado ? "Activo" : "Inactivo";
-    public string EstadoColor => Estado ? "#28b779" : "#e94560";
+    public string EstadoColor => Estado ? "#16A34A" : "#DC2626";
 }
 
 public class ClienteRequest
@@ -185,16 +185,16 @@ public class PedidoResponse
 
     public string EstadoBadgeColor => Estado switch
     {
-        PedidoEstados.Pendiente          => "#0ea5e9",
-        PedidoEstados.EnCocina           => "#f59e0b",
-        PedidoEstados.EnBar              => "#f59e0b",
-        PedidoEstados.EnProceso          => "#f59e0b",
-        PedidoEstados.Listo              => "#ef4444",
-        PedidoEstados.ListoParaEntrega   => "#ef4444",
-        PedidoEstados.Entregado          => "#6b7280",
-        PedidoEstados.Completado         => "#6b7280",
-        PedidoEstados.Cancelado          => "#ef4444",
-        _ => "#6b7280"
+        PedidoEstados.Pendiente          => "#64748B",
+        PedidoEstados.EnCocina           => "#2563EB",
+        PedidoEstados.EnBar              => "#2563EB",
+        PedidoEstados.EnProceso          => "#2563EB",
+        PedidoEstados.Listo              => "#7C3AED",
+        PedidoEstados.ListoParaEntrega   => "#7C3AED",
+        PedidoEstados.Entregado          => "#DC2626",
+        PedidoEstados.Completado         => "#DC2626",
+        PedidoEstados.Cancelado          => "#6B7280",
+        _ => "#64748B"
     };
 
     public string EstadoBorderColor => EstadoBadgeColor;
@@ -244,35 +244,35 @@ public class PedidoResponse
     /// Color del círculo de ícono por estado.
     public string CircleColor => Estado switch
     {
-        PedidoEstados.Pendiente                     => "#0ea5e9",
+        PedidoEstados.Pendiente                     => "#64748B",
         PedidoEstados.EnCocina or PedidoEstados.EnBar
-            or PedidoEstados.EnProceso              => "#f59e0b",
-        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega => "#28b779",
-        PedidoEstados.Completado or PedidoEstados.Entregado   => "#28b779",
-        PedidoEstados.Cancelado                     => "#ef4444",
-        _ => "#6b7280"
+            or PedidoEstados.EnProceso              => "#2563EB",
+        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega => "#7C3AED",
+        PedidoEstados.Completado or PedidoEstados.Entregado   => "#DC2626",
+        PedidoEstados.Cancelado                     => "#6B7280",
+        _ => "#64748B"
     };
 
     /// Fondo claro del badge de estado.
     public string BadgeLightBackground => Estado switch
     {
-        PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso => "#FFF3E0",
-        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega                    => "#E8F5E9",
-        PedidoEstados.Completado or PedidoEstados.Entregado                      => "#E8F5E9",
-        PedidoEstados.Cancelado                                                  => "#FFEBEE",
-        PedidoEstados.Pendiente                                                  => "#E3F2FD",
-        _ => "#F5F5F5"
+        PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso => "#DBEAFE",
+        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega                    => "#EDE9FE",
+        PedidoEstados.Completado or PedidoEstados.Entregado                      => "#FEE2E2",
+        PedidoEstados.Cancelado                                                  => "#F1F5F9",
+        PedidoEstados.Pendiente                                                  => "#E2E8F0",
+        _ => "#F1F5F9"
     };
 
     /// Color del texto del badge (mismo tono que el color principal del estado).
     public string BadgeTextColor => Estado switch
     {
-        PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso => "#F59E0B",
-        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega                    => "#28B779",
-        PedidoEstados.Completado or PedidoEstados.Entregado                      => "#28B779",
-        PedidoEstados.Cancelado                                                  => "#EF4444",
-        PedidoEstados.Pendiente                                                  => "#0EA5E9",
-        _ => "#6B7280"
+        PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso => "#2563EB",
+        PedidoEstados.Listo or PedidoEstados.ListoParaEntrega                    => "#7C3AED",
+        PedidoEstados.Completado or PedidoEstados.Entregado                      => "#DC2626",
+        PedidoEstados.Cancelado                                                  => "#6B7280",
+        PedidoEstados.Pendiente                                                  => "#64748B",
+        _ => "#64748B"
     };
 
     /// Texto con ícono para el badge de estado.
@@ -315,6 +315,20 @@ public class CambiarPasswordRequest
 public class CambiarEstadoRequest
 {
     public string Estado { get; set; } = string.Empty;
+}
+
+public class PedidoHistorialResponse
+{
+    public int Idhistorial { get; set; }
+    public int Idpedido { get; set; }
+    public string Accion { get; set; } = string.Empty;
+    public string? EstadoAnterior { get; set; }
+    public string? EstadoNuevo { get; set; }
+    public int? Idusuario { get; set; }
+    public string UsuarioNombre { get; set; } = string.Empty;
+    public string UsuarioRol { get; set; } = string.Empty;
+    public DateTime Fecha { get; set; }
+    public string? Observacion { get; set; }
 }
 
 /// <summary>Item en el carrito del POS (en memoria).</summary>
@@ -422,20 +436,40 @@ public class MesaVisual
 
     public string EstadoColor => EstadoVisual switch
     {
-        "Disponible"            => "#28b779",
-        "Ocupada"               => "#0ea5e9",
-        "En preparacion"        => "#f59e0b",
-        "Lista para entregar"   => "#ef4444",
-        "Pendiente de pago"     => "#8b5cf6",
+        "Disponible"            => "#22C55E",
+        "Ocupada"               => "#F97316",
+        "En preparacion"        => "#3B82F6",
+        "Lista para entregar"   => "#8B5CF6",
+        "Pendiente de pago"     => "#EF4444",
         _                       => "#6b7280"
+    };
+
+    public string EstadoMapaTexto => EstadoVisual switch
+    {
+        "Disponible"          => "Libre",
+        "En preparacion"      => "En cocina",
+        "Pendiente de pago"   => "Por cobrar",
+        _                     => EstadoVisual
     };
 
     public string EstadoIcono => EstadoVisual switch
     {
-        "En preparacion"      => "♨",
-        "Lista para entregar" => "🔔",
+        "Disponible"          => "M",
+        "Ocupada"             => "P",
+        "En preparacion"      => "C",
+        "Lista para entregar" => "L",
         "Pendiente de pago"   => "$",
-        _                     => string.Empty
+        _                     => "M"
+    };
+
+    public string EstadoIconoSource => EstadoVisual switch
+    {
+        "Disponible"          => "icon_table.svg",
+        "Ocupada"             => "icon_users.svg",
+        "En preparacion"      => "cooking.svg",
+        "Lista para entregar" => "icon_receipt.svg",
+        "Pendiente de pago"   => "icon_cash_register.svg",
+        _                     => "icon_table.svg"
     };
 
     public string PedidoBadgeTexto => PedidosListos > 0
@@ -473,10 +507,11 @@ public class CuentaResponse
 
     public Color EstadoBadgeColor => Estado switch
     {
-        CuentaEstados.Abierta  => Color.FromArgb("#28b779"),
-        "CERRADA"  => Color.FromArgb("#6b7280"),
-        CuentaEstados.Anulada  => Color.FromArgb("#e94560"),
-        _          => Color.FromArgb("#fb8c00")
+        CuentaEstados.Abierta  => Color.FromArgb("#16A34A"),
+        CuentaEstados.Pagada   => Color.FromArgb("#2563EB"),
+        "CERRADA"              => Color.FromArgb("#64748B"),
+        CuentaEstados.Anulada  => Color.FromArgb("#DC2626"),
+        _                      => Color.FromArgb("#D97706")
     };
     public string MesaTexto => Mesa is not null ? $"Mesa {Mesa.Numero}" : "Sin mesa";
     public string ClienteTexto => Cliente?.Nombre ?? "Sin cliente";

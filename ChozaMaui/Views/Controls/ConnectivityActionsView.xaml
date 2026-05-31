@@ -29,7 +29,7 @@
                                VerticalOptions="Center" />
         </Grid>
 
-        <Border BackgroundColor="#FB923C"
+        <Border BackgroundColor="{StaticResource Primary}"
                 Stroke="Transparent"
                 StrokeShape="RoundRectangle 12"
                 HeightRequest="40"

@@ -8,21 +8,20 @@ public sealed class PedidoPresentationService
     public PedidosPresentationSnapshot BuildList(IReadOnlyList<PedidoResponse> pedidos, string filtroEstado, string? busqueda)
     {
         var hoy = DateTime.Today;
-        var visibles = pedidos
-            .Where(p => p.EsActivo || p.Fecha.Date == hoy)
-            .ToList();
+        var visibles = pedidos.ToList();
 
         IEnumerable<PedidoResponse> resultado = visibles;
 
         resultado = filtroEstado switch
         {
+            "ACTIVOS" => resultado.Where(p => p.EsActivo),
             "EN_PREPARACION" => resultado.Where(p =>
-                p.Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso or PedidoEstados.Pendiente),
+                EsEstado(p, PedidoEstados.EnCocina, PedidoEstados.EnBar, PedidoEstados.EnProceso, PedidoEstados.Pendiente)),
             "LISTOS" => resultado.Where(p =>
-                p.Estado is PedidoEstados.ListoParaEntrega or PedidoEstados.Listo),
+                EsEstado(p, PedidoEstados.ListoParaEntrega, PedidoEstados.Listo)),
             "ENTREGADOS" => resultado.Where(p =>
-                p.Estado is PedidoEstados.Completado or PedidoEstados.Entregado),
-            "CANCELADOS" => resultado.Where(p => p.Estado == PedidoEstados.Cancelado),
+                EsEstado(p, PedidoEstados.Completado, PedidoEstados.Entregado)),
+            "CANCELADOS" => resultado.Where(p => EsEstado(p, PedidoEstados.Cancelado)),
             _ => resultado
         };
 
@@ -38,10 +37,10 @@ public sealed class PedidoPresentationService
         var lista = resultado.OrderByDescending(p => p.Fecha).ToList();
 
         var totalEnPreparacion = visibles.Count(p =>
-            p.Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso or PedidoEstados.Pendiente);
-        var totalListos = visibles.Count(p => p.Estado is PedidoEstados.ListoParaEntrega or PedidoEstados.Listo);
-        var totalEntregados = visibles.Count(p => p.Fecha.Date == hoy && p.Estado is (PedidoEstados.Completado or PedidoEstados.Entregado));
-        var totalCancelados = visibles.Count(p => p.Fecha.Date == hoy && p.Estado == PedidoEstados.Cancelado);
+            EsEstado(p, PedidoEstados.EnCocina, PedidoEstados.EnBar, PedidoEstados.EnProceso, PedidoEstados.Pendiente));
+        var totalListos = visibles.Count(p => EsEstado(p, PedidoEstados.ListoParaEntrega, PedidoEstados.Listo));
+        var totalEntregados = visibles.Count(p => p.Fecha.Date == hoy && EsEstado(p, PedidoEstados.Completado, PedidoEstados.Entregado));
+        var totalCancelados = visibles.Count(p => p.Fecha.Date == hoy && EsEstado(p, PedidoEstados.Cancelado));
 
         return new PedidosPresentationSnapshot(
             lista,
@@ -88,6 +87,9 @@ public sealed class PedidoPresentationService
         PedidoEstados.Cancelado => "CANCELADO",
         _ => estado
     };
+
+    private static bool EsEstado(PedidoResponse pedido, params string[] estados)
+        => estados.Any(e => string.Equals(pedido.Estado, e, StringComparison.OrdinalIgnoreCase));
 
     private static IReadOnlyList<PedidoTimelineItem> BuildTimeline(PedidoResponse pedido, string responsable, string estado)
     {

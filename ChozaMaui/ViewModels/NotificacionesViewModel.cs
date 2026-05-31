@@ -9,6 +9,7 @@ namespace ChozaMaui.ViewModels;
 public partial class NotificacionesViewModel : ObservableObject
 {
     private readonly NotificationService _notificationService;
+    private bool _escuchandoCambios;
 
     [ObservableProperty] private ObservableCollection<Notificacion> notificaciones = new();
     [ObservableProperty] private bool isBusy;
@@ -18,7 +19,7 @@ public partial class NotificacionesViewModel : ObservableObject
     public NotificacionesViewModel(NotificationService notificationService)
     {
         _notificationService = notificationService;
-        _notificationService.Cambiaron += OnHistorialCambiado;
+        Iniciar();
         CargarDesdeStore();
     }
 
@@ -26,6 +27,15 @@ public partial class NotificacionesViewModel : ObservableObject
 
     [RelayCommand]
     private void Cargar() => CargarDesdeStore();
+
+    public void Iniciar()
+    {
+        if (_escuchandoCambios)
+            return;
+
+        _notificationService.Cambiaron += OnHistorialCambiado;
+        _escuchandoCambios = true;
+    }
 
     private void OnHistorialCambiado() => CargarDesdeStore();
 
@@ -79,7 +89,11 @@ public partial class NotificacionesViewModel : ObservableObject
     /// <summary>Llamar desde OnDisappearing para evitar fugas de memoria.</summary>
     public void Detener()
     {
+        if (!_escuchandoCambios)
+            return;
+
         _notificationService.Cambiaron -= OnHistorialCambiado;
+        _escuchandoCambios = false;
     }
 
     private static void ReemplazarItems<T>(ObservableCollection<T> destino, IEnumerable<T> origen)

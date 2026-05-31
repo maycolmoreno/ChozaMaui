@@ -10,10 +10,15 @@ namespace ChozaMaui.Services;
 public class PedidoApiService
 {
     private readonly HttpClient _http;
+    private readonly SessionService _session;
     private static readonly JsonSerializerOptions _camelCase =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public PedidoApiService(HttpClient http) => _http = http;
+    public PedidoApiService(HttpClient http, SessionService session)
+    {
+        _http = http;
+        _session = session;
+    }
 
     public async Task<List<PedidoResponse>> GetPedidosAsync()
     {
@@ -27,6 +32,13 @@ public class PedidoApiService
         var response = await _http.GetAsync($"/api/pedidos/{id}");
         await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+    }
+
+    public async Task<List<PedidoHistorialResponse>> ObtenerHistorialPedidoAsync(int id)
+    {
+        var response = await _http.GetAsync($"/api/pedidos/{id}/historial");
+        await ApiErrorHelper.EnsureSuccessAsync(response);
+        return (await response.Content.ReadFromJsonAsync<List<PedidoHistorialResponse>>()) ?? [];
     }
 
     public async Task<PedidoResponse> GetPedidoRecientePorCuentaAsync(int idCuenta)
@@ -56,7 +68,9 @@ public class PedidoApiService
         var estado = (nuevoEstado ?? string.Empty).Trim().ToUpperInvariant();
         var rutaSemantica = estado switch
         {
-            PedidoEstados.EnCocina => $"/api/pedidos/{id}/confirmar",
+            PedidoEstados.EnCocina => string.Equals(_session.Rol, "COCINA", StringComparison.OrdinalIgnoreCase)
+                ? $"/api/pedidos/{id}/preparando"
+                : $"/api/pedidos/{id}/confirmar",
             PedidoEstados.Listo or PedidoEstados.ListoParaEntrega => $"/api/pedidos/{id}/listo",
             PedidoEstados.Completado or PedidoEstados.Entregado => $"/api/pedidos/{id}/entregado",
             PedidoEstados.Cancelado => $"/api/pedidos/{id}/cancelar",

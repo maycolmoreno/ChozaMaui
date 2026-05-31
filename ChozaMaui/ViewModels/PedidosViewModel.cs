@@ -27,6 +27,18 @@ public partial class PedidosViewModel : ObservableObject
     [ObservableProperty] private string filtroEstado = "TODOS";
     [ObservableProperty] private string busqueda = string.Empty;
     [ObservableProperty] private string errorMessage = string.Empty;
+    [ObservableProperty] private string inicialesUsuario = "U";
+    [ObservableProperty] private string nombreUsuarioHeader = "Usuario";
+    [ObservableProperty] private string rolUsuarioHeader = "Usuario";
+    [ObservableProperty] private string headerKpi1Titulo = "Activos";
+    [ObservableProperty] private string headerKpi1Valor = "0";
+    [ObservableProperty] private string headerKpi2Titulo = "Cocina";
+    [ObservableProperty] private string headerKpi2Valor = "0";
+    [ObservableProperty] private string headerKpi3Titulo = "Listos";
+    [ObservableProperty] private string headerKpi3Valor = "0";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneAlertasHeader))]
+    private int totalAlertasHeader;
 
     // ── KPIs ──────────────────────────────────────────────────────────
     [ObservableProperty] private int pedidosActivos;
@@ -39,6 +51,7 @@ public partial class PedidosViewModel : ObservableObject
 
     public bool PuedeAbrirPedidos => _capabilities.PuedeCrearPedido(_session.Rol);
     public bool PuedeEntregarPedidos => _capabilities.PuedeEntregarPedido(_session.Rol);
+    public bool TieneAlertasHeader => TotalAlertasHeader > 0;
 
     public PedidosViewModel(RoleCapabilityService capabilities, PedidoApiService pedidosApi, NotificationService notifications, PosOrderWorkflowService pedidoWorkflow, PedidoPresentationService presentation, SessionService session, LiveRefreshCoordinator refreshCoordinator)
     {
@@ -64,10 +77,12 @@ public partial class PedidosViewModel : ObservableObject
             _todos = await _pedidosApi.GetPedidosAsync();
             AplicarFiltro();
             await _notifications.VerificarPedidosListosAsync(_todos);
+            ActualizarHeaderOperativo();
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Error: {ex.Message}";
+            ActualizarHeaderOperativo();
         }
         finally
         {
@@ -106,9 +121,28 @@ public partial class PedidosViewModel : ObservableObject
         TotalEntregadosHoy = snapshot.TotalEntregadosHoy;
         TotalCancelados = snapshot.TotalCancelados;
         PedidosActivos = snapshot.PedidosActivos;
+        ActualizarHeaderOperativo();
     }
 
     // ── Acciones de tarjeta ───────────────────────────────────────────
+
+    [RelayCommand]
+    public async Task NuevoPedidoAsync()
+    {
+        if (!PuedeAbrirPedidos)
+        {
+            ErrorMessage = "Tu perfil no tiene autorizacion para crear pedidos.";
+            return;
+        }
+
+        await Shell.Current.GoToAsync("//mapa");
+    }
+
+    [RelayCommand]
+    public async Task IrNotificacionesAsync()
+    {
+        await Shell.Current.GoToAsync("notificacionesPage");
+    }
 
     [RelayCommand]
     public async Task VerDetalleAsync(PedidoResponse pedido)
@@ -199,8 +233,9 @@ public partial class PedidosViewModel : ObservableObject
         // 3. Mostrar alerta visual según evento
         var titulo = notif.Evento switch
         {
-            PedidoEstados.Listo => "🔔 ¡Pedido listo para entregar!",
+            _ when EsNotificacionLista(notif) => "🔔 ¡Pedido listo para entregar!",
             "CONFIRMAR" => "🍳 Nuevo pedido en cocina",
+            "PREPARANDO" => "🍳 Pedido en preparacion",
             PedidoEstados.Cancelado => "❌ Pedido cancelado",
             _           => "📋 Cambio en pedido"
         };
@@ -210,6 +245,10 @@ public partial class PedidosViewModel : ObservableObject
                 await Shell.Current.DisplayAlertAsync(titulo, notif.Mensaje, "OK");
         });
     }
+
+    private static bool EsNotificacionLista(NotificacionPedidoWs notif)
+        => string.Equals(notif.Evento, PedidoEstados.Listo, StringComparison.OrdinalIgnoreCase)
+           || string.Equals(notif.EstadoNuevo, PedidoEstados.ListoParaEntrega, StringComparison.OrdinalIgnoreCase);
 
     public void DetenerPolling()
     {
@@ -224,5 +263,61 @@ public partial class PedidosViewModel : ObservableObject
         if (_capabilities.PuedeMarcarPedidoListo(rol))
             yield return TopicCocina;
     }
+
+    private void ActualizarHeaderOperativo()
+    {
+        NombreUsuarioHeader = _session.NombreCompleto ?? _session.Username ?? "Usuario";
+        RolUsuarioHeader = FormatearRol(_session.Rol);
+        InicialesUsuario = CrearIniciales(NombreUsuarioHeader);
+        TotalAlertasHeader = _notifications.Historial.Count(n => !n.Leida);
+
+        var pendientes = _todos.Count(p => string.Equals(p.Estado, PedidoEstados.Pendiente, StringComparison.OrdinalIgnoreCase));
+        switch ((_session.Rol ?? string.Empty).ToUpperInvariant())
+        {
+            case "COCINA":
+                HeaderKpi1Titulo = "Pendientes";
+                HeaderKpi1Valor = pendientes.ToString();
+                HeaderKpi2Titulo = "Preparando";
+                HeaderKpi2Valor = TotalEnPreparacion.ToString();
+                HeaderKpi3Titulo = "Listos";
+                HeaderKpi3Valor = TotalListos.ToString();
+                break;
+            case "ADMIN":
+                HeaderKpi1Titulo = "Pedidos";
+                HeaderKpi1Valor = _todos.Count.ToString();
+                HeaderKpi2Titulo = "Activos";
+                HeaderKpi2Valor = PedidosActivos.ToString();
+                HeaderKpi3Titulo = "Alertas";
+                HeaderKpi3Valor = TotalAlertasHeader.ToString();
+                break;
+            default:
+                HeaderKpi1Titulo = "Activos";
+                HeaderKpi1Valor = PedidosActivos.ToString();
+                HeaderKpi2Titulo = "Cocina";
+                HeaderKpi2Valor = TotalEnPreparacion.ToString();
+                HeaderKpi3Titulo = "Listos";
+                HeaderKpi3Valor = TotalListos.ToString();
+                break;
+        }
+    }
+
+    private static string CrearIniciales(string nombre)
+    {
+        var iniciales = string.Concat(nombre
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(p => p[0].ToString().ToUpperInvariant()));
+        return string.IsNullOrWhiteSpace(iniciales) ? "U" : iniciales;
+    }
+
+    private static string FormatearRol(string? rol)
+        => (rol ?? "USUARIO").ToUpperInvariant() switch
+        {
+            "CAJERO" => "Cajero",
+            "CAMARERO" => "Camarero",
+            "COCINA" => "Cocina",
+            "ADMIN" => "Administrador",
+            _ => "Usuario"
+        };
 }
 

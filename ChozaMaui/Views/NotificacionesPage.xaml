@@ -20,7 +20,7 @@
               ColumnSpacing="10">
 
             <Border Grid.Column="0"
-                    BackgroundColor="#FB923C"
+                    BackgroundColor="{StaticResource PrimaryDark}"
                     StrokeShape="RoundRectangle 10"
                     Stroke="Transparent"
                     Padding="8,6">
@@ -31,7 +31,7 @@
                 <Label Text="Avisos"
                        FontSize="16" FontAttributes="Bold" TextColor="White" />
                 <Label Text="Centro de notificaciones"
-                       FontSize="11" TextColor="#FFEDD5" />
+                       FontSize="11" TextColor="{StaticResource PrimaryLight}" />
             </VerticalStackLayout>
 
             <!-- Badge no leídas -->

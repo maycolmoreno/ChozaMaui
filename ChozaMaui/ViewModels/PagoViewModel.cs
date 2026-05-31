@@ -14,6 +14,7 @@ public partial class PagoViewModel : ObservableObject
     private readonly PagoValidationService _validation;
     private readonly PagoWorkflowService _workflow;
     private readonly INavigationService _navigation;
+    private readonly NotificationService _notifications;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private DateTimeOffset? _ultimaCargaUtc;
     private int? _pedidoCargadoId;
@@ -70,6 +71,9 @@ public partial class PagoViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PuedeCobrar))]
     private bool isBusy;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PuedeCobrar))]
+    private bool errorCargaContexto;
     [ObservableProperty] private string mensaje = string.Empty;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TotalCobro))]
@@ -81,6 +85,20 @@ public partial class PagoViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(PuedeCobrar))]
     [NotifyPropertyChangedFor(nameof(NotaMinimoEfectivo))]
     private double saldoPendienteActual;
+
+    // ── Header POS ───────────────────────────────────────────────────
+    [ObservableProperty] private string inicialesUsuario = "U";
+    [ObservableProperty] private string nombreUsuarioHeader = "Usuario";
+    [ObservableProperty] private string rolUsuarioHeader = "Cajero";
+    [ObservableProperty] private string headerKpi1Titulo = "Cuenta";
+    [ObservableProperty] private string headerKpi1Valor = "#-";
+    [ObservableProperty] private string headerKpi2Titulo = "Mesa";
+    [ObservableProperty] private string headerKpi2Valor = "-";
+    [ObservableProperty] private string headerKpi3Titulo = "Saldo";
+    [ObservableProperty] private string headerKpi3Valor = "$0.00";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneAlertasHeader))]
+    private int totalAlertasHeader;
 
     // ── Comprobante: captura ──────────────────────────────────────
     [ObservableProperty]
@@ -142,8 +160,10 @@ public partial class PagoViewModel : ObservableObject
     public double Saldo             => UltimoPago?.SaldoPendienteCuenta ?? TotalCobro;
     public bool   PagadoCompleto    => PagoRegistrado && Saldo <= 0;
     public bool   PuedeCobrar       => !IsBusy
+                                       && !ErrorCargaContexto
                                        && _capabilities.PuedeCobrarCuenta(_session.Rol)
                                        && Pedido is not null
+                                       && Pedido.EsCobrable
                                        && TotalCobro > 0
                                        && (!EsMetodoEfectivo || MontoRecibido >= TotalCobro)
                                        && (!EsMetodoTransferencia || TieneComprobante);
@@ -173,6 +193,7 @@ public partial class PagoViewModel : ObservableObject
     public string TextoBotonCobro   => EsMetodoTransferencia
                                        ? "COBRAR Y SUBIR COMPROBANTE"
                                        : "COBRAR Y CERRAR MESA";
+    public bool TieneAlertasHeader => TotalAlertasHeader > 0;
 
     partial void OnPedidoChanged(PedidoResponse? value)
     {
@@ -183,6 +204,7 @@ public partial class PagoViewModel : ObservableObject
         OnPropertyChanged(nameof(PagadoCompleto));
         MontoStr = value?.Total.ToString("F2") ?? string.Empty;
         MontoRecibido = value?.Total ?? 0;
+        ActualizarHeaderOperativo();
     }
 
     private void ReiniciarEstadoPago(PedidoResponse? pedidoActual)
@@ -201,6 +223,7 @@ public partial class PagoViewModel : ObservableObject
         IntentosSubida = 0;
         UltimoComprobante = null;
         Mensaje = string.Empty;
+        ErrorCargaContexto = false;
         MetodoSeleccionado = ChozaMaui.Models.MetodosPago.Efectivo;
         SaldoPendienteActual = pedidoActual?.Total ?? 0;
     }
@@ -209,6 +232,7 @@ public partial class PagoViewModel : ObservableObject
     {
         if (!PagoRegistrado && value > 0)
             MontoStr = value.ToString("F2");
+        ActualizarHeaderOperativo();
     }
 
     partial void OnMetodoSeleccionadoChanged(string value)
@@ -235,7 +259,7 @@ public partial class PagoViewModel : ObservableObject
 
     public PagoViewModel(RoleCapabilityService capabilities, SessionService session, PagoWorkflowService workflow,
                          PagoComprobanteService comprobantes, PagoValidationService validation,
-                         INavigationService navigation)
+                         INavigationService navigation, NotificationService notifications)
     {
         _capabilities = capabilities;
         _session = session;
@@ -243,6 +267,8 @@ public partial class PagoViewModel : ObservableObject
         _comprobantes = comprobantes;
         _validation = validation;
         _navigation = navigation;
+        _notifications = notifications;
+        ActualizarHeaderOperativo();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -273,6 +299,7 @@ public partial class PagoViewModel : ObservableObject
 
         IsBusy = true;
         Mensaje = string.Empty;
+        ErrorCargaContexto = false;
         try
         {
             var contexto = await _workflow.CargarContextoAsync(Pedido);
@@ -281,8 +308,16 @@ public partial class PagoViewModel : ObservableObject
             SaldoPendienteActual = contexto.saldoPendiente;
             _pedidoCargadoId = Pedido.Idpedido;
             _ultimaCargaUtc = DateTimeOffset.UtcNow;
+            ActualizarHeaderOperativo();
         }
-        catch { /* cuenta aún no creada */ }
+        catch (Exception ex)
+        {
+            ErrorCargaContexto = true;
+            Cuenta = null;
+            TieneCuenta = false;
+            Mensaje = $"No se pudo cargar la cuenta para cobrar: {ex.Message}";
+            ActualizarHeaderOperativo();
+        }
         finally
         {
             IsBusy = false;
@@ -545,6 +580,12 @@ public partial class PagoViewModel : ObservableObject
     [RelayCommand]
     public Task Volver() => _navigation.GoToAsync("..");
 
+    [RelayCommand]
+    public async Task IrNotificacionesAsync()
+    {
+        await Shell.Current.GoToAsync("notificacionesPage");
+    }
+
     private void RefrescarEstadoCobro()
     {
         OnPropertyChanged(nameof(TotalCobro));
@@ -581,7 +622,42 @@ public partial class PagoViewModel : ObservableObject
         OnPropertyChanged(nameof(CantidadProductosTexto));
         OnPropertyChanged(nameof(SubtituloPantalla));
         OnPropertyChanged(nameof(HoraAperturaTexto));
+        ActualizarHeaderOperativo();
     }
+
+    private void ActualizarHeaderOperativo()
+    {
+        NombreUsuarioHeader = _session.NombreCompleto ?? _session.Username ?? "Usuario";
+        RolUsuarioHeader = FormatearRol(_session.Rol);
+        InicialesUsuario = CrearIniciales(NombreUsuarioHeader);
+        TotalAlertasHeader = _notifications.Historial.Count(n => !n.Leida);
+
+        HeaderKpi1Titulo = "Cuenta";
+        HeaderKpi1Valor = Cuenta is null ? "#-" : $"#{Cuenta.Idcuenta}";
+        HeaderKpi2Titulo = "Mesa";
+        HeaderKpi2Valor = Pedido?.Mesa is null ? "-" : $"#{Pedido.Mesa.Numero}";
+        HeaderKpi3Titulo = PagadoCompleto ? "Estado" : "Saldo";
+        HeaderKpi3Valor = PagadoCompleto ? "Pagada" : $"${TotalCobro:0.00}";
+    }
+
+    private static string CrearIniciales(string nombre)
+    {
+        var iniciales = string.Concat(nombre
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(p => p[0].ToString().ToUpperInvariant()));
+        return string.IsNullOrWhiteSpace(iniciales) ? "U" : iniciales;
+    }
+
+    private static string FormatearRol(string? rol)
+        => (rol ?? "USUARIO").ToUpperInvariant() switch
+        {
+            "CAJERO" => "Cajero",
+            "CAMARERO" => "Camarero",
+            "COCINA" => "Cocina",
+            "ADMIN" => "Administrador",
+            _ => "Usuario"
+        };
 
     private void ReiniciarEstadoComprobante()
     {

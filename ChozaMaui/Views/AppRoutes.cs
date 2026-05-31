@@ -21,6 +21,7 @@ public static class AppRoutes
             Routing.RegisterRoute("pago",          typeof(PagoPage));
             Routing.RegisterRoute("pos",           typeof(PosPage));
             Routing.RegisterRoute("turnos",        typeof(TurnoPage));
+            Routing.RegisterRoute("notificacionesPage", typeof(NotificacionesPage));
 
             _registered = true;
         }

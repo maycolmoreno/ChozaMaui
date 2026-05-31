@@ -7,45 +7,29 @@
              x:Class="ChozaMaui.Views.TurnoPage"
              x:DataType="vm:TurnoViewModel"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="#F8FAFC">
+             BackgroundColor="{StaticResource Surface}">
 
     <Grid RowDefinitions="Auto,*">
-        <Grid Grid.Row="0"
-              BackgroundColor="{StaticResource Orange}"
-              Padding="14,44,14,14"
-              ColumnDefinitions="Auto,*,Auto">
-            <Image Grid.Column="0"
-                   Source="lachozalogo.png"
-                   HeightRequest="38"
-                   WidthRequest="38"
-                   Aspect="AspectFit"
-                   VerticalOptions="Center"
-                   Margin="0,0,10,0" />
-
-            <VerticalStackLayout Grid.Column="1"
-                                 Spacing="1"
-                                 VerticalOptions="Center">
-                <Label Text="Turno de caja"
-                       FontSize="18"
-                       FontAttributes="Bold"
-                       TextColor="White" />
-                <Label Text="{Binding NombreUsuario}"
-                       FontSize="12"
-                       TextColor="#FFE3D0" />
-            </VerticalStackLayout>
-
-            <controls:ConnectivityActionsView Grid.Column="2"
-                                              RefreshCommand="{Binding CargarCommand}"
-                                              HorizontalOptions="End"
-                                              VerticalOptions="Center" />
-        </Grid>
+        <controls:PosHeaderView Grid.Row="0"
+                                InicialesUsuario="{Binding InicialesUsuario}"
+                                NombreUsuario="{Binding NombreUsuario}"
+                                RolUsuario="{Binding RolUsuarioHeader}"
+                                Kpi1Titulo="{Binding HeaderKpi1Titulo}"
+                                Kpi1Valor="{Binding HeaderKpi1Valor}"
+                                Kpi2Titulo="{Binding HeaderKpi2Titulo}"
+                                Kpi2Valor="{Binding HeaderKpi2Valor}"
+                                Kpi3Titulo="{Binding HeaderKpi3Titulo}"
+                                Kpi3Valor="{Binding HeaderKpi3Valor}"
+                                TotalAlertas="{Binding TotalAlertasHeader}"
+                                NotificacionesCommand="{Binding IrNotificacionesCommand}"
+                                RefreshCommand="{Binding CargarCommand}" />
 
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="14,12,14,30"
                                  Spacing="12">
 
                 <Border BackgroundColor="White"
-                        Stroke="#E5E7EB"
+                        Stroke="{StaticResource Border}"
                         StrokeShape="RoundRectangle 14"
                         Padding="14">
                     <VerticalStackLayout Spacing="12">
@@ -68,7 +52,7 @@
                                     VerticalOptions="Start"
                                     BackgroundColor="{Binding EstadoCajaTexto,
                                         Converter={StaticResource StringEqualsColorConverter},
-                                        ConverterParameter='Abierta|#16a34a|#dc2626'}">
+                                        ConverterParameter='Abierta|#16A34A|#DC2626'}">
                                 <Label Text="{Binding EstadoCajaTexto}"
                                        FontSize="11"
                                        FontAttributes="Bold"
@@ -103,12 +87,12 @@
 
                         <Grid ColumnDefinitions="*,*"
                               ColumnSpacing="8"
-                              IsVisible="{Binding PuedeGestionarCaja}">
+                              IsVisible="{Binding PuedeMostrarAccionesCaja}">
                             <Button Grid.Column="0"
                                     Text="Abrir caja"
                                     Command="{Binding ToggleFormAperturaCommand}"
                                     IsVisible="{Binding TieneTurnoAbierto, Converter={StaticResource InvertBoolConverter}}"
-                                    BackgroundColor="{StaticResource Orange}"
+                                    BackgroundColor="{StaticResource Primary}"
                                     TextColor="White"
                                     CornerRadius="10"
                                     HeightRequest="44"
@@ -118,15 +102,15 @@
                                     Text="Cerrar caja"
                                     Command="{Binding ToggleFormCierreCommand}"
                                     IsVisible="{Binding TieneTurnoAbierto}"
-                                    BackgroundColor="#EF4444"
+                                    BackgroundColor="{StaticResource Danger}"
                                     TextColor="White"
                                     CornerRadius="10"
                                     HeightRequest="44"
                                     FontAttributes="Bold" />
 
                             <Border Grid.Column="1"
-                                    BackgroundColor="#F9FAFB"
-                                    Stroke="#E5E7EB"
+                                    BackgroundColor="{StaticResource SurfaceSunken}"
+                                    Stroke="{StaticResource Border}"
                                     StrokeShape="RoundRectangle 10"
                                     Padding="12,8">
                                 <VerticalStackLayout Spacing="1"
@@ -134,7 +118,7 @@
                                     <Label Text="{Binding HistorialPagos.Count}"
                                            FontSize="17"
                                            FontAttributes="Bold"
-                                           TextColor="{StaticResource Orange}"
+                                           TextColor="{StaticResource Primary}"
                                            HorizontalTextAlignment="Center" />
                                     <Label Text="pagos"
                                            FontSize="11"
@@ -144,7 +128,7 @@
                             </Border>
                         </Grid>
 
-                        <Border BackgroundColor="#FFF7ED"
+                        <Border BackgroundColor="{StaticResource PrimaryLight}"
                                 StrokeThickness="0"
                                 StrokeShape="RoundRectangle 10"
                                 Padding="12"
@@ -157,17 +141,17 @@
                                 <Entry Placeholder="0.00"
                                        Text="{Binding MontoInicial}"
                                        Keyboard="Numeric"
-                                       BackgroundColor="White"
+                                       BackgroundColor="{StaticResource SurfaceCard}"
                                        TextColor="{StaticResource TextPrimary}" />
                                 <Button Text="Confirmar apertura"
                                         Command="{Binding AbrirTurnoCommand}"
-                                        BackgroundColor="{StaticResource Orange}"
+                                        BackgroundColor="{StaticResource Primary}"
                                         TextColor="White"
                                         CornerRadius="10" />
                             </VerticalStackLayout>
                         </Border>
 
-                        <Border BackgroundColor="#FEF2F2"
+                        <Border BackgroundColor="{StaticResource DangerLight}"
                                 StrokeThickness="0"
                                 StrokeShape="RoundRectangle 10"
                                 Padding="12"
@@ -180,11 +164,11 @@
                                 <Entry Placeholder="0.00"
                                        Text="{Binding MontoFinal}"
                                        Keyboard="Numeric"
-                                       BackgroundColor="White"
+                                       BackgroundColor="{StaticResource SurfaceCard}"
                                        TextColor="{StaticResource TextPrimary}" />
                                 <Button Text="Confirmar cierre"
                                         Command="{Binding CerrarTurnoCommand}"
-                                        BackgroundColor="#EF4444"
+                                        BackgroundColor="{StaticResource Danger}"
                                         TextColor="White"
                                         CornerRadius="10" />
                             </VerticalStackLayout>
@@ -192,7 +176,7 @@
 
                         <ActivityIndicator IsRunning="{Binding IsBusy}"
                                            IsVisible="{Binding IsBusy}"
-                                           Color="{StaticResource Orange}"
+                                           Color="{StaticResource Primary}"
                                            HorizontalOptions="Center" />
 
                         <Label Text="{Binding Mensaje}"
@@ -204,7 +188,7 @@
                 </Border>
 
                 <Border BackgroundColor="White"
-                        Stroke="#E5E7EB"
+                        Stroke="{StaticResource Border}"
                         StrokeShape="RoundRectangle 14"
                         Padding="14"
                         IsVisible="{Binding TieneTurnoAbierto}">
@@ -217,7 +201,7 @@
                                    TextColor="{StaticResource TextPrimary}"
                                    VerticalOptions="Center" />
                             <Border Grid.Column="1"
-                                    BackgroundColor="#F3F4F6"
+                                    BackgroundColor="{StaticResource SurfaceSunken}"
                                     StrokeThickness="0"
                                     StrokeShape="RoundRectangle 8"
                                     Padding="8,4">
@@ -255,7 +239,7 @@
                                                Text="{Binding Monto, StringFormat='${0:0.00}'}"
                                                FontSize="14"
                                                FontAttributes="Bold"
-                                               TextColor="#16A34A"
+                                               TextColor="{StaticResource Success}"
                                                VerticalOptions="Center" />
                                     </Grid>
                                 </DataTemplate>

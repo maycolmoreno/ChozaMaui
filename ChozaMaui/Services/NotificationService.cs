@@ -57,18 +57,19 @@ public class NotificationService
 
         if (ws.PedidoId > 0)
         {
-            if (ws.Evento == PedidoEstados.Listo)
+            if (EsEventoListo(ws))
                 _notificados.Add(ws.PedidoId);
 
-            if (ws.Evento == PedidoEstados.Entregado || ws.Evento == PedidoEstados.Cancelado)
+            if (EsEventoFinalizado(ws))
                 _notificados.Remove(ws.PedidoId);
         }
 
         var (titulo, tipo) = ws.Evento switch
         {
-            PedidoEstados.Listo => ("¡Pedido listo para entregar!", "PEDIDO"),
+            _ when EsEventoListo(ws) => ("¡Pedido listo para entregar!", "PEDIDO"),
             "CONFIRMAR" => ("Nuevo pedido en cocina",       "PEDIDO"),
-            PedidoEstados.Entregado => ("Pedido entregado", "PEDIDO"),
+            "PREPARANDO" => ("Pedido en preparacion",       "PEDIDO"),
+            _ when EsEventoEntregado(ws) => ("Pedido entregado", "PEDIDO"),
             PedidoEstados.Cancelado => ("Pedido cancelado", "PEDIDO"),
             _           => ("Cambio en pedido",             "PEDIDO"),
         };
@@ -191,10 +192,7 @@ public class NotificationService
             if (!_eventosWebSocketProcesados.Add(key))
                 return false;
 
-            if (ws.PedidoId > 0 &&
-                (ws.Evento == PedidoEstados.Entregado ||
-                 ws.Evento == PedidoEstados.Cancelado ||
-                 ws.Evento == PedidoEstados.Completado))
+            if (ws.PedidoId > 0 && EsEventoFinalizado(ws))
             {
                 var prefijo = $"{ws.PedidoId}:";
                 _eventosWebSocketProcesados.RemoveWhere(k => k.StartsWith(prefijo, StringComparison.Ordinal));
@@ -207,4 +205,18 @@ public class NotificationService
 
     private static string ConstruirAccionPedido(int pedidoId)
         => pedidoId > 0 ? $"pedidodetalle?id={pedidoId}" : "//pedidos";
+
+    private static bool EsEventoListo(NotificacionPedidoWs ws)
+        => string.Equals(ws.Evento, PedidoEstados.Listo, StringComparison.OrdinalIgnoreCase)
+           || string.Equals(ws.EstadoNuevo, PedidoEstados.ListoParaEntrega, StringComparison.OrdinalIgnoreCase);
+
+    private static bool EsEventoEntregado(NotificacionPedidoWs ws)
+        => string.Equals(ws.Evento, PedidoEstados.Entregado, StringComparison.OrdinalIgnoreCase)
+           || string.Equals(ws.EstadoNuevo, PedidoEstados.Completado, StringComparison.OrdinalIgnoreCase)
+           || string.Equals(ws.EstadoNuevo, PedidoEstados.Entregado, StringComparison.OrdinalIgnoreCase);
+
+    private static bool EsEventoFinalizado(NotificacionPedidoWs ws)
+        => EsEventoEntregado(ws)
+           || string.Equals(ws.Evento, PedidoEstados.Cancelado, StringComparison.OrdinalIgnoreCase)
+           || string.Equals(ws.EstadoNuevo, PedidoEstados.Cancelado, StringComparison.OrdinalIgnoreCase);
 }

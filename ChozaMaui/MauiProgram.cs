@@ -87,7 +87,7 @@ public static class MauiProgram
 
             var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("ChozaApi");
             client.BaseAddress = baseUri;
-            return new PedidoApiService(client);
+            return new PedidoApiService(client, sp.GetRequiredService<SessionService>());
         });
         builder.Services.AddTransient(sp =>
         {

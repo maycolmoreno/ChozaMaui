@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ChozaMaui.Views.Controls.PosHeaderView"
+             x:Name="Root">
+
+    <Border Margin="10,8,10,4"
+            Padding="10,8"
+            BackgroundColor="{StaticResource PrimaryDark}"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 18"
+            HeightRequest="68">
+
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+              ColumnSpacing="10"
+              VerticalOptions="Center">
+
+            <!-- Usuario -->
+            <Border Grid.Column="0"
+                    WidthRequest="38"
+                    HeightRequest="38"
+                    BackgroundColor="{StaticResource PrimaryLight}"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 19">
+                <Label Text="{Binding InicialesUsuario, Source={x:Reference Root}}"
+                       FontSize="13"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource PrimaryDark}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <VerticalStackLayout Grid.Column="1"
+                                 Spacing="0"
+                                 VerticalOptions="Center">
+                <Label Text="{Binding NombreUsuario, Source={x:Reference Root}}"
+                       FontSize="13"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       MaxLines="1"
+                       LineBreakMode="TailTruncation" />
+
+                <Label Text="{Binding RolUsuario, Source={x:Reference Root}}"
+                       FontSize="10"
+                       TextColor="{StaticResource PrimarySoft}"
+                       MaxLines="1"
+                       LineBreakMode="TailTruncation" />
+            </VerticalStackLayout>
+
+            <!-- KPI principal -->
+            <Border Grid.Column="2"
+                    BackgroundColor="#22FFFFFF"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 12"
+                    Padding="10,6"
+                    VerticalOptions="Center">
+                <VerticalStackLayout Spacing="0">
+                    <Label Text="{Binding Kpi1Titulo, Source={x:Reference Root}}"
+                           FontSize="9"
+                           TextColor="{StaticResource PrimarySoft}"
+                           MaxLines="1" />
+
+                    <Label Text="{Binding Kpi1Valor, Source={x:Reference Root}}"
+                           FontSize="12"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           MaxLines="1" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Estado conexión -->
+            <Border Grid.Column="3"
+                    WidthRequest="13"
+                    HeightRequest="13"
+                    BackgroundColor="{StaticResource Success}"
+                    Stroke="White"
+                    StrokeThickness="1.5"
+                    StrokeShape="RoundRectangle 7"
+                    VerticalOptions="Center" />
+
+            <!-- Notificaciones -->
+            <Grid Grid.Column="4"
+                  WidthRequest="36"
+                  HeightRequest="36">
+                <ImageButton Source="header_notif.svg"
+                             Command="{Binding NotificacionesCommand, Source={x:Reference Root}}"
+                             BackgroundColor="{StaticResource PrimaryPressed}"
+                             CornerRadius="18"
+                             Padding="9" />
+
+                <Border IsVisible="{Binding TieneAlertas, Source={x:Reference Root}}"
+                        BackgroundColor="{StaticResource Danger}"
+                        Stroke="White"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 9"
+                        WidthRequest="18"
+                        HeightRequest="18"
+                        HorizontalOptions="End"
+                        VerticalOptions="Start">
+                    <Label Text="{Binding TotalAlertas, Source={x:Reference Root}}"
+                           FontSize="9"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
+            </Grid>
+
+            <!-- Refrescar -->
+            <ImageButton Grid.Column="5"
+                         Source="header_refresh.svg"
+                         Command="{Binding RefreshCommand, Source={x:Reference Root}}"
+                         BackgroundColor="{StaticResource PrimaryPressed}"
+                         CornerRadius="18"
+                         Padding="9"
+                         WidthRequest="36"
+                         HeightRequest="36" />
+
+        </Grid>
+    </Border>
+</ContentView>

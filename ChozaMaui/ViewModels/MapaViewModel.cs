@@ -28,6 +28,15 @@ public partial class MapaViewModel : ObservableObject
     [ObservableProperty] private string nombreUsuario = string.Empty;
     [ObservableProperty] private string rolUsuario = string.Empty;
     [ObservableProperty] private string inicialUsuario = string.Empty;
+    [ObservableProperty] private string headerKpi1Titulo = "Ocupadas";
+    [ObservableProperty] private string headerKpi1Valor = "0";
+    [ObservableProperty] private string headerKpi2Titulo = "Cocina";
+    [ObservableProperty] private string headerKpi2Valor = "0";
+    [ObservableProperty] private string headerKpi3Titulo = "Por cobrar";
+    [ObservableProperty] private string headerKpi3Valor = "0";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneAlertasHeader))]
+    private int totalAlertasHeader;
 
     // Contadores para la leyenda
     [ObservableProperty] private int totalDisponibles;
@@ -80,6 +89,7 @@ public partial class MapaViewModel : ObservableObject
     public bool SheetPuedeEnviarACocina =>
         PedidoSheet?.Estado == PedidoEstados.Pendiente &&
         _capabilities.PuedeConfirmarPedido(_session.Rol);
+    public bool TieneAlertasHeader => TotalAlertasHeader > 0;
 
     public MapaViewModel(RoleCapabilityService capabilities, PedidoApiService pedidosApi, MesaStateService mesas, MapaPresentationService presentation, NotificationService notifications, SessionService session, LiveRefreshCoordinator refreshCoordinator)
     {
@@ -100,10 +110,11 @@ public partial class MapaViewModel : ObservableObject
 
         // Cargar datos del usuario en el header
         NombreUsuario = _session.NombreCompleto ?? "Usuario";
-        RolUsuario = (_session.Rol ?? "CAMARERO").ToUpper();
+        RolUsuario = FormatearRol(_session.Rol);
         InicialUsuario = NombreUsuario.Length > 0
-            ? string.Concat(NombreUsuario.Split(' ').Take(2).Select(p => p.Length > 0 ? p[0].ToString() : ""))
+            ? string.Concat(NombreUsuario.Split(' ').Take(2).Select(p => p.Length > 0 ? p[0].ToString().ToUpperInvariant() : ""))
             : "U";
+        ActualizarHeaderOperativo();
 
         IsBusy = true;
         Mensaje = string.Empty;
@@ -120,6 +131,7 @@ public partial class MapaViewModel : ObservableObject
             TotalEnPreparacion = snapshot.TotalEnPreparacion;
             TotalPendientePago = snapshot.TotalPendientePago;
             ReemplazarItems(Grupos, snapshot.Grupos);
+            ActualizarHeaderOperativo();
 
             if (!Grupos.Any()) Mensaje = "No hay mesas registradas.";
 
@@ -129,6 +141,7 @@ public partial class MapaViewModel : ObservableObject
         catch (Exception ex)
         {
             Mensaje = $"Error al cargar mesas: {ex.Message}";
+            ActualizarHeaderOperativo();
         }
         finally
         {
@@ -252,6 +265,7 @@ public partial class MapaViewModel : ObservableObject
 
     private void OnNotificacionRecibida(NotificacionPedidoWs notif)
     {
+        ActualizarHeaderOperativo();
     }
 
     private IEnumerable<string> ObtenerTopicsActivos()
@@ -262,5 +276,53 @@ public partial class MapaViewModel : ObservableObject
         if (_capabilities.PuedeMarcarPedidoListo(rol))
             yield return TopicCocina;
     }
+
+    [RelayCommand]
+    public async Task IrNotificacionesAsync()
+    {
+        await Shell.Current.GoToAsync("notificacionesPage");
+    }
+
+    private void ActualizarHeaderOperativo()
+    {
+        TotalAlertasHeader = _notifications.Historial.Count(n => !n.Leida);
+        switch ((_session.Rol ?? string.Empty).ToUpperInvariant())
+        {
+            case "ADMIN":
+                HeaderKpi1Titulo = "Libres";
+                HeaderKpi1Valor = TotalDisponibles.ToString();
+                HeaderKpi2Titulo = "Ocupadas";
+                HeaderKpi2Valor = TotalOcupadas.ToString();
+                HeaderKpi3Titulo = "Alertas";
+                HeaderKpi3Valor = TotalAlertasHeader.ToString();
+                break;
+            case "CAJERO":
+                HeaderKpi1Titulo = "Ocupadas";
+                HeaderKpi1Valor = TotalOcupadas.ToString();
+                HeaderKpi2Titulo = "Cocina";
+                HeaderKpi2Valor = TotalEnPreparacion.ToString();
+                HeaderKpi3Titulo = "Por cobrar";
+                HeaderKpi3Valor = TotalPendientePago.ToString();
+                break;
+            default:
+                HeaderKpi1Titulo = "Libres";
+                HeaderKpi1Valor = TotalDisponibles.ToString();
+                HeaderKpi2Titulo = "Activas";
+                HeaderKpi2Valor = TotalOcupadas.ToString();
+                HeaderKpi3Titulo = "Cocina";
+                HeaderKpi3Valor = TotalEnPreparacion.ToString();
+                break;
+        }
+    }
+
+    private static string FormatearRol(string? rol)
+        => (rol ?? "USUARIO").ToUpperInvariant() switch
+        {
+            "CAJERO" => "Cajero",
+            "CAMARERO" => "Camarero",
+            "COCINA" => "Cocina",
+            "ADMIN" => "Administrador",
+            _ => "Usuario"
+        };
 
 }

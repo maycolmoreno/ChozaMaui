@@ -10,6 +10,15 @@ public partial class AppShell : Shell
 
     public void AplicarVisibilidadRol(string? rol)
     {
-        // Turnos ya no está en el TabBar principal — no se necesita filtrar por rol aquí
+        var rolNormalizado = (rol ?? string.Empty).Trim().ToUpperInvariant();
+        var esCocina = rolNormalizado == "COCINA";
+
+        MesasTab.IsVisible = !esCocina;
+        PedidosTab.IsVisible = true;
+        AvisosTab.IsVisible = true;
+        PerfilTab.IsVisible = true;
+
+        if (esCocina)
+            CurrentItem = PedidosTab;
     }
 }

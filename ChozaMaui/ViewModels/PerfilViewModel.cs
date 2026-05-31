@@ -9,12 +9,23 @@ public partial class PerfilViewModel : ObservableObject
     private readonly SessionService _session;
     private readonly UsuarioApiService _usuariosApi;
     private readonly INavigationService _navigation;
+    private readonly NotificationService _notifications;
 
     // Datos del perfil
     [ObservableProperty] private string nombreCompleto = string.Empty;
     [ObservableProperty] private string username = string.Empty;
     [ObservableProperty] private string rol = string.Empty;
     [ObservableProperty] private string inicialUsuario = "U";
+    [ObservableProperty] private string rolHeader = "Usuario";
+    [ObservableProperty] private string headerKpi1Titulo = "Cuenta";
+    [ObservableProperty] private string headerKpi1Valor = "Activa";
+    [ObservableProperty] private string headerKpi2Titulo = "Usuario";
+    [ObservableProperty] private string headerKpi2Valor = "--";
+    [ObservableProperty] private string headerKpi3Titulo = "Alertas";
+    [ObservableProperty] private string headerKpi3Valor = "0";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneAlertasHeader))]
+    private int totalAlertasHeader;
 
     // Cambio de contraseña
     [ObservableProperty] private string passwordActual = string.Empty;
@@ -23,12 +34,14 @@ public partial class PerfilViewModel : ObservableObject
     [ObservableProperty] private string mensajePassword = string.Empty;
     [ObservableProperty] private bool mensajeEsError;
     [ObservableProperty] private bool isBusy;
+    public bool TieneAlertasHeader => TotalAlertasHeader > 0;
 
-    public PerfilViewModel(SessionService session, UsuarioApiService usuariosApi, INavigationService navigation)
+    public PerfilViewModel(SessionService session, UsuarioApiService usuariosApi, INavigationService navigation, NotificationService notifications)
     {
         _session = session;
         _usuariosApi = usuariosApi;
         _navigation = navigation;
+        _notifications = notifications;
     }
 
     [RelayCommand]
@@ -40,6 +53,14 @@ public partial class PerfilViewModel : ObservableObject
         InicialUsuario = string.Concat(NombreCompleto.Split(' ').Take(2)
             .Select(p => p.Length > 0 ? p[0].ToString().ToUpper() : ""));
         if (string.IsNullOrEmpty(InicialUsuario)) InicialUsuario = "U";
+        RolHeader = FormatearRol(Rol);
+        HeaderKpi1Titulo = "Cuenta";
+        HeaderKpi1Valor = "Activa";
+        HeaderKpi2Titulo = "Usuario";
+        HeaderKpi2Valor = Username;
+        HeaderKpi3Titulo = "Alertas";
+        TotalAlertasHeader = _notifications.Historial.Count(n => !n.Leida);
+        HeaderKpi3Valor = TotalAlertasHeader.ToString();
     }
 
     [RelayCommand]
@@ -104,6 +125,12 @@ public partial class PerfilViewModel : ObservableObject
         _navigation.IrAlLogin();
     }
 
+    [RelayCommand]
+    private async Task IrNotificacionesAsync()
+    {
+        await Shell.Current.GoToAsync("notificacionesPage");
+    }
+
     private Task IrAInicioSegunRolAsync()
     {
         var ruta = (_session.Rol ?? string.Empty).ToUpperInvariant() switch
@@ -115,5 +142,15 @@ public partial class PerfilViewModel : ObservableObject
 
         return Shell.Current.GoToAsync(ruta);
     }
+
+    private static string FormatearRol(string? rol)
+        => (rol ?? "USUARIO").ToUpperInvariant() switch
+        {
+            "CAJERO" => "Cajero",
+            "CAMARERO" => "Camarero",
+            "COCINA" => "Cocina",
+            "ADMIN" => "Administrador",
+            _ => "Usuario"
+        };
 }
 

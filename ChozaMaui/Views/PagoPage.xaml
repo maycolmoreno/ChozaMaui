@@ -7,40 +7,24 @@
              x:Class="ChozaMaui.Views.PagoPage"
              x:DataType="vm:PagoViewModel"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="#F6F8FC">
+             BackgroundColor="{StaticResource Surface}">
 
     <Grid RowDefinitions="Auto,*">
-        <Grid Grid.Row="0"
-              BackgroundColor="#F97316"
-              Padding="16,42,16,18"
-              ColumnDefinitions="44,*,Auto"
-              ColumnSpacing="10">
-            <Button Grid.Column="0"
-                    Text="←"
-                    FontSize="28"
-                    TextColor="White"
-                    BackgroundColor="Transparent"
-                    Command="{Binding VolverCommand}"
-                    HeightRequest="44"
-                    WidthRequest="44"
-                    Padding="0" />
-
-            <VerticalStackLayout Grid.Column="1"
-                                 Spacing="2"
-                                 VerticalOptions="Center">
-                <Label Text="Cobrar cuenta"
-                       FontSize="22"
-                       FontAttributes="Bold"
-                       TextColor="White" />
-                <Label Text="{Binding SubtituloPantalla}"
-                       FontSize="14"
-                       TextColor="#FFEDD5" />
-            </VerticalStackLayout>
-
-            <controls:ConnectivityActionsView Grid.Column="2"
-                                              RefreshCommand="{Binding CargarCommand}"
-                                              VerticalOptions="Center" />
-        </Grid>
+        <controls:PosHeaderView Grid.Row="0"
+                                MostrarVolver="True"
+                                BackCommand="{Binding VolverCommand}"
+                                InicialesUsuario="{Binding InicialesUsuario}"
+                                NombreUsuario="{Binding NombreUsuarioHeader}"
+                                RolUsuario="{Binding RolUsuarioHeader}"
+                                Kpi1Titulo="{Binding HeaderKpi1Titulo}"
+                                Kpi1Valor="{Binding HeaderKpi1Valor}"
+                                Kpi2Titulo="{Binding HeaderKpi2Titulo}"
+                                Kpi2Valor="{Binding HeaderKpi2Valor}"
+                                Kpi3Titulo="{Binding HeaderKpi3Titulo}"
+                                Kpi3Valor="{Binding HeaderKpi3Valor}"
+                                TotalAlertas="{Binding TotalAlertasHeader}"
+                                NotificacionesCommand="{Binding IrNotificacionesCommand}"
+                                RefreshCommand="{Binding CargarCommand}" />
 
         <CollectionView Grid.Row="1"
                         ItemsSource="{Binding Pedido.Detalle}"
@@ -51,25 +35,25 @@
 
                     <VerticalStackLayout IsVisible="{Binding PagadoCompleto}"
                                          Spacing="12">
-                        <Border BackgroundColor="#ECFDF5"
-                                Stroke="#22C55E"
+                        <Border BackgroundColor="{StaticResource SuccessLight}"
+                                Stroke="{StaticResource Success}"
                                 StrokeShape="RoundRectangle 22"
                                 Padding="16">
                             <Grid ColumnDefinitions="Auto,*"
                                   ColumnSpacing="12">
                                 <Label Text="✓"
                                        FontSize="26"
-                                       TextColor="#16A34A"
+                                       TextColor="{StaticResource Success}"
                                        VerticalOptions="Center" />
                                 <VerticalStackLayout Grid.Column="1"
                                                      Spacing="2">
                                     <Label Text="Mesa cobrada y liberada"
                                            FontSize="16"
                                            FontAttributes="Bold"
-                                           TextColor="#166534" />
+                                           TextColor="{StaticResource Success}" />
                                     <Label Text="{Binding Mensaje}"
                                            FontSize="13"
-                                           TextColor="#15803D"
+                                           TextColor="{StaticResource Success}"
                                            IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}" />
                                 </VerticalStackLayout>
                             </Grid>
@@ -77,7 +61,7 @@
 
                         <Button Text="Volver al mapa"
                                 Command="{Binding VolverCommand}"
-                                BackgroundColor="#F97316"
+                                BackgroundColor="{StaticResource Primary}"
                                 TextColor="White"
                                 FontSize="16"
                                 FontAttributes="Bold"
@@ -89,18 +73,20 @@
                                          Spacing="14">
 
                         <Border BackgroundColor="White"
-                                Stroke="#E9EEF5"
+                                Stroke="{StaticResource Border}"
                                 StrokeShape="RoundRectangle 24"
                                 Padding="16">
                             <Grid ColumnDefinitions="Auto,*,Auto"
                                   ColumnSpacing="14">
-                                <Border BackgroundColor="#FFF1E8"
+                                <Border BackgroundColor="{StaticResource PrimaryLight}"
                                         Stroke="Transparent"
                                         StrokeShape="RoundRectangle 28"
                                         WidthRequest="56"
                                         HeightRequest="56">
-                                    <Label Text="🍽"
-                                           FontSize="26"
+                                    <Label Text="M"
+                                           FontSize="22"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Primary}"
                                            HorizontalOptions="Center"
                                            VerticalOptions="Center" />
                                 </Border>
@@ -111,13 +97,13 @@
                                     <Label Text="{Binding Pedido.Mesa.Numero, StringFormat='Mesa {0}'}"
                                            FontSize="18"
                                            FontAttributes="Bold"
-                                           TextColor="#0F172A" />
+                                           TextColor="{StaticResource TextPrimary}" />
                                     <Label Text="{Binding ClienteNombreTexto}"
                                            FontSize="14"
-                                           TextColor="#667085" />
+                                           TextColor="{StaticResource TextSecondary}" />
                                     <Label Text="{Binding HoraAperturaTexto, StringFormat='Abierta: {0}'}"
                                            FontSize="13"
-                                           TextColor="#667085" />
+                                           TextColor="{StaticResource TextSecondary}" />
                                 </VerticalStackLayout>
 
                                 <VerticalStackLayout Grid.Column="2"
@@ -127,30 +113,30 @@
                                     <Label Text="TOTAL A COBRAR"
                                            FontSize="12"
                                            HorizontalTextAlignment="End"
-                                           TextColor="#667085" />
+                                           TextColor="{StaticResource TextSecondary}" />
                                     <Label Text="{Binding TotalCobro, StringFormat='${0:F2}'}"
                                            FontSize="32"
                                            FontAttributes="Bold"
                                            HorizontalTextAlignment="End"
-                                           TextColor="#F97316" />
+                                           TextColor="{StaticResource Primary}" />
                                 </VerticalStackLayout>
                             </Grid>
                         </Border>
 
                         <Border BackgroundColor="White"
-                                Stroke="#E9EEF5"
+                                Stroke="{StaticResource Border}"
                                 StrokeShape="RoundRectangle 24"
                                 Padding="16,16,16,8">
                             <Grid ColumnDefinitions="*,Auto">
                                 <Label Text="Resumen del pedido"
                                        FontSize="16"
                                        FontAttributes="Bold"
-                                       TextColor="#0F172A" />
+                                       TextColor="{StaticResource TextPrimary}" />
                                 <Label Grid.Column="1"
                                        Text="{Binding CantidadProductosTexto}"
                                        FontSize="14"
                                        FontAttributes="Bold"
-                                       TextColor="#F97316" />
+                                       TextColor="{StaticResource Primary}" />
                             </Grid>
                         </Border>
 
@@ -161,7 +147,7 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:PedidoDetalleResponse">
                     <Border BackgroundColor="White"
-                            Stroke="#E9EEF5"
+                            Stroke="{StaticResource Border}"
                             StrokeThickness="0"
                             Padding="16,4"
                             IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PagadoCompleto, Converter={StaticResource InvertBoolConverter}}">
@@ -170,17 +156,17 @@
                             <Label Text="{Binding Cantidad, StringFormat='{0}x'}"
                                    FontSize="14"
                                    FontAttributes="Bold"
-                                   TextColor="#0F172A" />
+                                   TextColor="{StaticResource TextPrimary}" />
                             <Label Grid.Column="1"
                                    Text="{Binding Producto.Nombre}"
                                    Margin="10,0,0,0"
                                    FontSize="14"
-                                   TextColor="#334155"
+                                   TextColor="{StaticResource TextPrimary}"
                                    LineBreakMode="TailTruncation" />
                             <Label Grid.Column="2"
                                    Text="{Binding Consumo, StringFormat='${0:F2}'}"
                                    FontSize="14"
-                                   TextColor="#0F172A" />
+                                   TextColor="{StaticResource TextPrimary}" />
                         </Grid>
                     </Border>
                 </DataTemplate>
@@ -191,54 +177,54 @@
                     <VerticalStackLayout IsVisible="{Binding PagadoCompleto, Converter={StaticResource InvertBoolConverter}}"
                                          Spacing="14">
                         <Border BackgroundColor="White"
-                                Stroke="#E9EEF5"
+                                Stroke="{StaticResource Border}"
                                 StrokeShape="RoundRectangle 24"
                                 Padding="16">
                             <VerticalStackLayout Spacing="12">
                                 <BoxView HeightRequest="1"
-                                         Color="#E9EEF5" />
+                                         Color="{StaticResource Border}" />
 
                                 <Grid ColumnDefinitions="*,Auto"
                                       RowDefinitions="Auto,Auto"
                                       RowSpacing="8">
                                     <Label Text="Consumo"
                                            FontSize="14"
-                                           TextColor="#667085" />
+                                           TextColor="{StaticResource TextSecondary}" />
                                     <Label Grid.Column="1"
                                            Text="{Binding Consumo, StringFormat='${0:F2}'}"
                                            FontSize="14"
-                                           TextColor="#334155" />
+                                           TextColor="{StaticResource TextPrimary}" />
 
                                     <Label Grid.Row="1"
                                            Text="Saldo a cobrar"
                                            FontSize="16"
                                            FontAttributes="Bold"
-                                           TextColor="#F97316" />
+                                           TextColor="{StaticResource Primary}" />
                                     <Label Grid.Row="1"
                                            Grid.Column="1"
                                            Text="{Binding TotalCobro, StringFormat='${0:F2}'}"
                                            FontSize="16"
                                            FontAttributes="Bold"
-                                           TextColor="#F97316" />
+                                           TextColor="{StaticResource Primary}" />
                                 </Grid>
                             </VerticalStackLayout>
                         </Border>
 
                         <Border BackgroundColor="White"
-                            Stroke="#E9EEF5"
+                            Stroke="{StaticResource Border}"
                             StrokeShape="RoundRectangle 24"
                             Padding="16">
                         <VerticalStackLayout Spacing="12">
                             <Label Text="Método de pago"
                                    FontSize="16"
                                    FontAttributes="Bold"
-                                   TextColor="#0F172A" />
+                                   TextColor="{StaticResource TextPrimary}" />
 
                             <Grid ColumnDefinitions="*,*,*,*"
                                   ColumnSpacing="10">
                                 <Border Grid.Column="0"
-                                        BackgroundColor="{Binding EsMetodoEfectivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFF1E8|#FFFFFF'}"
-                                        Stroke="{Binding EsMetodoEfectivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#F97316|#E5E7EB'}"
+                                        BackgroundColor="{Binding EsMetodoEfectivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFF1E7|#FFFFFF'}"
+                                        Stroke="{Binding EsMetodoEfectivo, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#EA580C|#DDE3EA'}"
                                         StrokeShape="RoundRectangle 18"
                                         Padding="10,14">
                                     <Border.GestureRecognizers>
@@ -247,20 +233,22 @@
                                     </Border.GestureRecognizers>
                                     <VerticalStackLayout Spacing="6"
                                                          HorizontalOptions="Center">
-                                        <Label Text="💵"
-                                               FontSize="24"
+                                        <Label Text="$"
+                                               FontSize="22"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Primary}"
                                                HorizontalOptions="Center" />
                                         <Label Text="Efectivo"
                                                FontSize="13"
                                                FontAttributes="Bold"
                                                HorizontalTextAlignment="Center"
-                                               TextColor="#0F172A" />
+                                               TextColor="{StaticResource TextPrimary}" />
                                     </VerticalStackLayout>
                                 </Border>
 
                                 <Border Grid.Column="1"
-                                        BackgroundColor="{Binding EsMetodoTarjeta, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#EEF4FF|#FFFFFF'}"
-                                        Stroke="{Binding EsMetodoTarjeta, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#3B82F6|#E5E7EB'}"
+                                        BackgroundColor="{Binding EsMetodoTarjeta, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#DBEAFE|#FFFFFF'}"
+                                        Stroke="{Binding EsMetodoTarjeta, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#2563EB|#DDE3EA'}"
                                         StrokeShape="RoundRectangle 18"
                                         Padding="10,14">
                                     <Border.GestureRecognizers>
@@ -269,20 +257,22 @@
                                     </Border.GestureRecognizers>
                                     <VerticalStackLayout Spacing="6"
                                                          HorizontalOptions="Center">
-                                        <Label Text="💳"
-                                               FontSize="24"
+                                        <Label Text="T"
+                                               FontSize="22"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Info}"
                                                HorizontalOptions="Center" />
                                         <Label Text="Tarjeta"
                                                FontSize="13"
                                                FontAttributes="Bold"
                                                HorizontalTextAlignment="Center"
-                                               TextColor="#0F172A" />
+                                               TextColor="{StaticResource TextPrimary}" />
                                     </VerticalStackLayout>
                                 </Border>
 
                                 <Border Grid.Column="2"
-                                        BackgroundColor="{Binding EsMetodoTransferencia, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#F3E8FF|#FFFFFF'}"
-                                        Stroke="{Binding EsMetodoTransferencia, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#8B5CF6|#E5E7EB'}"
+                                        BackgroundColor="{Binding EsMetodoTransferencia, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#EDE9FE|#FFFFFF'}"
+                                        Stroke="{Binding EsMetodoTransferencia, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#7C3AED|#DDE3EA'}"
                                         StrokeShape="RoundRectangle 18"
                                         Padding="10,14">
                                     <Border.GestureRecognizers>
@@ -291,20 +281,22 @@
                                     </Border.GestureRecognizers>
                                     <VerticalStackLayout Spacing="6"
                                                          HorizontalOptions="Center">
-                                        <Label Text="🏦"
-                                               FontSize="24"
+                                        <Label Text="TR"
+                                               FontSize="18"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Accent}"
                                                HorizontalOptions="Center" />
                                         <Label Text="Transferencia"
                                                FontSize="12"
                                                FontAttributes="Bold"
                                                HorizontalTextAlignment="Center"
-                                               TextColor="#0F172A" />
+                                               TextColor="{StaticResource TextPrimary}" />
                                     </VerticalStackLayout>
                                 </Border>
 
                                 <Border Grid.Column="3"
-                                        BackgroundColor="{Binding EsMetodoOtro, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#F8FAFC|#FFFFFF'}"
-                                        Stroke="{Binding EsMetodoOtro, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#64748B|#E5E7EB'}"
+                                        BackgroundColor="{Binding EsMetodoOtro, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#EEF2F6|#FFFFFF'}"
+                                        Stroke="{Binding EsMetodoOtro, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#64748B|#DDE3EA'}"
                                         StrokeShape="RoundRectangle 18"
                                         Padding="10,14">
                                     <Border.GestureRecognizers>
@@ -320,7 +312,7 @@
                                                FontSize="13"
                                                FontAttributes="Bold"
                                                HorizontalTextAlignment="Center"
-                                               TextColor="#0F172A" />
+                                               TextColor="{StaticResource TextPrimary}" />
                                     </VerticalStackLayout>
                                 </Border>
                             </Grid>
@@ -329,44 +321,46 @@
 
                     <Border IsVisible="{Binding EsMetodoEfectivo}"
                             BackgroundColor="White"
-                            Stroke="#E9EEF5"
+                            Stroke="{StaticResource Border}"
                             StrokeShape="RoundRectangle 24"
                             Padding="16">
                         <VerticalStackLayout Spacing="14">
                             <HorizontalStackLayout Spacing="10">
-                                <Label Text="💵"
-                                       FontSize="22"
+                                <Label Text="$"
+                                       FontSize="20"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}"
                                        VerticalOptions="Center" />
                                 <Label Text="Efectivo"
                                        FontSize="16"
                                        FontAttributes="Bold"
                                        VerticalOptions="Center"
-                                       TextColor="#0F172A" />
+                                       TextColor="{StaticResource TextPrimary}" />
                             </HorizontalStackLayout>
 
                             <Grid ColumnDefinitions="3*,2*"
                                   ColumnSpacing="12">
                                 <Border Grid.Column="0"
-                                        BackgroundColor="#F8FAFC"
-                                        Stroke="#E5E7EB"
+                                        BackgroundColor="{StaticResource SurfaceSunken}"
+                                        Stroke="{StaticResource Border}"
                                         StrokeShape="RoundRectangle 18"
                                         Padding="14,10">
                                     <VerticalStackLayout Spacing="4">
                                         <Label Text="Monto recibido"
                                                FontSize="13"
-                                               TextColor="#667085" />
+                                               TextColor="{StaticResource TextSecondary}" />
                                         <Entry Text="{Binding MontoRecibido}"
                                                Keyboard="Numeric"
                                                FontSize="22"
                                                FontAttributes="Bold"
-                                               TextColor="#0F172A"
+                                               TextColor="{StaticResource TextPrimary}"
                                                BackgroundColor="Transparent" />
                                     </VerticalStackLayout>
                                 </Border>
 
                                 <Border Grid.Column="1"
-                                        BackgroundColor="#F8FAFC"
-                                        Stroke="#E5E7EB"
+                                        BackgroundColor="{StaticResource SurfaceSunken}"
+                                        Stroke="{StaticResource Border}"
                                         StrokeShape="RoundRectangle 18"
                                         Padding="14,10">
                                     <VerticalStackLayout Spacing="4"
@@ -375,40 +369,40 @@
                                         <Label Text="Cambio"
                                                FontSize="13"
                                                HorizontalTextAlignment="Center"
-                                               TextColor="#667085" />
+                                               TextColor="{StaticResource TextSecondary}" />
                                         <Label Text="{Binding Cambio, StringFormat='${0:F2}'}"
                                                FontSize="22"
                                                FontAttributes="Bold"
                                                HorizontalTextAlignment="Center"
-                                               TextColor="#16A34A" />
+                                               TextColor="{StaticResource Success}" />
                                     </VerticalStackLayout>
                                 </Border>
                             </Grid>
 
-                            <Border BackgroundColor="#FFF7ED"
-                                    Stroke="#FED7AA"
+                            <Border BackgroundColor="{StaticResource PrimaryLight}"
+                                    Stroke="{StaticResource PrimarySoft}"
                                     StrokeShape="RoundRectangle 14"
                                     Padding="12,10">
                                 <Label Text="{Binding NotaMinimoEfectivo}"
                                        FontSize="13"
-                                       TextColor="#C2410C" />
+                                       TextColor="{StaticResource PrimaryDark}" />
                             </Border>
 
                             <Border IsVisible="{Binding TieneFaltanteEfectivo}"
-                                    BackgroundColor="#FEF2F2"
-                                    Stroke="#FECACA"
+                                    BackgroundColor="{StaticResource DangerLight}"
+                                    Stroke="{StaticResource DangerLight}"
                                     StrokeShape="RoundRectangle 14"
                                     Padding="12,10">
                                 <Label Text="{Binding FaltaPorRecibir, StringFormat='Falta por recibir ${0:F2}'}"
                                        FontSize="13"
-                                       TextColor="#DC2626" />
+                                       TextColor="{StaticResource Danger}" />
                             </Border>
                         </VerticalStackLayout>
                     </Border>
 
                     <Border IsVisible="{Binding EsMetodoTransferencia}"
                             BackgroundColor="White"
-                            Stroke="#E9EEF5"
+                            Stroke="{StaticResource Border}"
                             StrokeShape="RoundRectangle 24"
                             Padding="16">
                         <VerticalStackLayout Spacing="14">
@@ -419,26 +413,26 @@
                                     <Label Text="Comprobante de transferencia"
                                            FontSize="16"
                                            FontAttributes="Bold"
-                                           TextColor="#0F172A" />
+                                           TextColor="{StaticResource TextPrimary}" />
                                     <Label Text="Sube una foto del comprobante para guardarlo en Dropbox"
                                            FontSize="13"
-                                           TextColor="#667085" />
+                                           TextColor="{StaticResource TextSecondary}" />
                                 </VerticalStackLayout>
 
                                 <Button Grid.Column="1"
                                         Text="Tomar foto"
                                         Command="{Binding CapturarComprobanteCommand}"
-                                        BackgroundColor="#FFFFFF"
-                                        BorderColor="#8B5CF6"
+                                        BackgroundColor="{StaticResource SurfaceCard}"
+                                        BorderColor="{StaticResource Accent}"
                                         BorderWidth="1"
-                                        TextColor="#8B5CF6"
+                                        TextColor="{StaticResource Accent}"
                                         CornerRadius="16"
                                         HeightRequest="44" />
                             </Grid>
 
                             <Border IsVisible="{Binding TieneComprobante}"
                                     HeightRequest="180"
-                                    Stroke="#E5E7EB"
+                                    Stroke="{StaticResource Border}"
                                     StrokeShape="RoundRectangle 18">
                                 <Image Source="{Binding ImagenComprobante}"
                                        Aspect="AspectFill" />
@@ -449,9 +443,9 @@
                                 <Button Grid.Column="0"
                                         Text="Galería"
                                         Command="{Binding SeleccionarFotoGaleriaCommand}"
-                                        BackgroundColor="#F8FAFC"
-                                        TextColor="#475569"
-                                        BorderColor="#E5E7EB"
+                                        BackgroundColor="{StaticResource Surface}"
+                                        TextColor="{StaticResource TextSecondary}"
+                                        BorderColor="{StaticResource Border}"
                                         BorderWidth="1"
                                         CornerRadius="16"
                                         HeightRequest="46" />
@@ -459,7 +453,7 @@
                                         Text="{Binding HayErrorComprobante, Converter={StaticResource BoolToStringConverter}, ConverterParameter='Reintentar subida|Subir ahora'}"
                                         Command="{Binding SubirComprobanteCommand}"
                                            IsEnabled="{Binding PuedeAccionarSubidaComprobante}"
-                                        BackgroundColor="#8B5CF6"
+                                        BackgroundColor="{StaticResource Accent}"
                                         TextColor="White"
                                         CornerRadius="16"
                                         HeightRequest="46" />
@@ -467,86 +461,86 @@
 
                             <ActivityIndicator IsRunning="{Binding SubiendoComprobante}"
                                                IsVisible="{Binding SubiendoComprobante}"
-                                               Color="#8B5CF6"
+                                               Color="{StaticResource Accent}"
                                                HorizontalOptions="Center" />
 
                             <Label Text="{Binding ErrorComprobante}"
                                    IsVisible="{Binding HayErrorComprobante}"
                                    FontSize="13"
-                                   TextColor="#DC2626" />
+                                   TextColor="{StaticResource Danger}" />
 
                             <Border IsVisible="{Binding ComprobanteSubido}"
-                                    BackgroundColor="#F0FDF4"
-                                    Stroke="#86EFAC"
+                                    BackgroundColor="{StaticResource SuccessLight}"
+                                    Stroke="{StaticResource SuccessLight}"
                                     StrokeShape="RoundRectangle 14"
                                     Padding="12,10">
                                 <Label Text="Comprobante listo para guardarse con el cobro"
                                        FontSize="13"
-                                       TextColor="#15803D" />
+                                       TextColor="{StaticResource Success}" />
                             </Border>
                         </VerticalStackLayout>
                     </Border>
 
                     <Border IsVisible="{Binding EsMetodoTarjeta}"
                             BackgroundColor="White"
-                            Stroke="#E9EEF5"
+                            Stroke="{StaticResource Border}"
                             StrokeShape="RoundRectangle 24"
                             Padding="16">
                         <VerticalStackLayout Spacing="10">
                             <Label Text="Referencia de tarjeta"
                                    FontSize="16"
                                    FontAttributes="Bold"
-                                   TextColor="#0F172A" />
-                            <Border BackgroundColor="#F8FAFC"
-                                    Stroke="#E5E7EB"
+                                   TextColor="{StaticResource TextPrimary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceSunken}"
+                                    Stroke="{StaticResource Border}"
                                     StrokeShape="RoundRectangle 16"
                                     Padding="12,0">
                                 <Entry Placeholder="Últimos 4 dígitos o referencia"
                                        Text="{Binding Referencia}"
                                        BackgroundColor="Transparent"
-                                       TextColor="#0F172A"
-                                       PlaceholderColor="#94A3B8" />
+                                       TextColor="{StaticResource TextPrimary}"
+                                       PlaceholderColor="{StaticResource TextMuted}" />
                             </Border>
                         </VerticalStackLayout>
                     </Border>
 
                     <Border IsVisible="{Binding EsMetodoOtro}"
                             BackgroundColor="White"
-                            Stroke="#E9EEF5"
+                            Stroke="{StaticResource Border}"
                             StrokeShape="RoundRectangle 24"
                             Padding="16">
                         <VerticalStackLayout Spacing="10">
                             <Label Text="Detalle del método"
                                    FontSize="16"
                                    FontAttributes="Bold"
-                                   TextColor="#0F172A" />
-                            <Border BackgroundColor="#F8FAFC"
-                                    Stroke="#E5E7EB"
+                                   TextColor="{StaticResource TextPrimary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceSunken}"
+                                    Stroke="{StaticResource Border}"
                                     StrokeShape="RoundRectangle 16"
                                     Padding="12,0">
                                 <Entry Placeholder="Describe el método o referencia"
                                        Text="{Binding Referencia}"
                                        BackgroundColor="Transparent"
-                                       TextColor="#0F172A"
-                                       PlaceholderColor="#94A3B8" />
+                                       TextColor="{StaticResource TextPrimary}"
+                                       PlaceholderColor="{StaticResource TextMuted}" />
                             </Border>
                         </VerticalStackLayout>
                     </Border>
 
                     <ActivityIndicator IsRunning="{Binding IsBusy}"
                                        IsVisible="{Binding IsBusy}"
-                                       Color="#F97316"
+                                       Color="{StaticResource Primary}"
                                        HorizontalOptions="Center" />
 
                     <Label Text="{Binding Mensaje}"
                            IsVisible="{Binding Mensaje, Converter={StaticResource StringToBoolConverter}}"
                            FontSize="13"
-                           TextColor="#F97316"
+                           TextColor="{StaticResource Primary}"
                            HorizontalTextAlignment="Center" />
 
                     <Button Command="{Binding CobrarYCerrarMesaCommand}"
                             Text="{Binding TextoBotonCobro}"
-                            BackgroundColor="#16A34A"
+                            BackgroundColor="{StaticResource Success}"
                             TextColor="White"
                             CornerRadius="18"
                             FontAttributes="Bold"
@@ -556,7 +550,7 @@
 
                     <Label Text="La mesa se liberará automáticamente al completar el cobro"
                            FontSize="13"
-                           TextColor="#667085"
+                           TextColor="{StaticResource TextSecondary}"
                            HorizontalTextAlignment="Center" />
                                    </VerticalStackLayout>
                             </VerticalStackLayout>

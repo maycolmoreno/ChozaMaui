@@ -65,6 +65,9 @@ public sealed class PosOrderWorkflowService
             PedidoCacheTtl,
             () => _pedidosApi.GetPedidoPorIdAsync(pedidoId));
 
+    public Task<List<PedidoHistorialResponse>> ObtenerHistorialPedidoAsync(int pedidoId)
+        => _pedidosApi.ObtenerHistorialPedidoAsync(pedidoId);
+
     public async Task<PedidoResponse> CambiarEstadoPedidoAsync(PedidoResponse pedido, string estado)
     {
         var actualizado = await _pedidosApi.CambiarEstadoPedidoAsync(pedido.Idpedido, estado);

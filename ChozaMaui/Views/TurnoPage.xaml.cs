@@ -16,6 +16,6 @@ public partial class TurnoPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _vm.CargarSiEsNecesarioAsync();
+        await _vm.CargarAsync();
     }
 }

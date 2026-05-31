@@ -11,12 +11,12 @@
         <!-- Tab bar premium mobile-first -->
         <Style TargetType="TabBar">
             <Setter Property="Shell.TabBarBackgroundColor" Value="#FFFFFF" />
-            <Setter Property="Shell.TabBarForegroundColor" Value="#F97316" />
-            <Setter Property="Shell.TabBarTitleColor" Value="#F97316" />
-            <Setter Property="Shell.TabBarUnselectedColor" Value="#94A3B8" />
+            <Setter Property="Shell.TabBarForegroundColor" Value="#EA580C" />
+            <Setter Property="Shell.TabBarTitleColor" Value="#EA580C" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="#8A94A6" />
         </Style>
         <Style TargetType="Tab">
-            <Setter Property="Shell.TabBarTitleColor" Value="#F97316" />
+            <Setter Property="Shell.TabBarTitleColor" Value="#EA580C" />
         </Style>
     </Shell.Resources>
 
@@ -27,22 +27,30 @@
     <TabBar>
 
         <!-- 1: Inicio / Mesas -->
-        <Tab Title="Mesas" Icon="tab_mesas.svg">
+        <Tab x:Name="MesasTab"
+             Title="Mesas"
+             Icon="tab_mesas.svg">
             <ShellContent ContentTemplate="{DataTemplate views:MapaPage}" Route="mapa" />
         </Tab>
 
         <!-- 2: Pedidos -->
-        <Tab Title="Pedidos" Icon="tab_pedidos.svg">
+        <Tab x:Name="PedidosTab"
+             Title="Pedidos"
+             Icon="tab_pedidos.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PedidosPage}" Route="pedidos" />
         </Tab>
 
         <!-- 3: Notificaciones -->
-        <Tab Title="Avisos" Icon="tab_notif.svg">
+        <Tab x:Name="AvisosTab"
+             Title="Avisos"
+             Icon="tab_notif.svg">
             <ShellContent ContentTemplate="{DataTemplate views:NotificacionesPage}" Route="notificaciones" />
         </Tab>
 
         <!-- 4: Perfil -->
-        <Tab Title="Perfil" Icon="tab_perfil.svg">
+        <Tab x:Name="PerfilTab"
+             Title="Perfil"
+             Icon="tab_perfil.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}" Route="perfil" />
         </Tab>
 

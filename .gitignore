@@ -6,6 +6,7 @@
 # Eclipse / Android Studio metadata
 .metadata/
 .tmp_apiPOS/
+.tmp_runtime/
 
 # VSCode
 .vscode/

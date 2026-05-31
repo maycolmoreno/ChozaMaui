@@ -3,10 +3,13 @@ namespace ChozaMaui.Services;
 public sealed class RoleCapabilityService
 {
     public bool PuedeCrearPedido(string? rol)
-        => EsUnoDe(rol, "ADMIN", "CAMARERO");
+        => EsUnoDe(rol, "ADMIN", "CAMARERO", "CAJERO");
 
     public bool PuedeConfirmarPedido(string? rol)
-        => EsUnoDe(rol, "ADMIN", "CAMARERO");
+        => EsUnoDe(rol, "ADMIN", "CAMARERO", "CAJERO");
+
+    public bool PuedeIniciarPreparacion(string? rol)
+        => EsUnoDe(rol, "ADMIN", "COCINA");
 
     public bool PuedeMarcarPedidoListo(string? rol)
         => EsUnoDe(rol, "ADMIN", "COCINA");

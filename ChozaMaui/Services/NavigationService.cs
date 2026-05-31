@@ -22,7 +22,8 @@ public class NavigationService : INavigationService
 
         w.Page?.Unfocus();
 
-        if (string.Equals(_session.Rol, "CAJERO", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(_session.Rol, "CAJERO", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_session.Rol, "ADMIN", StringComparison.OrdinalIgnoreCase))
         {
             w.Page = _services.GetRequiredService<AppShellCajero>();
         }

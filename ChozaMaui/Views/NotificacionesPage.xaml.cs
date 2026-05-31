@@ -14,7 +14,10 @@ public partial class NotificacionesPage : ContentPage
     {
         base.OnAppearing();
         if (BindingContext is NotificacionesViewModel vm)
+        {
+            vm.Iniciar();
             vm.CargarCommand.Execute(null);
+        }
     }
 
     protected override void OnDisappearing()

@@ -3,24 +3,24 @@
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:views="clr-namespace:ChozaMaui.Views"
        x:Class="ChozaMaui.Views.AppShellCajero"
-       Title="La Choza - Cajero"
+       Title="La Choza POS"
        Shell.NavBarIsVisible="False"
        Shell.TabBarIsVisible="True">
 
     <Shell.Resources>
         <Style TargetType="TabBar">
             <Setter Property="Shell.TabBarBackgroundColor" Value="#FFFFFF" />
-            <Setter Property="Shell.TabBarForegroundColor" Value="#F97316" />
-            <Setter Property="Shell.TabBarTitleColor" Value="#F97316" />
-            <Setter Property="Shell.TabBarUnselectedColor" Value="#94A3B8" />
+            <Setter Property="Shell.TabBarForegroundColor" Value="#EA580C" />
+            <Setter Property="Shell.TabBarTitleColor" Value="#EA580C" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="#8A94A6" />
         </Style>
     </Shell.Resources>
 
     <TabBar>
 
-        <!-- 1: Caja / Turno -->
-        <Tab Title="Turno" Icon="tab_cuentas.svg">
-            <ShellContent ContentTemplate="{DataTemplate views:TurnoPage}" Route="turnos" />
+        <!-- 1: Mesas / Nuevo pedido -->
+        <Tab Title="Mesas" Icon="tab_mesas.svg">
+            <ShellContent ContentTemplate="{DataTemplate views:MapaPage}" Route="mapa" />
         </Tab>
 
         <!-- 2: Cuentas -->
@@ -33,15 +33,23 @@
             <ShellContent ContentTemplate="{DataTemplate views:PedidosPage}" Route="pedidos" />
         </Tab>
 
-        <!-- 4: Notificaciones -->
-        <Tab Title="Avisos" Icon="tab_notif.svg">
-            <ShellContent ContentTemplate="{DataTemplate views:NotificacionesPage}" Route="notificaciones" />
+        <!-- 4: Turno / Caja -->
+        <Tab Title="Turno" Icon="tab_cuentas.svg">
+            <ShellContent ContentTemplate="{DataTemplate views:TurnoPage}" Route="turnos" />
         </Tab>
 
         <!-- 5: Perfil -->
         <Tab Title="Perfil" Icon="tab_perfil.svg">
             <ShellContent ContentTemplate="{DataTemplate views:PerfilPage}" Route="perfil" />
         </Tab>
+
+        <!-- Avisos queda accesible por ruta interna/notificaciones si se necesita,
+             pero no se muestra como pestana para no ocultar Mesas en Android. -->
+        <!--
+        <Tab Title="Avisos" Icon="tab_notif.svg">
+            <ShellContent ContentTemplate="{DataTemplate views:NotificacionesPage}" Route="notificaciones" />
+        </Tab>
+        -->
 
     </TabBar>
 

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Net;
 
 namespace ChozaMaui.Services;
 
@@ -10,7 +11,7 @@ internal static class ApiErrorHelper
             return;
 
         var raw = await response.Content.ReadAsStringAsync(cancellationToken);
-        var message = ExtractMessage(raw) ?? $"Error del servidor ({(int)response.StatusCode}).";
+        var message = ExtractMessage(raw) ?? BuildFallbackMessage(response);
         throw new HttpRequestException(message, null, response.StatusCode);
     }
 
@@ -39,5 +40,24 @@ internal static class ApiErrorHelper
         }
 
         return raw.Trim();
+    }
+
+    private static string BuildFallbackMessage(HttpResponseMessage response)
+    {
+        var path = response.RequestMessage?.RequestUri?.AbsolutePath;
+        var suffix = string.IsNullOrWhiteSpace(path) ? string.Empty : $" Ruta: {path}.";
+
+        return response.StatusCode switch
+        {
+            HttpStatusCode.Unauthorized =>
+                "Tu sesion no esta activa o el token no fue enviado. Cierra sesion e ingresa nuevamente." + suffix,
+            HttpStatusCode.Forbidden =>
+                "Tu rol no tiene permiso para realizar esta accion. Verifica que ingresaste con el usuario correcto." + suffix,
+            HttpStatusCode.NotFound =>
+                "No se encontro el recurso solicitado." + suffix,
+            HttpStatusCode.Conflict =>
+                "La operacion no se pudo completar porque entra en conflicto con el estado actual del sistema." + suffix,
+            _ => $"Error del servidor ({(int)response.StatusCode})." + suffix
+        };
     }
 }

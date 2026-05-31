@@ -14,14 +14,15 @@ public partial class PosViewModel : ObservableObject
 {
     private readonly RoleCapabilityService _capabilities;
     private readonly PosCatalogService _catalogService;
-    private readonly PosClientService _clientService;
     private readonly PosDataService _dataService;
     private readonly PosDraftService _draftService;
     private readonly PosMediaService _mediaService;
     private readonly PosOrderStateService _orderStateService;
     private readonly PosOrderWorkflowService _posWorkflow;
+    private readonly ClienteApiService _clientesApi;
     private readonly SessionService _session;
     private readonly INavigationService _navigation;
+    private readonly NotificationService _notifications;
     private PedidoResponse? _ultimoPedidoParaRecibo;
     private bool _cargandoDatos;
     private bool _actualizandoCarrito;
@@ -34,6 +35,8 @@ public partial class PosViewModel : ObservableObject
     public ObservableCollection<ProductoResponse> Productos { get; } = [];
     public ObservableCollection<ProductoResponse> ProductosFiltrados { get; } = [];
     public ObservableCollection<ItemCarrito> Carrito { get; } = [];
+    public ObservableCollection<ClienteResponse> ClientesEncontrados { get; } = [];
+    private List<ClienteResponse> _clientesDisponibles = [];
 
     // ── Listas POS split-panel ─────────────────────────────────────────
     public ObservableCollection<MesaVisual> MesasVisuales { get; } = [];
@@ -55,9 +58,14 @@ public partial class PosViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(EstadoPedidoTexto))]
     [NotifyPropertyChangedFor(nameof(EstadoPedidoColor))]
     [NotifyPropertyChangedFor(nameof(TienePedidoEnCurso))]
+    [NotifyPropertyChangedFor(nameof(PuedeEnviarACocina))]
+    [NotifyPropertyChangedFor(nameof(PuedeGuardarBorrador))]
     [NotifyPropertyChangedFor(nameof(PuedeMarcarListo))]
+    [NotifyPropertyChangedFor(nameof(MostrarPedidoEnPreparacion))]
     [NotifyPropertyChangedFor(nameof(PuedeEntregarPedido))]
     [NotifyPropertyChangedFor(nameof(MostrarPedidoListo))]
+    [NotifyPropertyChangedFor(nameof(PuedeCobrarCuenta))]
+    [NotifyPropertyChangedFor(nameof(PuedeCerrarMesa))]
     [NotifyPropertyChangedFor(nameof(PedidoEnCursoTotalTexto))]
     [NotifyPropertyChangedFor(nameof(TotalPedidoActualTexto))]
     [NotifyPropertyChangedFor(nameof(MostrarEstadoVacio))]
@@ -67,6 +75,7 @@ public partial class PosViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ClienteTexto))]
     [NotifyPropertyChangedFor(nameof(ClienteNombreTexto))]
     [NotifyPropertyChangedFor(nameof(ClienteEstadoTexto))]
+    [NotifyPropertyChangedFor(nameof(TieneClienteSeleccionado))]
     private ClienteResponse? clienteSeleccionado;
 
     [ObservableProperty]
@@ -80,6 +89,28 @@ public partial class PosViewModel : ObservableObject
     [ObservableProperty] private string mensaje = string.Empty;
     [ObservableProperty] private bool mostrarMensaje;
     [ObservableProperty] private bool mensajeEsError;
+    [ObservableProperty] private bool mostrarPedidoSheet;
+    [ObservableProperty] private bool mostrarClienteSheet;
+    [ObservableProperty] private bool mostrandoCrearCliente;
+    [ObservableProperty] private bool isBuscandoClientes;
+    [ObservableProperty] private string busquedaCliente = string.Empty;
+    [ObservableProperty] private string clienteNuevoNombre = string.Empty;
+    [ObservableProperty] private string clienteNuevoCedula = string.Empty;
+    [ObservableProperty] private string clienteNuevoTelefono = string.Empty;
+    [ObservableProperty] private string clienteNuevoEmail = string.Empty;
+    [ObservableProperty] private string clienteSheetMensaje = string.Empty;
+    [ObservableProperty] private string inicialesUsuario = "U";
+    [ObservableProperty] private string nombreUsuarioHeader = "Usuario";
+    [ObservableProperty] private string rolUsuarioHeader = "Usuario";
+    [ObservableProperty] private string headerKpi1Titulo = "Mesa";
+    [ObservableProperty] private string headerKpi1Valor = "-";
+    [ObservableProperty] private string headerKpi2Titulo = "Estado";
+    [ObservableProperty] private string headerKpi2Valor = "Sin pedido";
+    [ObservableProperty] private string headerKpi3Titulo = "Total";
+    [ObservableProperty] private string headerKpi3Valor = "$0.00";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneAlertasHeader))]
+    private int totalAlertasHeader;
 
     // ── Filtro de mesas ───────────────────────────────────────────────
     [ObservableProperty] private string filtroMesas = "Todas";
@@ -103,15 +134,36 @@ public partial class PosViewModel : ObservableObject
         PedidoEnCurso?.EstadoTextoVisual ?? (Carrito.Count > 0 ? "NUEVO PEDIDO" : "SIN PEDIDO");
 
     public string EstadoPedidoColor =>
-        PedidoEnCurso?.EstadoBadgeColor ?? (Carrito.Count > 0 ? "#f59e0b" : "#6b7280");
+        PedidoEnCurso?.EstadoBadgeColor ?? (Carrito.Count > 0 ? "#EA580C" : "#64748B");
 
     public bool TienePedidoEnCurso => PedidoEnCurso is not null;
-    public bool PuedeEnviarACocina => _capabilities.PuedeConfirmarPedido(_session.Rol);
+    public bool PuedeGuardarBorrador =>
+        TieneItems &&
+        PedidoEnCurso is null &&
+        _capabilities.PuedeCrearPedido(_session.Rol);
+
+    public bool PuedeEnviarACocina =>
+        TieneItems &&
+        EsPedidoBorradorOEnEdicion &&
+        _capabilities.PuedeConfirmarPedido(_session.Rol);
+
     public bool PuedeMarcarListo =>
         (PedidoEnCurso?.Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar) &&
         _capabilities.PuedeMarcarPedidoListo(_session.Rol);
+
+    public bool MostrarPedidoEnPreparacion => PedidoEnCurso?.EstaEnPreparacion == true;
     public bool PuedeEntregarPedido => PedidoEnCurso?.PuedeEntregarse == true && _capabilities.PuedeEntregarPedido(_session.Rol);
     public bool MostrarPedidoListo => PuedeEntregarPedido;
+    public bool PuedeCobrarCuenta =>
+        EsPedidoEntregado &&
+        _capabilities.PuedeCobrarCuenta(_session.Rol);
+
+    public bool PuedeCerrarMesa =>
+        EsPedidoPagado &&
+        (_capabilities.PuedeCerrarMesa(_session.Rol)
+         || _capabilities.PuedeCobrarCuenta(_session.Rol)
+         || _capabilities.PuedeEntregarPedido(_session.Rol));
+
     public string PedidoEnCursoTotalTexto => PedidoEnCurso is null ? "$0.00" : $"${PedidoEnCurso.Total:0.00}";
     public string TotalPedidoActualTexto => PedidoEnCurso is null ? TotalTexto : PedidoEnCursoTotalTexto;
     public bool MostrarEstadoVacio => !TieneItems && !TienePedidoEnCurso;
@@ -121,6 +173,9 @@ public partial class PosViewModel : ObservableObject
 
     public string ClienteNombreTexto => ClienteSeleccionado?.Nombre ?? "Sin asignar";
     public string ClienteEstadoTexto => ClienteSeleccionado is null ? "Cliente" : ClienteSeleccionado.Cedula;
+    public bool TieneClienteSeleccionado => ClienteSeleccionado is not null;
+    public bool TieneClientesEncontrados => ClientesEncontrados.Count > 0;
+    public bool MostrarClienteVacio => MostrarClienteSheet && !IsBuscandoClientes && !MostrandoCrearCliente && !TieneClientesEncontrados;
 
     public int TotalItems => Carrito.Sum(i => i.Cantidad);
     public string TotalTexto => $"${Total:0.00}";
@@ -129,6 +184,21 @@ public partial class PosViewModel : ObservableObject
     public string ComedorTexto    => MesaSeleccionada?.NombreComedor ?? "";
     public string MesaNumeroTexto => MesaSeleccionada is null ? "Selecciona mesa" : $"Mesa #{MesaSeleccionada.Numero}";
     public bool   TieneItems      => Carrito.Count > 0;
+    public bool TieneAlertasHeader => TotalAlertasHeader > 0;
+    public bool MostrarCarritoFijo => TieneItems && !MostrarPedidoSheet;
+    public string CarritoItemsTexto => TotalItems == 1 ? "1 producto" : $"{TotalItems} productos";
+    public string ObservacionesResumenTexto => string.IsNullOrWhiteSpace(Observaciones) ? "Sin observaciones" : "Con observaciones";
+    public bool TieneObservacionesPedido => !string.IsNullOrWhiteSpace(Observaciones);
+
+    private bool EsPedidoBorradorOEnEdicion =>
+        PedidoEnCurso is null || PedidoEnCurso.Estado == PedidoEstados.Pendiente;
+
+    private bool EsPedidoEntregado =>
+        PedidoEnCurso?.Estado is PedidoEstados.Completado or PedidoEstados.Entregado;
+
+    private bool EsPedidoPagado =>
+        string.Equals(PedidoEnCurso?.Estado, CuentaEstados.Pagada, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(PedidoEnCurso?.Estado, "PAGADO", StringComparison.OrdinalIgnoreCase);
 
     [ObservableProperty] private bool mostrarExito;
     [ObservableProperty] private string pedidoEntregadoTotalTexto = "$0.00";
@@ -136,40 +206,66 @@ public partial class PosViewModel : ObservableObject
     public PosViewModel(
         RoleCapabilityService capabilities,
         PosCatalogService catalogService,
-        PosClientService clientService,
         PosDataService dataService,
         PosDraftService draftService,
         PosMediaService mediaService,
         PosOrderStateService orderStateService,
+        ClienteApiService clientesApi,
         SessionService session,
         PosOrderWorkflowService posWorkflow,
-        INavigationService navigation)
+        INavigationService navigation,
+        NotificationService notifications)
     {
         _capabilities = capabilities;
         _catalogService = catalogService;
-        _clientService = clientService;
         _dataService = dataService;
         _draftService = draftService;
         _mediaService = mediaService;
         _orderStateService = orderStateService;
+        _clientesApi = clientesApi;
         _session = session;
         _posWorkflow = posWorkflow;
         _navigation = navigation;
+        _notifications = notifications;
 
         Carrito.CollectionChanged += OnCarritoCollectionChanged;
+        ClientesEncontrados.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(TieneClientesEncontrados));
+            OnPropertyChanged(nameof(MostrarClienteVacio));
+        };
+        ActualizarHeaderOperativo();
     }
 
     // Llamado automáticamente cuando Shell establece MesaSeleccionada vía QueryProperty
     partial void OnMesaSeleccionadaChanged(MesaResponse? value)
     {
+        ActualizarHeaderOperativo();
         if (value is not null && MesasVisuales.Count > 0)
             _ = CargarPedidoEnCursoAsync();
     }
 
     partial void OnPedidoIdChanged(int value)
     {
+        ActualizarHeaderOperativo();
         if (value > 0 && MesaSeleccionada is not null && MesasVisuales.Count > 0)
             _ = CargarPedidoEnCursoAsync();
+    }
+
+    partial void OnObservacionesChanged(string value)
+    {
+        OnPropertyChanged(nameof(ObservacionesResumenTexto));
+        OnPropertyChanged(nameof(TieneObservacionesPedido));
+    }
+
+    partial void OnMostrandoCrearClienteChanged(bool value)
+    {
+        OnPropertyChanged(nameof(MostrarClienteVacio));
+    }
+
+    partial void OnIsBuscandoClientesChanged(bool value)
+    {
+        OnPropertyChanged(nameof(MostrarClienteVacio));
     }
 
     // ── Carga inicial ─────────────────────────────────────────────────
@@ -211,6 +307,7 @@ public partial class PosViewModel : ObservableObject
                 await CargarPedidoEnCursoAsync();
 
             _ultimaCargaUtc = DateTimeOffset.UtcNow;
+            ActualizarHeaderOperativo();
         }
         catch (Exception ex)
         {
@@ -256,12 +353,42 @@ public partial class PosViewModel : ObservableObject
     }
 
     partial void OnBusquedaProductoChanged(string value) => AplicarBusquedaProductos();
+    partial void OnBusquedaClienteChanged(string value) => AplicarFiltroClientes();
 
     private void AplicarBusquedaProductos()
     {
         var productos = _catalogService.FiltrarProductos(Productos, BusquedaProducto);
 
         ReemplazarItems(ProductosFiltrados, productos);
+    }
+
+    private void AplicarFiltroClientes()
+    {
+        var texto = (BusquedaCliente ?? string.Empty).Trim();
+        IEnumerable<ClienteResponse> filtrados = _clientesDisponibles;
+        if (!string.IsNullOrWhiteSpace(texto))
+        {
+            filtrados = filtrados.Where(c =>
+                Contiene(c.Nombre, texto)
+                || Contiene(c.Cedula, texto)
+                || Contiene(c.Telefono, texto));
+        }
+
+        ReemplazarItems(ClientesEncontrados, filtrados.Take(20));
+        OnPropertyChanged(nameof(MostrarClienteVacio));
+    }
+
+    private static bool Contiene(string? valor, string filtro)
+        => !string.IsNullOrWhiteSpace(valor)
+           && valor.Contains(filtro, StringComparison.OrdinalIgnoreCase);
+
+    private void LimpiarFormularioCliente()
+    {
+        ClienteNuevoNombre = string.Empty;
+        ClienteNuevoCedula = string.Empty;
+        ClienteNuevoTelefono = string.Empty;
+        ClienteNuevoEmail = string.Empty;
+        BusquedaCliente = string.Empty;
     }
 
     private void ReemplazarProductos(IEnumerable<ProductoResponse> productos)
@@ -296,6 +423,7 @@ public partial class PosViewModel : ObservableObject
             Carrito.Add(new ItemCarrito { Producto = producto, Cantidad = 1 });
         }
         RecalcularTotal();
+        await MostrarMensajeAsync($"{producto.Nombre} agregado.", error: false);
     }
 
     [RelayCommand]
@@ -319,11 +447,15 @@ public partial class PosViewModel : ObservableObject
         Total = 0;
         Observaciones = string.Empty;
         FotoAdjunta = null;
+        MostrarPedidoSheet = false;
+        NotificarResumenCarritoCompleto();
     }
 
     private void RecalcularTotal()
     {
         Total = Carrito.Sum(i => i.Subtotal);
+        ActualizarHeaderOperativo();
+        NotificarResumenCarritoCompleto();
     }
 
     [RelayCommand]
@@ -366,19 +498,80 @@ public partial class PosViewModel : ObservableObject
     [RelayCommand]
     public async Task BuscarClienteAsync()
     {
+        MostrarClienteSheet = true;
+        MostrandoCrearCliente = false;
+        ClienteSheetMensaje = string.Empty;
         IsBusy = true;
+        IsBuscandoClientes = true;
         try
         {
-            var resultado = await _clientService.SeleccionarClienteAsync();
-            if (resultado.Cliente is not null)
-                ClienteSeleccionado = resultado.Cliente;
-
-            if (!string.IsNullOrWhiteSpace(resultado.Mensaje))
-                await MostrarMensajeAsync(resultado.Mensaje, error: true);
+            _clientesDisponibles = await _clientesApi.GetClientesAsync();
+            AplicarFiltroClientes();
         }
         catch (Exception ex)
         {
-            await MostrarMensajeAsync($"Error cargando clientes: {ex.Message}", error: true);
+            ClienteSheetMensaje = $"Error cargando clientes: {ex.Message}";
+        }
+        finally
+        {
+            IsBuscandoClientes = false;
+            IsBusy = false;
+            OnPropertyChanged(nameof(MostrarClienteVacio));
+        }
+    }
+
+    [RelayCommand]
+    public void QuitarCliente() => ClienteSeleccionado = null;
+
+    [RelayCommand]
+    public async Task SeleccionarClienteAsync(ClienteResponse cliente)
+    {
+        ClienteSeleccionado = cliente;
+        CerrarClienteSheet();
+        await MostrarMensajeAsync($"{cliente.Nombre} asignado al pedido.", error: false);
+    }
+
+    [RelayCommand]
+    public void MostrarCrearCliente()
+    {
+        MostrandoCrearCliente = true;
+        ClienteSheetMensaje = string.Empty;
+        if (string.IsNullOrWhiteSpace(ClienteNuevoNombre) && !string.IsNullOrWhiteSpace(BusquedaCliente))
+            ClienteNuevoNombre = BusquedaCliente.Trim();
+    }
+
+    [RelayCommand]
+    public async Task CrearClienteRapidoAsync()
+    {
+        IsBusy = true;
+        ClienteSheetMensaje = string.Empty;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(ClienteNuevoNombre))
+            {
+                ClienteSheetMensaje = "Ingresa el nombre completo del cliente.";
+                return;
+            }
+
+            var clienteCreado = await _clientesApi.CrearClienteAsync(new ClienteRequest
+            {
+                Nombre = ClienteNuevoNombre.Trim(),
+                Cedula = string.IsNullOrWhiteSpace(ClienteNuevoCedula)
+                    ? $"SC{DateTime.Now:yyyyMMddHHmmssfff}"
+                    : ClienteNuevoCedula.Trim(),
+                Telefono = string.IsNullOrWhiteSpace(ClienteNuevoTelefono) ? null : ClienteNuevoTelefono.Trim(),
+                Email = string.IsNullOrWhiteSpace(ClienteNuevoEmail) ? null : ClienteNuevoEmail.Trim(),
+                Estado = true
+            });
+
+            ClienteSeleccionado = clienteCreado;
+            LimpiarFormularioCliente();
+            CerrarClienteSheet();
+            await MostrarMensajeAsync("Cliente creado y asignado al pedido", error: false);
+        }
+        catch (Exception ex)
+        {
+            ClienteSheetMensaje = $"Error creando cliente: {ex.Message}";
         }
         finally
         {
@@ -387,31 +580,11 @@ public partial class PosViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void QuitarCliente() => ClienteSeleccionado = null;
-
-    [RelayCommand]
-    public async Task CrearClienteRapidoAsync()
+    public void CerrarClienteSheet()
     {
-        IsBusy = true;
-        try
-        {
-            var resultado = await _clientService.CrearClienteRapidoAsync();
-            if (resultado.Cancelado || resultado.Cliente is null)
-                return;
-
-            var clienteCreado = resultado.Cliente;
-            ClienteSeleccionado = clienteCreado;
-
-            await MostrarMensajeAsync($"Cliente {clienteCreado.Nombre} creado y asignado.", error: false);
-        }
-        catch (Exception ex)
-        {
-            await MostrarMensajeAsync($"Error creando cliente: {ex.Message}", error: true);
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        MostrarClienteSheet = false;
+        MostrandoCrearCliente = false;
+        ClienteSheetMensaje = string.Empty;
     }
 
     // ── Cámara (sensor del dispositivo) ──────────────────────────────
@@ -448,10 +621,27 @@ public partial class PosViewModel : ObservableObject
         RecalcularTotal();
     }
 
+    [RelayCommand]
+    public void VerPedido()
+    {
+        if (TieneItems)
+            MostrarPedidoSheet = true;
+    }
+
+    [RelayCommand]
+    public void CerrarPedidoSheet()
+    {
+        MostrarPedidoSheet = false;
+    }
+
     // Volver al mapa de mesas
     [RelayCommand]
     public Task VolverAsync()
         => _navigation.GoToAsync("//mapa");
+
+    [RelayCommand]
+    public Task IrNotificacionesAsync()
+        => _navigation.GoToAsync("notificacionesPage");
 
     [RelayCommand]
     public Task IrMesasAsync()
@@ -519,6 +709,12 @@ public partial class PosViewModel : ObservableObject
             return;
         }
 
+        if (PedidoEnCurso is not null)
+        {
+            await MostrarMensajeAsync("Este pedido ya existe. Usa Enviar a cocina para continuar el flujo.", error: true);
+            return;
+        }
+
         var estadoDestino = PedidoEstados.Pendiente;
         var mensajeExito = "Pedido";
 
@@ -530,7 +726,14 @@ public partial class PosViewModel : ObservableObject
     {
         if (!PuedeEnviarACocina)
         {
-            await MostrarMensajeAsync("Tu perfil no tiene autorizacion para enviar pedidos a cocina.", error: true);
+            await MostrarMensajeAsync("Este pedido ya no puede enviarse a cocina.", error: true);
+            return;
+        }
+
+        if (PedidoEnCurso is not null)
+        {
+            await CambiarEstadoPedidoActualAsync(PedidoEstados.EnCocina, "Pedido enviado a cocina.");
+            MostrarPedidoSheet = false;
             return;
         }
 
@@ -577,9 +780,30 @@ public partial class PosViewModel : ObservableObject
         MostrarExito = true;
     }
 
+    [RelayCommand]
+    public async Task CobrarCuentaAsync()
+    {
+        if (PedidoEnCurso is null)
+        {
+            await MostrarMensajeAsync("No hay pedido entregado para cobrar.", error: true);
+            return;
+        }
+
+        if (!PuedeCobrarCuenta)
+        {
+            await MostrarMensajeAsync("Este pedido aun no esta listo para cobro.", error: true);
+            return;
+        }
+
+        MostrarPedidoSheet = false;
+        await _navigation.GoToAsync("pago",
+            new Dictionary<string, object> { { "Pedido", PedidoEnCurso } });
+    }
+
     private async Task CrearPedidoAsync(string estadoDestino, string mensajeExito)
     {
-        var errorValidacion = _draftService.ValidarPedido(MesaSeleccionada, Carrito, ClienteSeleccionado);
+        var clientePedido = ClienteSeleccionado ?? await ObtenerClienteGenericoAsync();
+        var errorValidacion = _draftService.ValidarPedido(MesaSeleccionada, Carrito, clientePedido);
         if (errorValidacion is not null)
         {
             await MostrarMensajeAsync(errorValidacion, error: true);
@@ -596,7 +820,7 @@ public partial class PosViewModel : ObservableObject
         var request = _draftService.CrearPedidoRequest(
             _session.UserId,
             MesaSeleccionada!,
-            ClienteSeleccionado!,
+            clientePedido,
             Carrito,
             Observaciones,
             FotoAdjunta);
@@ -622,6 +846,7 @@ public partial class PosViewModel : ObservableObject
             LimpiarCarrito();
             PedidoEnCurso = pedido;
             ClienteSeleccionado = null;
+            MostrarPedidoSheet = false;
             await CargarDatosAsync();
             var mensaje = string.IsNullOrWhiteSpace(resultado.VinculoCuentaAdvertencia)
                 ? $"{mensajeExito} #{pedido.Idpedido}."
@@ -639,6 +864,28 @@ public partial class PosViewModel : ObservableObject
     }
 
     // ── Helpers ───────────────────────────────────────────────────────
+
+    private async Task<ClienteResponse> ObtenerClienteGenericoAsync()
+    {
+        const string cedulaGenerica = "9999999999";
+        var clientes = _clientesDisponibles.Count > 0
+            ? _clientesDisponibles
+            : await _clientesApi.GetClientesAsync();
+
+        var existente = clientes.FirstOrDefault(c =>
+            string.Equals(c.Cedula, cedulaGenerica, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Nombre, "Consumidor final", StringComparison.OrdinalIgnoreCase));
+
+        if (existente is not null)
+            return existente;
+
+        return await _clientesApi.CrearClienteAsync(new ClienteRequest
+        {
+            Nombre = "Consumidor final",
+            Cedula = cedulaGenerica,
+            Estado = true
+        });
+    }
 
     private async Task MostrarMensajeAsync(string texto, bool error)
     {
@@ -717,6 +964,7 @@ public partial class PosViewModel : ObservableObject
         ClienteSeleccionado = snapshot.Cliente;
         Observaciones = snapshot.Observaciones;
         Total = snapshot.Total;
+        ActualizarHeaderOperativo();
     }
 
     private void LimpiarPedidoActual()
@@ -769,6 +1017,14 @@ public partial class PosViewModel : ObservableObject
         OnPropertyChanged(nameof(TotalItems));
         OnPropertyChanged(nameof(TieneItems));
         OnPropertyChanged(nameof(MostrarEstadoVacio));
+        OnPropertyChanged(nameof(MostrarCarritoFijo));
+        OnPropertyChanged(nameof(CarritoItemsTexto));
+        OnPropertyChanged(nameof(PuedeGuardarBorrador));
+        OnPropertyChanged(nameof(PuedeEnviarACocina));
+        OnPropertyChanged(nameof(MostrarPedidoEnPreparacion));
+        OnPropertyChanged(nameof(PuedeEntregarPedido));
+        OnPropertyChanged(nameof(PuedeCobrarCuenta));
+        OnPropertyChanged(nameof(PuedeCerrarMesa));
     }
 
     private void NotificarResumenCarritoCompleto()
@@ -776,5 +1032,46 @@ public partial class PosViewModel : ObservableObject
         NotificarResumenCarritoBase();
         OnPropertyChanged(nameof(EstadoPedidoTexto));
         OnPropertyChanged(nameof(EstadoPedidoColor));
+        OnPropertyChanged(nameof(TotalTexto));
+        ActualizarHeaderOperativo();
     }
+
+    partial void OnMostrarPedidoSheetChanged(bool value)
+    {
+        OnPropertyChanged(nameof(MostrarCarritoFijo));
+    }
+
+    private void ActualizarHeaderOperativo()
+    {
+        NombreUsuarioHeader = _session.NombreCompleto ?? _session.Username ?? "Usuario";
+        RolUsuarioHeader = FormatearRol(_session.Rol);
+        InicialesUsuario = CrearIniciales(NombreUsuarioHeader);
+        TotalAlertasHeader = _notifications.Historial.Count(n => !n.Leida);
+
+        HeaderKpi1Titulo = "Mesa";
+        HeaderKpi1Valor = MesaSeleccionada is null ? "-" : $"#{MesaSeleccionada.Numero}";
+        HeaderKpi2Titulo = "Estado";
+        HeaderKpi2Valor = EstadoPedidoTexto;
+        HeaderKpi3Titulo = "Total";
+        HeaderKpi3Valor = TotalPedidoActualTexto;
+    }
+
+    private static string CrearIniciales(string nombre)
+    {
+        var iniciales = string.Concat(nombre
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(p => p[0].ToString().ToUpperInvariant()));
+        return string.IsNullOrWhiteSpace(iniciales) ? "U" : iniciales;
+    }
+
+    private static string FormatearRol(string? rol)
+        => (rol ?? "USUARIO").ToUpperInvariant() switch
+        {
+            "CAJERO" => "Cajero",
+            "CAMARERO" => "Camarero",
+            "COCINA" => "Cocina",
+            "ADMIN" => "Administrador",
+            _ => "Usuario"
+        };
 }

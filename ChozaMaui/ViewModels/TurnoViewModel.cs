@@ -11,12 +11,22 @@ public partial class TurnoViewModel : ObservableObject
     private readonly RoleCapabilityService _capabilities;
     private readonly SessionService _session;
     private readonly TurnoWorkflowService _workflow;
+    private readonly NotificationService _notifications;
     private DateTimeOffset? _ultimaCargaUtc;
     private static readonly TimeSpan VentanaMinimaRecarga = TimeSpan.FromSeconds(10);
 
     // ── Estado de caja ────────────────────────────────────────────────
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private string mensaje = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EstadoCajaTexto))]
+    [NotifyPropertyChangedFor(nameof(PuedeMostrarAccionesCaja))]
+    private bool cajaCargada;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EstadoCajaTexto))]
+    [NotifyPropertyChangedFor(nameof(PuedeMostrarAccionesCaja))]
+    private bool errorCargaCaja;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EstadoCajaTexto))]
@@ -31,27 +41,45 @@ public partial class TurnoViewModel : ObservableObject
     [ObservableProperty] private string montoFinal   = string.Empty;
     [ObservableProperty] private bool mostrarFormApertura;
     [ObservableProperty] private bool mostrarFormCierre;
+    [ObservableProperty] private string inicialesUsuario = "U";
+    [ObservableProperty] private string rolUsuarioHeader = "Cajero";
+    [ObservableProperty] private string headerKpi1Titulo = "Caja";
+    [ObservableProperty] private string headerKpi1Valor = "#-";
+    [ObservableProperty] private string headerKpi2Titulo = "Turno";
+    [ObservableProperty] private string headerKpi2Valor = "Sin caja";
+    [ObservableProperty] private string headerKpi3Titulo = "Ventas";
+    [ObservableProperty] private string headerKpi3Valor = "$0.00";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneAlertasHeader))]
+    private int totalAlertasHeader;
 
     // ── Colecciones ───────────────────────────────────────────────────
     public ObservableCollection<PagoResponse>   HistorialPagos    { get; } = [];
 
     // ── Propiedades computadas ────────────────────────────────────────
-    public string EstadoCajaTexto   => TurnoActivo?.Estado == CuentaEstados.Abierta ? "Abierta"
+    public string EstadoCajaTexto   => ErrorCargaCaja ? "No disponible"
+                                       : !CajaCargada ? "Cargando caja"
+                                       : EsCajaAbierta ? "Abierta"
                                        : TurnoActivo is null ? "Sin caja" : "Cerrada";
     public string FondoInicialTexto => TurnoActivo is null ? "$0.00" : $"${TurnoActivo.MontoInicial:0.00}";
     public string HoraAperturaTexto => TurnoActivo?.FechaApertura?.ToString("dd MMM · HH:mm") ?? "--";
     public string NumeroCajaTexto   => TurnoActivo is null ? "Caja #-" : $"Caja #{TurnoActivo.Idcaja}";
     public string NombreUsuario     => _session.NombreCompleto ?? _session.Username ?? "Cajero";
 
-    public bool   TieneTurnoAbierto      => TurnoActivo?.Estado == CuentaEstados.Abierta;
+    private bool EsCajaAbierta => string.Equals(TurnoActivo?.Estado, CuentaEstados.Abierta, StringComparison.OrdinalIgnoreCase);
+    public bool   TieneTurnoAbierto      => EsCajaAbierta;
     public bool   PuedeGestionarCaja      => _capabilities.PuedeGestionarCaja(_session.Rol);
+    public bool   PuedeMostrarAccionesCaja => PuedeGestionarCaja && CajaCargada && !ErrorCargaCaja;
     public string TotalPagosTurnoTexto => $"${HistorialPagos.Sum(p => p.Monto):0.00}";
+    public bool TieneAlertasHeader => TotalAlertasHeader > 0;
 
-    public TurnoViewModel(RoleCapabilityService capabilities, SessionService session, TurnoWorkflowService workflow)
+    public TurnoViewModel(RoleCapabilityService capabilities, SessionService session, TurnoWorkflowService workflow, NotificationService notifications)
     {
         _capabilities = capabilities;
         _session = session;
         _workflow = workflow;
+        _notifications = notifications;
+        ActualizarHeaderOperativo();
     }
 
     // ── Cargar datos ──────────────────────────────────────────────────
@@ -71,20 +99,32 @@ public partial class TurnoViewModel : ObservableObject
 
         IsBusy  = true;
         Mensaje = string.Empty;
+        ErrorCargaCaja = false;
+        CajaCargada = false;
         try
         {
             var snapshot = await _workflow.CargarDashboardAsync();
 
             TurnoActivo = snapshot.TurnoActivo;
+            CajaCargada = true;
 
             HistorialPagos.Clear();
             foreach (var pago in snapshot.PagosTurno)
                 HistorialPagos.Add(pago);
             OnPropertyChanged(nameof(TotalPagosTurnoTexto));
+            ActualizarHeaderOperativo();
 
             _ultimaCargaUtc = DateTimeOffset.UtcNow;
         }
-        catch (Exception ex) { Mensaje = $"Error al cargar: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            TurnoActivo = null;
+            HistorialPagos.Clear();
+            OnPropertyChanged(nameof(TotalPagosTurnoTexto));
+            ErrorCargaCaja = true;
+            Mensaje = $"Error al cargar caja: {ex.Message}";
+            ActualizarHeaderOperativo();
+        }
         finally { IsBusy = false; }
     }
 
@@ -105,6 +145,7 @@ public partial class TurnoViewModel : ObservableObject
             MontoInicial        = string.Empty;
             MostrarFormApertura = false;
             Mensaje             = "Caja abierta correctamente.";
+            ActualizarHeaderOperativo();
         }
         catch (Exception ex) { Mensaje = $"Error: {ex.Message}"; }
         finally { IsBusy = false; }
@@ -127,6 +168,7 @@ public partial class TurnoViewModel : ObservableObject
             MontoFinal        = string.Empty;
             MostrarFormCierre = false;
             Mensaje           = "Caja cerrada correctamente.";
+            ActualizarHeaderOperativo();
         }
         catch (Exception ex) { Mensaje = $"Error: {ex.Message}"; }
         finally { IsBusy = false; }
@@ -147,4 +189,41 @@ public partial class TurnoViewModel : ObservableObject
         MostrarFormApertura = false;
     }
 
+    [RelayCommand]
+    public async Task IrNotificacionesAsync()
+    {
+        await Shell.Current.GoToAsync("notificacionesPage");
+    }
+
+    private void ActualizarHeaderOperativo()
+    {
+        InicialesUsuario = CrearIniciales(NombreUsuario);
+        RolUsuarioHeader = FormatearRol(_session.Rol);
+        HeaderKpi1Titulo = "Caja";
+        HeaderKpi1Valor = TurnoActivo is null ? "#-" : $"#{TurnoActivo.Idcaja}";
+        HeaderKpi2Titulo = "Turno";
+        HeaderKpi2Valor = EstadoCajaTexto;
+        HeaderKpi3Titulo = "Ventas";
+        HeaderKpi3Valor = TotalPagosTurnoTexto;
+        TotalAlertasHeader = _notifications.Historial.Count(n => !n.Leida);
+    }
+
+    private static string CrearIniciales(string nombre)
+    {
+        var iniciales = string.Concat(nombre
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2)
+            .Select(p => p[0].ToString().ToUpperInvariant()));
+        return string.IsNullOrWhiteSpace(iniciales) ? "U" : iniciales;
+    }
+
+    private static string FormatearRol(string? rol)
+        => (rol ?? "USUARIO").ToUpperInvariant() switch
+        {
+            "CAJERO" => "Cajero",
+            "CAMARERO" => "Camarero",
+            "COCINA" => "Cocina",
+            "ADMIN" => "Administrador",
+            _ => "Usuario"
+        };
 }

@@ -7,7 +7,6 @@ namespace ChozaMaui.ViewModels;
 public partial class LoginViewModel : ObservableObject
 {
     private readonly UsuarioApiService _usuariosApi;
-    private readonly CajaApiService _cajaApi;
     private readonly ServerConnectionService _serverConnection;
     private readonly SessionService  _session;
     private readonly SettingsService _settings;
@@ -28,7 +27,7 @@ public partial class LoginViewModel : ObservableObject
     private string servidorPuerto = string.Empty;
 
     [ObservableProperty] private string estadoServidor     = string.Empty;
-    [ObservableProperty] private string estadoServidorColor = "#9ca3af";
+    [ObservableProperty] private string estadoServidorColor = "#8A94A6";
     [ObservableProperty] private bool   probandoConexion;
     [ObservableProperty] private bool   panelServidorVisible;
 
@@ -37,11 +36,10 @@ public partial class LoginViewModel : ObservableObject
             ? $"http://{host}:{port}"
             : $"http://{ServidorHost}:{ServidorPuerto}";
 
-    public LoginViewModel(UsuarioApiService usuariosApi, CajaApiService cajaApi, ServerConnectionService serverConnection,
+    public LoginViewModel(UsuarioApiService usuariosApi, ServerConnectionService serverConnection,
                           SessionService session, SettingsService settings, INavigationService navigation)
     {
         _usuariosApi = usuariosApi;
-        _cajaApi = cajaApi;
         _serverConnection = serverConnection;
         _session    = session;
         _settings   = settings;
@@ -65,14 +63,14 @@ public partial class LoginViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(ServidorHost) || string.IsNullOrWhiteSpace(ServidorPuerto))
         {
             EstadoServidor      = "Ingresa host y puerto válidos.";
-            EstadoServidorColor = "#ef4444";
+            EstadoServidorColor = "#DC2626";
             return false;
         }
 
         if (!_settings.TrySetServer(ServidorHost, ServidorPuerto, out var errorMessage))
         {
             EstadoServidor      = $"Servidor inválido: {errorMessage}";
-            EstadoServidorColor = "#ef4444";
+            EstadoServidorColor = "#DC2626";
             return false;
         }
 
@@ -80,7 +78,7 @@ public partial class LoginViewModel : ObservableObject
         ServidorPuerto = _settings.Port;
 
         EstadoServidor      = $"URL guardada: {_settings.BaseUrl}";
-        EstadoServidorColor = "#6b7280";
+        EstadoServidorColor = "#64748B";
         return true;
     }
 
@@ -92,13 +90,13 @@ public partial class LoginViewModel : ObservableObject
 
         ProbandoConexion    = true;
         EstadoServidor      = "Probando conexión…";
-        EstadoServidorColor = "#f59e0b";
+        EstadoServidorColor = "#D97706";
 
         try
         {
             var (ok, estado) = await _serverConnection.PingAsync();
             EstadoServidor      = estado;
-            EstadoServidorColor = ok ? "#28b779" : "#ef4444";
+            EstadoServidorColor = ok ? "#16A34A" : "#DC2626";
         }
         finally
         {
@@ -146,13 +144,6 @@ public partial class LoginViewModel : ObservableObject
             else
             {
                 _navigation.IrAlShellSegunRol();
-
-                if (string.Equals(response.Rol, "CAJERO", StringComparison.OrdinalIgnoreCase))
-                {
-                    var caja = await _cajaApi.ObtenerCajaAbiertaAsync();
-                    if (caja == null)
-                        await Shell.Current.GoToAsync("turnos");
-                }
             }
         }
         catch (HttpRequestException ex) when ((int?)ex.StatusCode == 401)
