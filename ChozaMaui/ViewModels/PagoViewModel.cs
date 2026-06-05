@@ -261,6 +261,7 @@ public partial class PagoViewModel : ObservableObject
                          PagoComprobanteService comprobantes, PagoValidationService validation,
                          INavigationService navigation, NotificationService notifications)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _capabilities = capabilities;
         _session = session;
         _workflow = workflow;
@@ -269,6 +270,7 @@ public partial class PagoViewModel : ObservableObject
         _navigation = navigation;
         _notifications = notifications;
         ActualizarHeaderOperativo();
+        System.Diagnostics.Debug.WriteLine($"[PERF][PagoViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -286,6 +288,7 @@ public partial class PagoViewModel : ObservableObject
 
     private async Task CargarInternoAsync(bool force)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         if (Pedido is null) return;
         if (!await _refreshLock.WaitAsync(0))
             return;
@@ -322,6 +325,7 @@ public partial class PagoViewModel : ObservableObject
         {
             IsBusy = false;
             _refreshLock.Release();
+            System.Diagnostics.Debug.WriteLine($"[PERF][PagoViewModel] CargarInternoAsync(force={force}): {sw.ElapsedMilliseconds} ms");
         }
     }
 

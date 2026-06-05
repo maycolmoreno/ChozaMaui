@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChozaMaui.Models;
@@ -10,13 +11,16 @@ public partial class MapaViewModel : ObservableObject
 {
     private readonly RoleCapabilityService _capabilities;
     private readonly PedidoApiService _pedidosApi;
+    private readonly CuentaApiService _cuentasApi;
     private readonly MesaStateService _mesas;
     private readonly MapaPresentationService _presentation;
     private readonly NotificationService _notifications;
     private readonly SessionService _session;
     private readonly LiveRefreshCoordinator _refreshCoordinator;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
+    private readonly Dictionary<int, (DateTimeOffset LoadedAt, PedidoResponse Pedido)> _pedidoSheetCache = new();
     private const int PollingIntervalSeconds = 30;
+    private static readonly TimeSpan PedidoSheetCacheTtl = TimeSpan.FromSeconds(30);
     private const string TopicCamarero = "/topic/camarero";
     private const string TopicCocina = "/topic/cocina";
 
@@ -51,6 +55,7 @@ public partial class MapaViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(SheetCapacidadTexto))]
     [NotifyPropertyChangedFor(nameof(SheetEstadoTexto))]
     [NotifyPropertyChangedFor(nameof(SheetEstadoColor))]
+    [NotifyPropertyChangedFor(nameof(SheetEstadoColorValue))]
     [NotifyPropertyChangedFor(nameof(SheetEsPendientePago))]
     [NotifyPropertyChangedFor(nameof(PuedeCobrar))]
     [NotifyPropertyChangedFor(nameof(SheetPuedeAbrirPos))]
@@ -74,6 +79,7 @@ public partial class MapaViewModel : ObservableObject
     public string SheetCapacidadTexto => MesaSheet is null ? "" : $"Capacidad: {MesaSheet.Capacidad} personas";
     public string SheetEstadoTexto   => MesaSheet?.EstadoVisual ?? "";
     public string SheetEstadoColor   => MesaSheet?.EstadoColor ?? "#6b7280";
+    public Color SheetEstadoColorValue => MesaSheet?.EstadoColorValue ?? Color.FromArgb("#6b7280");
     public bool   SheetEsPendientePago => MesaSheet?.EstadoVisual == "Pendiente de pago";
     public bool   PuedeCobrar          => SheetEsPendientePago && _capabilities.PuedeCobrarCuenta(_session.Rol);
     public bool   SheetPuedeAbrirPos   => MesaSheet is not null
@@ -91,15 +97,18 @@ public partial class MapaViewModel : ObservableObject
         _capabilities.PuedeConfirmarPedido(_session.Rol);
     public bool TieneAlertasHeader => TotalAlertasHeader > 0;
 
-    public MapaViewModel(RoleCapabilityService capabilities, PedidoApiService pedidosApi, MesaStateService mesas, MapaPresentationService presentation, NotificationService notifications, SessionService session, LiveRefreshCoordinator refreshCoordinator)
+    public MapaViewModel(RoleCapabilityService capabilities, PedidoApiService pedidosApi, CuentaApiService cuentasApi, MesaStateService mesas, MapaPresentationService presentation, NotificationService notifications, SessionService session, LiveRefreshCoordinator refreshCoordinator)
     {
+        var sw = Stopwatch.StartNew();
         _capabilities = capabilities;
         _pedidosApi = pedidosApi;
+        _cuentasApi = cuentasApi;
         _mesas = mesas;
         _presentation = presentation;
         _notifications = notifications;
         _session = session;
         _refreshCoordinator = refreshCoordinator;
+        Debug.WriteLine($"[PERF][MapaViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     [RelayCommand]
@@ -122,21 +131,31 @@ public partial class MapaViewModel : ObservableObject
         {
             var mesasTask = _mesas.ObtenerMesasAsync();
             var pedidosTask = _pedidosApi.GetPedidosAsync();
+            var cuentasAbiertasTask = _cuentasApi.ObtenerCuentasAbiertasAsync();
 
-            await Task.WhenAll(mesasTask, pedidosTask);
+            var sw = Stopwatch.StartNew();
+            await Task.WhenAll(mesasTask, pedidosTask, cuentasAbiertasTask);
+            Debug.WriteLine($"[PERF][Mapa] API mesas+pedidos+cuentas abiertas: {sw.ElapsedMilliseconds} ms");
+            var mesas = await mesasTask;
+            var pedidos = await pedidosTask;
+            var cuentasAbiertas = await cuentasAbiertasTask;
 
-            var snapshot = _presentation.Build(mesasTask.Result, pedidosTask.Result);
+            sw.Restart();
+            var snapshot = _presentation.Build(mesas, pedidos, cuentasAbiertas);
+            Debug.WriteLine($"[PERF][Mapa] Presentacion mesas: {sw.ElapsedMilliseconds} ms");
             TotalDisponibles = snapshot.TotalDisponibles;
             TotalOcupadas = snapshot.TotalOcupadas;
             TotalEnPreparacion = snapshot.TotalEnPreparacion;
             TotalPendientePago = snapshot.TotalPendientePago;
-            ReemplazarItems(Grupos, snapshot.Grupos);
+            Grupos = new ObservableCollection<GrupoMesaVisual>(snapshot.Grupos);
             ActualizarHeaderOperativo();
 
             if (!Grupos.Any()) Mensaje = "No hay mesas registradas.";
 
             // Notificar si hay pedidos recién listos
-            await _notifications.VerificarPedidosListosAsync(pedidosTask.Result);
+            sw.Restart();
+            await _notifications.VerificarPedidosListosAsync(pedidos);
+            Debug.WriteLine($"[PERF][Mapa] Notificaciones: {sw.ElapsedMilliseconds} ms");
         }
         catch (Exception ex)
         {
@@ -154,6 +173,7 @@ public partial class MapaViewModel : ObservableObject
     [RelayCommand]
     public async Task VerDetalleMesa(MesaVisual mesa)
     {
+        var sw = Stopwatch.StartNew();
         MesaSheet = mesa;
         PedidoSheet = null;
 
@@ -165,7 +185,7 @@ public partial class MapaViewModel : ObservableObject
         {
             try
             {
-                PedidoSheet = await _pedidosApi.GetPedidoPorIdAsync(pedidoBase.Idpedido);
+                PedidoSheet = await ObtenerPedidoSheetAsync(pedidoBase);
             }
             catch
             {
@@ -174,6 +194,7 @@ public partial class MapaViewModel : ObservableObject
         }
 
         MostrarSheet = true;
+        Debug.WriteLine($"[PERF][Mapa] Abrir bottom sheet mesa {mesa.Numero}: {sw.ElapsedMilliseconds} ms");
     }
 
     [RelayCommand]
@@ -245,6 +266,22 @@ public partial class MapaViewModel : ObservableObject
         destino.Clear();
         foreach (var item in origen)
             destino.Add(item);
+    }
+
+    private async Task<PedidoResponse> ObtenerPedidoSheetAsync(PedidoResponse pedidoBase)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (_pedidoSheetCache.TryGetValue(pedidoBase.Idpedido, out var cache)
+            && now - cache.LoadedAt < PedidoSheetCacheTtl)
+        {
+            return cache.Pedido;
+        }
+
+        var sw = Stopwatch.StartNew();
+        var pedido = await _pedidosApi.GetPedidoPorIdAsync(pedidoBase.Idpedido);
+        Debug.WriteLine($"[PERF][Mapa] API pedido sheet #{pedidoBase.Idpedido}: {sw.ElapsedMilliseconds} ms");
+        _pedidoSheetCache[pedidoBase.Idpedido] = (now, pedido);
+        return pedido;
     }
 
     // ── Polling automático ────────────────────────────────────────────

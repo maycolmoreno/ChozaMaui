@@ -141,7 +141,7 @@ public class BoolToStringConverter : IValueConverter
 /// </summary>
 public class StringToCachedImageSourceConverter : IValueConverter
 {
-	private static readonly TimeSpan CacheValidity = TimeSpan.FromHours(6);
+	private static readonly TimeSpan CacheValidity = TimeSpan.FromDays(7);
 
 	public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
 	{

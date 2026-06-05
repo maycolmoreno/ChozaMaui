@@ -9,20 +9,35 @@ namespace ChozaMaui.Services;
 /// </summary>
 public class PedidoApiService
 {
+    private static readonly TimeSpan PedidosCacheTtl = TimeSpan.FromSeconds(8);
+    private const string PedidosCacheKey = "api:pedidos:all";
+
     private readonly HttpClient _http;
     private readonly SessionService _session;
+    private readonly SessionCacheService _cache;
     private static readonly JsonSerializerOptions _camelCase =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public PedidoApiService(HttpClient http, SessionService session)
+    public PedidoApiService(HttpClient http, SessionService session, SessionCacheService cache)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _http = http;
         _session = session;
+        _cache = cache;
+        System.Diagnostics.Debug.WriteLine($"[PERF][PedidoApiService] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     public async Task<List<PedidoResponse>> GetPedidosAsync()
+        => await _cache.GetOrCreateAsync(
+            PedidosCacheKey,
+            PedidosCacheTtl,
+            GetPedidosDesdeApiAsync);
+
+    private async Task<List<PedidoResponse>> GetPedidosDesdeApiAsync()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         var response = await _http.GetAsync("/api/pedidos");
+        System.Diagnostics.Debug.WriteLine($"[HTTP][Pedido] GET /api/pedidos status: {(int)response.StatusCode} en {sw.ElapsedMilliseconds} ms");
         await ApiErrorHelper.EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<List<PedidoResponse>>()) ?? [];
     }
@@ -52,19 +67,34 @@ public class PedidoApiService
     {
         var response = await _http.PostAsJsonAsync("/api/pedidos", request, _camelCase);
         await ApiErrorHelper.EnsureSuccessAsync(response);
-        return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+        var pedido = (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+        await InvalidarCachePedidosAsync();
+        return pedido;
     }
 
     public async Task<PedidoResponse> CrearPedidoConCuentaAsync(PedidoRequest request, string estadoDestino)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         var estado = Uri.EscapeDataString((estadoDestino ?? string.Empty).Trim().ToUpperInvariant());
-        var response = await _http.PostAsJsonAsync($"/api/pedidos/con-cuenta?estadoDestino={estado}", request, _camelCase);
-        await ApiErrorHelper.EnsureSuccessAsync(response);
-        return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+        try
+        {
+            var response = await _http.PostAsJsonAsync($"/api/pedidos/con-cuenta?estadoDestino={estado}", request, _camelCase);
+            System.Diagnostics.Debug.WriteLine($"[HTTP][Pedido] Crear con cuenta status: {(int)response.StatusCode} en {sw.ElapsedMilliseconds} ms");
+            await ApiErrorHelper.EnsureSuccessAsync(response);
+            var pedido = (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+            await InvalidarCachePedidosAsync();
+            return pedido;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ERROR][Pedido] Crear con cuenta: {ex.GetType().Name} | {ApiErrorHelper.ToUserMessage(ex, "enviar pedido")}");
+            throw;
+        }
     }
 
     public async Task<PedidoResponse> CambiarEstadoPedidoAsync(int id, string nuevoEstado)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         var estado = (nuevoEstado ?? string.Empty).Trim().ToUpperInvariant();
         var rutaSemantica = estado switch
         {
@@ -77,20 +107,34 @@ public class PedidoApiService
             _ => null
         };
 
-        HttpResponseMessage response;
-        if (rutaSemantica is not null)
+        try
         {
-            response = await _http.SendAsync(new HttpRequestMessage(HttpMethod.Patch, rutaSemantica));
-        }
-        else
-        {
-            response = await _http.PatchAsJsonAsync(
-                $"/api/pedidos/{id}/estado",
-                new CambiarEstadoRequest { Estado = estado },
-                _camelCase);
-        }
+            HttpResponseMessage response;
+            if (rutaSemantica is not null)
+            {
+                response = await _http.SendAsync(new HttpRequestMessage(HttpMethod.Patch, rutaSemantica));
+            }
+            else
+            {
+                response = await _http.PatchAsJsonAsync(
+                    $"/api/pedidos/{id}/estado",
+                    new CambiarEstadoRequest { Estado = estado },
+                    _camelCase);
+            }
 
-        await ApiErrorHelper.EnsureSuccessAsync(response);
-        return (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+            System.Diagnostics.Debug.WriteLine($"[HTTP][Pedido] Cambiar estado status: {(int)response.StatusCode} estado={estado} en {sw.ElapsedMilliseconds} ms");
+            await ApiErrorHelper.EnsureSuccessAsync(response);
+            var pedido = (await response.Content.ReadFromJsonAsync<PedidoResponse>())!;
+            await InvalidarCachePedidosAsync();
+            return pedido;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ERROR][Pedido] Cambiar estado: {ex.GetType().Name} | {ApiErrorHelper.ToUserMessage(ex, "cambiar estado del pedido")}");
+            throw;
+        }
     }
+
+    public Task InvalidarCachePedidosAsync()
+        => _cache.RemoveAsync(PedidosCacheKey);
 }

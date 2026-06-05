@@ -50,9 +50,11 @@ public partial class MesaDetalleViewModel : ObservableObject
 
     public MesaDetalleViewModel(RoleCapabilityService capabilities, MesaDetailWorkflowService workflow, SessionService session)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _capabilities = capabilities;
         _workflow = workflow;
         _session = session;
+        System.Diagnostics.Debug.WriteLine($"[PERF][MesaDetalleViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     partial void OnMesaChanged(MesaResponse? value)
@@ -84,6 +86,7 @@ public partial class MesaDetalleViewModel : ObservableObject
 
     private async Task CargarInternoAsync(bool force)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         if (Mesa is null) return;
 
         var cambioDeMesa = _mesaCargadaId != Mesa.Idmesa;
@@ -119,6 +122,7 @@ public partial class MesaDetalleViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            System.Diagnostics.Debug.WriteLine($"[PERF][MesaDetalleViewModel] CargarInternoAsync(force={force}): {sw.ElapsedMilliseconds} ms");
         }
     }
 

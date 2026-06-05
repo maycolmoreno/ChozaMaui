@@ -15,7 +15,7 @@ public sealed class RoleCapabilityService
         => EsUnoDe(rol, "ADMIN", "COCINA");
 
     public bool PuedeEntregarPedido(string? rol)
-        => EsUnoDe(rol, "ADMIN", "CAMARERO");
+        => EsUnoDe(rol, "ADMIN", "CAMARERO", "CAJERO");
 
     public bool PuedeCancelarPedido(string? rol)
         => EsUnoDe(rol, "ADMIN");

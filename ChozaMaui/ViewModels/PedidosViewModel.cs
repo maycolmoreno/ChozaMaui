@@ -55,6 +55,7 @@ public partial class PedidosViewModel : ObservableObject
 
     public PedidosViewModel(RoleCapabilityService capabilities, PedidoApiService pedidosApi, NotificationService notifications, PosOrderWorkflowService pedidoWorkflow, PedidoPresentationService presentation, SessionService session, LiveRefreshCoordinator refreshCoordinator)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _capabilities = capabilities;
         _pedidosApi = pedidosApi;
         _notifications = notifications;
@@ -62,11 +63,13 @@ public partial class PedidosViewModel : ObservableObject
         _presentation = presentation;
         _session = session;
         _refreshCoordinator = refreshCoordinator;
+        System.Diagnostics.Debug.WriteLine($"[PERF][PedidosViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     [RelayCommand]
     public async Task CargarAsync()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         if (!await _refreshLock.WaitAsync(0))
             return;
 
@@ -88,6 +91,7 @@ public partial class PedidosViewModel : ObservableObject
         {
             IsBusy = false;
             _refreshLock.Release();
+            System.Diagnostics.Debug.WriteLine($"[PERF][PedidosViewModel] CargarAsync: {sw.ElapsedMilliseconds} ms");
         }
     }
 

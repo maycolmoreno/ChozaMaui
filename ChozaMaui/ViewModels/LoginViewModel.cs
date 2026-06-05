@@ -16,6 +16,11 @@ public partial class LoginViewModel : ObservableObject
     [ObservableProperty] private string password     = string.Empty;
     [ObservableProperty] private string errorMessage = string.Empty;
     [ObservableProperty] private bool   isBusy;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PasswordOculta))]
+    private bool passwordVisible;
+
+    public bool PasswordOculta => !PasswordVisible;
 
     // ── Configuración del servidor ─────────────────────────────────
     [ObservableProperty]
@@ -39,6 +44,7 @@ public partial class LoginViewModel : ObservableObject
     public LoginViewModel(UsuarioApiService usuariosApi, ServerConnectionService serverConnection,
                           SessionService session, SettingsService settings, INavigationService navigation)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _usuariosApi = usuariosApi;
         _serverConnection = serverConnection;
         _session    = session;
@@ -48,6 +54,7 @@ public partial class LoginViewModel : ObservableObject
         // Cargar valores actuales de Preferences
         ServidorHost   = _settings.Host;
         ServidorPuerto = _settings.Port;
+        System.Diagnostics.Debug.WriteLine($"[PERF][LoginViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     // ── Servidor: guardar y actualizar ────────────────────────────
@@ -107,6 +114,10 @@ public partial class LoginViewModel : ObservableObject
     [RelayCommand]
     private void TogglePanelServidor() =>
         PanelServidorVisible = !PanelServidorVisible;
+
+    [RelayCommand]
+    private void TogglePasswordVisible() =>
+        PasswordVisible = !PasswordVisible;
 
     // ── Login ─────────────────────────────────────────────────────
 

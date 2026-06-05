@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChozaMaui.ViewModels"
+             xmlns:models="clr-namespace:ChozaMaui.Models"
+             x:Class="ChozaMaui.Views.Controls.ClienteBottomSheetView"
+             x:DataType="vm:PosViewModel">
+
+    <Grid>
+        <!-- Overlay oscuro -->
+        <BoxView Color="#66000000">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding CerrarClienteSheetCommand}" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- Panel inferior -->
+        <Border VerticalOptions="End"
+                BackgroundColor="White"
+                Stroke="{StaticResource Border}"
+                StrokeShape="RoundRectangle 24,24,0,0"
+                Padding="16,12,16,24">
+            <Border.Shadow>
+                <Shadow Brush="Black" Offset="0,-4" Radius="20" Opacity="0.12" />
+            </Border.Shadow>
+
+            <VerticalStackLayout Spacing="14">
+                <!-- Handle -->
+                <BoxView WidthRequest="40"
+                         HeightRequest="4"
+                         CornerRadius="2"
+                         Color="{StaticResource Border}"
+                         HorizontalOptions="Center" />
+
+                <!-- Título + cerrar -->
+                <Grid ColumnDefinitions="*,40">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Cliente del pedido"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="Busca por cedula, nombre o telefono"
+                               FontSize="12"
+                               TextColor="{StaticResource TextSecondary}" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1"
+                            BackgroundColor="{StaticResource SurfaceSunken}"
+                            Stroke="Transparent"
+                            StrokeShape="RoundRectangle 12"
+                            HeightRequest="40"
+                            WidthRequest="40">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding CerrarClienteSheetCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="X"
+                               FontSize="13"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextSecondary}"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+
+                <!-- Mensaje de error -->
+                <Label Text="{Binding ClienteSheetMensaje}"
+                       FontSize="12"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource Danger}"
+                       IsVisible="{Binding ClienteSheetMensaje, Converter={StaticResource StringToBoolConverter}}" />
+
+                <!-- Búsqueda y resultados -->
+                <VerticalStackLayout Spacing="12"
+                                     IsVisible="{Binding MostrandoCrearCliente, Converter={StaticResource InvertBoolConverter}}">
+                    <Border BackgroundColor="{StaticResource SurfaceSunken}"
+                            Stroke="{StaticResource Border}"
+                            StrokeShape="RoundRectangle 14"
+                            Padding="12,0"
+                            HeightRequest="48">
+                        <Entry Text="{Binding BusquedaCliente}"
+                               Placeholder="Cedula/RUC, nombre o telefono..."
+                               PlaceholderColor="{StaticResource TextMuted}"
+                               TextColor="{StaticResource TextPrimary}"
+                               FontSize="14"
+                               BackgroundColor="Transparent"
+                               VerticalOptions="Center" />
+                    </Border>
+
+                    <ActivityIndicator IsRunning="{Binding IsBuscandoClientes}"
+                                       IsVisible="{Binding IsBuscandoClientes}"
+                                       Color="{StaticResource Primary}"
+                                       HorizontalOptions="Center" />
+
+                    <CollectionView ItemsSource="{Binding ClientesEncontrados}"
+                                    SelectionMode="None"
+                                    MaximumHeightRequest="300">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:ClienteResponse">
+                                <Border BackgroundColor="White"
+                                        Stroke="{StaticResource Border}"
+                                        StrokeShape="RoundRectangle 14"
+                                        Padding="12"
+                                        Margin="0,0,0,8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=BindingContext.SeleccionarClienteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <VerticalStackLayout Spacing="2">
+                                            <Label Text="{Binding Nombre}"
+                                                   FontSize="14"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{StaticResource TextPrimary}"
+                                                   LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding Cedula}"
+                                                   FontSize="12"
+                                                   TextColor="{StaticResource TextSecondary}" />
+                                            <Label Text="{Binding Telefono}"
+                                                   FontSize="12"
+                                                   TextColor="{StaticResource TextMuted}"
+                                                   IsVisible="{Binding Telefono, Converter={StaticResource StringToBoolConverter}}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1"
+                                               Text="+"
+                                               FontSize="24"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Primary}"
+                                               VerticalOptions="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <VerticalStackLayout IsVisible="{Binding MostrarClienteVacio}"
+                                         Spacing="12"
+                                         Padding="0,18"
+                                         HorizontalOptions="Center">
+                        <Label Text="No se encontraron clientes"
+                               FontSize="15"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}"
+                               HorizontalTextAlignment="Center" />
+                        <Button Text="CREAR CLIENTE"
+                                Command="{Binding MostrarCrearClienteCommand}"
+                                Style="{StaticResource BtnPrimary}"
+                                HeightRequest="48"
+                                Padding="22,0" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- Crear cliente rápido -->
+                <VerticalStackLayout Spacing="10"
+                                     IsVisible="{Binding MostrandoCrearCliente}">
+                    <Entry Text="{Binding ClienteNuevoNombre}"
+                           Placeholder="Nombre completo"
+                           PlaceholderColor="{StaticResource TextMuted}"
+                           TextColor="{StaticResource TextPrimary}"
+                           BackgroundColor="{StaticResource SurfaceSunken}" />
+                    <Entry Text="{Binding ClienteNuevoCedula}"
+                           Placeholder="Cedula/RUC opcional"
+                           PlaceholderColor="{StaticResource TextMuted}"
+                           TextColor="{StaticResource TextPrimary}"
+                           Keyboard="Numeric"
+                           BackgroundColor="{StaticResource SurfaceSunken}" />
+                    <Entry Text="{Binding ClienteNuevoTelefono}"
+                           Placeholder="Telefono opcional"
+                           PlaceholderColor="{StaticResource TextMuted}"
+                           TextColor="{StaticResource TextPrimary}"
+                           Keyboard="Telephone"
+                           BackgroundColor="{StaticResource SurfaceSunken}" />
+                    <Entry Text="{Binding ClienteNuevoEmail}"
+                           Placeholder="Correo opcional"
+                           PlaceholderColor="{StaticResource TextMuted}"
+                           TextColor="{StaticResource TextPrimary}"
+                           Keyboard="Email"
+                           BackgroundColor="{StaticResource SurfaceSunken}" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,4,0,0">
+                        <Button Text="VOLVER"
+                                Command="{Binding BuscarClienteCommand}"
+                                Style="{StaticResource BtnSecondary}"
+                                HeightRequest="48" />
+                        <Button Grid.Column="1"
+                                Text="GUARDAR"
+                                Command="{Binding CrearClienteRapidoCommand}"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}"
+                                Style="{StaticResource BtnPrimary}"
+                                HeightRequest="48" />
+                    </Grid>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentView>

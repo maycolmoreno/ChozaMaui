@@ -13,7 +13,12 @@ public class ProductoApiService
     private static readonly JsonSerializerOptions _camelCase =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public ProductoApiService(HttpClient http) => _http = http;
+    public ProductoApiService(HttpClient http)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        _http = http;
+        System.Diagnostics.Debug.WriteLine($"[PERF][ProductoApiService] Constructor: {sw.ElapsedMilliseconds} ms");
+    }
 
     // ── Categorías ────────────────────────────────────────────────
     public async Task<List<CategoriaResponse>> GetCategoriasActivasAsync()

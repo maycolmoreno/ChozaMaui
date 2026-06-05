@@ -36,9 +36,16 @@
                          Command="{Binding CargarCommand}"
                          RefreshColor="{StaticResource Primary}">
                 <CollectionView ItemsSource="{Binding Grupos}"
+                                IsGrouped="True"
                                 ItemsUpdatingScrollMode="KeepScrollOffset"
                                 SelectionMode="None"
                                 Margin="16,0,16,0">
+                    <CollectionView.ItemsLayout>
+                        <GridItemsLayout Orientation="Vertical"
+                                         Span="3"
+                                         HorizontalItemSpacing="8"
+                                         VerticalItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
                     <CollectionView.Header>
                         <VerticalStackLayout Spacing="0">
 
@@ -90,139 +97,94 @@
                         </VerticalStackLayout>
                     </CollectionView.Header>
 
-                    <CollectionView.ItemTemplate>
+                    <CollectionView.GroupHeaderTemplate>
                         <DataTemplate x:DataType="models:GrupoMesaVisual">
+                            <Grid ColumnDefinitions="*,Auto"
+                                  Padding="2,14,2,8"
+                                  BackgroundColor="{StaticResource Surface}">
+                                <Label Grid.Column="0"
+                                       Text="{Binding Nombre}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       TextTransform="Uppercase"
+                                       VerticalOptions="Center" />
+                                <Border Grid.Column="1"
+                                        BackgroundColor="{StaticResource SurfaceSunken}"
+                                        Stroke="Transparent"
+                                        StrokeShape="RoundRectangle 12"
+                                        Padding="10,5">
+                                    <Label Text="{Binding TotalMesas, StringFormat='{0} mesas'}"
+                                           FontSize="12"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource TextSecondary}" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.GroupHeaderTemplate>
 
-                            <!-- Card por comedor -->
-                            <Border BackgroundColor="White"
-                                    Stroke="{StaticResource Border}"
-                                    StrokeShape="RoundRectangle 22"
-                                    Padding="18"
-                                    Margin="0,0,0,16">
-                                <Border.Shadow>
-                                    <Shadow Brush="#CBD5E1" Offset="0,6" Radius="18" Opacity="0.22" />
-                                </Border.Shadow>
-                                <VerticalStackLayout Spacing="20">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:MesaVisual">
+                            <Border BackgroundColor="{Binding EstadoColorValue}"
+                                    StrokeShape="RoundRectangle 12"
+                                    Stroke="Transparent"
+                                    WidthRequest="94"
+                                    HeightRequest="96">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerDetalleMesaCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
 
-                                            <!-- Cabecera del comedor -->
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <Label Grid.Column="0"
-                                                       Text="{Binding Nombre}"
-                                                       FontSize="21"
-                                                       FontAttributes="Bold"
-                                                       TextColor="{StaticResource TextPrimary}"
-                                                       TextTransform="Uppercase"
-                                                       VerticalOptions="Center" />
-                                                <Border Grid.Column="1"
-                                                        BackgroundColor="{StaticResource SurfaceSunken}"
-                                                        Stroke="Transparent"
-                                                        StrokeShape="RoundRectangle 16"
-                                                        Padding="14,7">
-                                                    <Label Text="{Binding TotalMesas, StringFormat='{0} mesas'}"
-                                                           FontSize="14"
-                                                           FontAttributes="Bold"
-                                                           TextColor="{StaticResource TextSecondary}" />
-                                                </Border>
-                                            </Grid>
+                                <Grid RowDefinitions="Auto,Auto,Auto"
+                                      Padding="9,7"
+                                      RowSpacing="4">
+                                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                        <Label Grid.Column="0"
+                                               Text="{Binding NumeroTexto}"
+                                               FontSize="29"
+                                               FontAttributes="Bold"
+                                               TextColor="White"
+                                               LineBreakMode="TailTruncation" />
+                                        <Border Grid.Column="1"
+                                                WidthRequest="20"
+                                                HeightRequest="20"
+                                                Stroke="White"
+                                                StrokeThickness="1"
+                                                StrokeShape="RoundRectangle 10"
+                                                BackgroundColor="#26FFFFFF">
+                                            <Label Text="{Binding EstadoIcono}"
+                                                   FontSize="10"
+                                                   FontAttributes="Bold"
+                                                   TextColor="White"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                        </Border>
+                                    </Grid>
 
-                                            <!-- Grid de mesas -->
-                                            <FlexLayout BindableLayout.ItemsSource="{Binding .}"
-                                                        Wrap="Wrap"
-                                                        JustifyContent="Start"
-                                                        AlignItems="Start"
-                                                        Direction="Row">
-                                                <BindableLayout.ItemTemplate>
-                                                    <DataTemplate x:DataType="models:MesaVisual">
+                                    <Border Grid.Row="1"
+                                            BackgroundColor="#D9FFFFFF"
+                                            Stroke="Transparent"
+                                            StrokeShape="RoundRectangle 10"
+                                            Padding="7,3"
+                                            HorizontalOptions="Center">
+                                        <Label Text="{Binding EstadoMapaTexto}"
+                                               FontSize="10"
+                                               FontAttributes="Bold"
+                                               TextColor="{Binding EstadoColorValue}"
+                                               HorizontalTextAlignment="Center"
+                                               TextTransform="Uppercase"
+                                               LineBreakMode="TailTruncation" />
+                                    </Border>
 
-                                                        <!-- Mesa Card -->
-                                                        <Border BackgroundColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
-                                                                StrokeShape="RoundRectangle 20"
-                                                                Stroke="Transparent"
-                                                                WidthRequest="132"
-                                                                HeightRequest="138"
-                                                                Margin="0,0,14,14">
-                                                            <Border.Shadow>
-                                                                <Shadow Brush="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
-                                                                        Offset="0,8"
-                                                                        Radius="18"
-                                                                        Opacity="0.32" />
-                                                            </Border.Shadow>
-                                                            <Border.GestureRecognizers>
-                                                                <TapGestureRecognizer
-                                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerDetalleMesaCommand}"
-                                                                    CommandParameter="{Binding .}" />
-                                                            </Border.GestureRecognizers>
-
-                                                            <Grid RowDefinitions="Auto,Auto,Auto,Auto"
-                                                                  Padding="14,12"
-                                                                  RowSpacing="8">
-
-                                                                <Grid Grid.Row="0"
-                                                                      ColumnDefinitions="*,Auto">
-                                                                    <Label Grid.Column="0"
-                                                                           Text="{Binding NumeroTexto}"
-                                                                           FontSize="45"
-                                                                           FontAttributes="Bold"
-                                                                           TextColor="White"
-                                                                           HorizontalTextAlignment="Start"
-                                                                           VerticalTextAlignment="Center"
-                                                                           LineBreakMode="TailTruncation" />
-                                                                    <Border Grid.Column="1"
-                                                                            WidthRequest="34"
-                                                                            HeightRequest="34"
-                                                                            Stroke="White"
-                                                                            StrokeThickness="2"
-                                                                            StrokeShape="RoundRectangle 17"
-                                                                            BackgroundColor="#26FFFFFF"
-                                                                            VerticalOptions="Start">
-                                                                        <Image Source="{Binding EstadoIconoSource}"
-                                                                               WidthRequest="21"
-                                                                               HeightRequest="21"
-                                                                               HorizontalOptions="Center"
-                                                                               VerticalOptions="Center" />
-                                                                    </Border>
-                                                                </Grid>
-
-                                                                <BoxView Grid.Row="1"
-                                                                         HeightRequest="1"
-                                                                         Color="White"
-                                                                         Opacity="0.45"
-                                                                         Margin="0,0,0,2" />
-
-                                                                <!-- Estado operativo -->
-                                                                <Border Grid.Row="2"
-                                                                        BackgroundColor="#D9FFFFFF"
-                                                                        Stroke="Transparent"
-                                                                        StrokeShape="RoundRectangle 16"
-                                                                        Padding="12,5"
-                                                                        HorizontalOptions="Center">
-                                                                    <Label Text="{Binding EstadoMapaTexto}"
-                                                                           FontSize="13"
-                                                                           FontAttributes="Bold"
-                                                                           TextColor="{Binding EstadoColor, Converter={StaticResource HexToColorConverter}}"
-                                                                           HorizontalTextAlignment="Center"
-                                                                           TextTransform="Uppercase"
-                                                                           LineBreakMode="TailTruncation" />
-                                                                </Border>
-
-                                                                <!-- Capacidad -->
-                                                                <Label Grid.Row="3"
-                                                                       Text="{Binding Capacidad, StringFormat='{0} personas'}"
-                                                                       FontSize="14"
-                                                                       FontAttributes="Bold"
-                                                                       TextColor="White"
-                                                                       Opacity="0.96"
-                                                                       HorizontalTextAlignment="Center" />
-                                                            </Grid>
-                                                        </Border>
-
-                                                    </DataTemplate>
-                                                </BindableLayout.ItemTemplate>
-                                            </FlexLayout>
-
-                                </VerticalStackLayout>
+                                    <Label Grid.Row="2"
+                                           Text="{Binding Capacidad, StringFormat='{0} personas'}"
+                                           FontSize="10"
+                                           FontAttributes="Bold"
+                                           TextColor="White"
+                                           HorizontalTextAlignment="Center" />
+                                </Grid>
                             </Border>
-
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
 
@@ -298,7 +260,7 @@
                          Margin="0,0,0,20" />
 
                 <!-- Badge de estado de mesa -->
-                <Border BackgroundColor="{Binding SheetEstadoColor, Converter={StaticResource HexToColorConverter}}"
+                <Border BackgroundColor="{Binding SheetEstadoColorValue}"
                         StrokeShape="RoundRectangle 40"
                         Stroke="Transparent"
                         WidthRequest="68" HeightRequest="68"
@@ -327,7 +289,7 @@
                        TextColor="{StaticResource TextMuted}"
                        HorizontalOptions="Center" />
 
-                <Border BackgroundColor="{Binding SheetEstadoColor, Converter={StaticResource HexToColorConverter}}"
+                <Border BackgroundColor="{Binding SheetEstadoColorValue}"
                         StrokeShape="RoundRectangle 20"
                         Stroke="Transparent"
                         Padding="14,5"

@@ -1,4 +1,5 @@
 using ChozaMaui.Models;
+using System.Diagnostics;
 
 namespace ChozaMaui.Services;
 
@@ -6,50 +7,71 @@ public sealed class PosOrderWorkflowService
 {
     private static readonly TimeSpan PedidoCacheTtl = TimeSpan.FromSeconds(10);
     private readonly PedidoApiService _pedidosApi;
+    private readonly CuentaApiService _cuentasApi;
     private readonly ProductoApiService _productosApi;
     private readonly ConnectivityService _connectivity;
     private readonly MesaStateService _mesas;
     private readonly PosCatalogService _catalog;
-    private readonly OrderWorkflowService _orderWorkflow;
     private readonly PendingOrderService _pendingOrders;
     private readonly SessionCacheService _cache;
 
     public PosOrderWorkflowService(
         PedidoApiService pedidosApi,
+        CuentaApiService cuentasApi,
         ProductoApiService productosApi,
         ConnectivityService connectivity,
         MesaStateService mesas,
         PosCatalogService catalog,
-        OrderWorkflowService orderWorkflow,
         PendingOrderService pendingOrders,
         SessionCacheService cache)
     {
         _pedidosApi = pedidosApi;
+        _cuentasApi = cuentasApi;
         _productosApi = productosApi;
         _connectivity = connectivity;
         _mesas = mesas;
         _catalog = catalog;
-        _orderWorkflow = orderWorkflow;
         _pendingOrders = pendingOrders;
         _cache = cache;
     }
 
     public async Task<PosOrderSubmissionResult> SubmitPedidoAsync(PedidoRequest request, string estadoDestino)
     {
-        if (!_connectivity.IsOnline)
+        var sw = Stopwatch.StartNew();
+
+        if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+        {
+            Debug.WriteLine("[ERROR][Pedido] Sin internet real. Encolando pedido local.");
             return await EncolarAsync(request, estadoDestino);
+        }
+
+        var health = await _connectivity.CheckBackendAsync();
+        if (!health.IsOnline)
+        {
+            Debug.WriteLine($"[ERROR][Pedido] API no disponible. Tipo={health.Failure} Mensaje={health.Message}");
+            throw new InvalidOperationException(health.Message);
+        }
 
         try
         {
-            var resultado = await _orderWorkflow.SubmitPedidoAsync(request, estadoDestino);
+            var pedido = await _pedidosApi.CrearPedidoConCuentaAsync(request, estadoDestino);
             await InvalidarCachesTrasCrearPedidoAsync(request.IdMesa);
-            await GuardarPedidoEnCacheAsync(resultado.Pedido);
-            return PosOrderSubmissionResult.Submitted(resultado.Pedido, resultado.VinculoCuentaAdvertencia);
+            await GuardarPedidoEnCacheAsync(pedido);
+            Debug.WriteLine($"[PERF][POS] Enviar cocina total: {sw.ElapsedMilliseconds} ms");
+            return PosOrderSubmissionResult.Submitted(pedido, null);
         }
-        catch (Exception ex) when (PendingOrderService.IsRecoverable(ex))
+        catch (Exception ex)
         {
-            await _connectivity.RefreshStatusAsync();
-            return await EncolarAsync(request, estadoDestino);
+            _ = _connectivity.RefreshStatusAsync(showOfflineAlert: false);
+
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            {
+                Debug.WriteLine("[ERROR][Pedido] Se perdio internet durante el envio. Encolando pedido local.");
+                return await EncolarAsync(request, estadoDestino);
+            }
+
+            Debug.WriteLine($"[ERROR][Pedido] Tipo de error real: {ex.GetType().Name} | {ex.Message}");
+            throw;
         }
     }
 
@@ -130,7 +152,9 @@ public sealed class PosOrderWorkflowService
 
     private async Task InvalidarCachesTrasCrearPedidoAsync(int mesaId)
     {
-        await _catalog.InvalidarAsync();
+        await _catalog.InvalidarProductosAsync();
+        await _pedidosApi.InvalidarCachePedidosAsync();
+        await _cuentasApi.InvalidarCacheCuentasAbiertasAsync();
         await _mesas.InvalidarAsync();
         await _cache.RemoveAsync(BuildCuentaMesaKey(mesaId));
         await _cache.RemoveAsync(BuildPedidoMesaKey(mesaId));

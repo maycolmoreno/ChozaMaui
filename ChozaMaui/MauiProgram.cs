@@ -2,6 +2,7 @@ using ChozaMaui.Services;
 using ChozaMaui.ViewModels;
 using ChozaMaui.Views;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 #if ANDROID
 using ChozaMaui.Platforms.Android.Services;
@@ -13,6 +14,7 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+        var totalSw = Stopwatch.StartNew();
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
@@ -76,7 +78,7 @@ public static class MauiProgram
 
             var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("ChozaApi");
             client.BaseAddress = baseUri;
-            return new CuentaApiService(client);
+            return new CuentaApiService(client, sp.GetRequiredService<SessionCacheService>());
         });
         builder.Services.AddTransient<CajaApiService>();
         builder.Services.AddTransient(sp =>
@@ -87,7 +89,10 @@ public static class MauiProgram
 
             var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient("ChozaApi");
             client.BaseAddress = baseUri;
-            return new PedidoApiService(client, sp.GetRequiredService<SessionService>());
+            return new PedidoApiService(
+                client,
+                sp.GetRequiredService<SessionService>(),
+                sp.GetRequiredService<SessionCacheService>());
         });
         builder.Services.AddTransient(sp =>
         {
@@ -178,6 +183,10 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
-        return builder.Build();
+        var buildSw = Stopwatch.StartNew();
+        var app = builder.Build();
+        Debug.WriteLine($"[PERF][MauiProgram] builder.Build: {buildSw.ElapsedMilliseconds} ms");
+        Debug.WriteLine($"[PERF][MauiProgram] CreateMauiApp total: {totalSw.ElapsedMilliseconds} ms");
+        return app;
     }
 }

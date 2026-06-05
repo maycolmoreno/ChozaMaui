@@ -16,6 +16,12 @@ public class SessionService
     public string? Rol { get; private set; }
     public bool EstaAutenticado => !string.IsNullOrEmpty(Token);
 
+    public SessionService()
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        System.Diagnostics.Debug.WriteLine($"[PERF][SessionService] Constructor: {sw.ElapsedMilliseconds} ms");
+    }
+
     public async Task GuardarSesionAsync(string token, int userId, string username, string nombre, string rol)
     {
         Token = token;
@@ -33,12 +39,14 @@ public class SessionService
 
     public async Task CargarSesionAsync()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         Token = await SecureStorage.Default.GetAsync(TokenKey);
         var id = await SecureStorage.Default.GetAsync(UserIdKey);
         UserId = int.TryParse(id, out var parsed) ? parsed : 0;
         Username = await SecureStorage.Default.GetAsync(UsernameKey);
         NombreCompleto = await SecureStorage.Default.GetAsync(NombreKey);
         Rol = await SecureStorage.Default.GetAsync(RolKey);
+        System.Diagnostics.Debug.WriteLine($"[PERF][SessionService] CargarSesionAsync: {sw.ElapsedMilliseconds} ms");
     }
 
     public void CerrarSesion()

@@ -15,10 +15,26 @@ public class AuthHandler : DelegatingHandler
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (_session.Token is not null)
+        if (!string.IsNullOrWhiteSpace(_session.Token))
+        {
             request.Headers.Authorization =
                 new AuthenticationHeaderValue("Bearer", _session.Token);
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"[HTTP][Auth] Request sin token: {request.Method} {request.RequestUri?.AbsolutePath}");
+        }
 
-        return base.SendAsync(request, cancellationToken);
+        return SendWithLogAsync(request, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> SendWithLogAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var response = await base.SendAsync(request, cancellationToken);
+        System.Diagnostics.Debug.WriteLine($"[HTTP][Auth] {request.Method} {request.RequestUri?.AbsolutePath} -> {(int)response.StatusCode} en {sw.ElapsedMilliseconds} ms");
+        return response;
     }
 }

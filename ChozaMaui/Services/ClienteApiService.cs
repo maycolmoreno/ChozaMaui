@@ -13,7 +13,12 @@ public class ClienteApiService
     private static readonly JsonSerializerOptions _camelCase =
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public ClienteApiService(HttpClient http) => _http = http;
+    public ClienteApiService(HttpClient http)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        _http = http;
+        System.Diagnostics.Debug.WriteLine($"[PERF][ClienteApiService] Constructor: {sw.ElapsedMilliseconds} ms");
+    }
 
     public async Task<List<ClienteResponse>> GetClientesAsync()
     {

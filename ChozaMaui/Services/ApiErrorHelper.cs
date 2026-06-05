@@ -42,6 +42,30 @@ internal static class ApiErrorHelper
         return raw.Trim();
     }
 
+    public static string ToUserMessage(Exception ex, string operacion)
+    {
+        return ex switch
+        {
+            TaskCanceledException =>
+                $"Tiempo de espera agotado al {operacion}. El pedido no se perdio; intenta nuevamente.",
+            HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } =>
+                "Sesion expirada o token invalido. Inicia sesion nuevamente.",
+            HttpRequestException { StatusCode: HttpStatusCode.Forbidden } =>
+                "Tu rol no tiene permiso para realizar esta accion.",
+            HttpRequestException { StatusCode: HttpStatusCode.BadRequest } httpEx =>
+                $"Error de validacion: {httpEx.Message}",
+            HttpRequestException { StatusCode: HttpStatusCode.InternalServerError } httpEx =>
+                $"Error interno del servidor: {httpEx.Message}",
+            HttpRequestException { StatusCode: not null } httpEx =>
+                $"Error HTTP {(int)httpEx.StatusCode.Value}: {httpEx.Message}",
+            HttpRequestException httpEx =>
+                $"Servidor no disponible al {operacion}. Verifica que la API este encendida y la URL sea correcta. Detalle: {httpEx.Message}",
+            InvalidOperationException invalidEx when invalidEx.Message.Contains("servidor", StringComparison.OrdinalIgnoreCase) =>
+                invalidEx.Message,
+            _ => ex.Message
+        };
+    }
+
     private static string BuildFallbackMessage(HttpResponseMessage response)
     {
         var path = response.RequestMessage?.RequestUri?.AbsolutePath;

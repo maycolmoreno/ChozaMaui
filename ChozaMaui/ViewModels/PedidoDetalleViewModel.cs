@@ -39,6 +39,7 @@ public partial class PedidoDetalleViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(PuedeMarcarListo))]
     [NotifyPropertyChangedFor(nameof(PuedeEntregarCliente))]
     [NotifyPropertyChangedFor(nameof(PuedeCancelarPedido))]
+    [NotifyPropertyChangedFor(nameof(PuedeIrAPagar))]
     private string estado = string.Empty;
     [ObservableProperty] private string estadoColor = "#6b7280";
     [ObservableProperty] private string estadoBadgeTexto = string.Empty;
@@ -65,17 +66,19 @@ public partial class PedidoDetalleViewModel : ObservableObject
 
     public bool PuedeIrAPagar =>
         _capabilities.PuedeCobrarCuenta(_session.Rol)
-        && PedidoCompleto?.EsCobrable == true;
+        && (Estado is PedidoEstados.Completado or PedidoEstados.Entregado);
     public bool TieneAlertasHeader => TotalAlertasHeader > 0;
 
     public PedidoDetalleViewModel(RoleCapabilityService capabilities, PedidoPresentationService presentation, PosOrderWorkflowService pedidoWorkflow, SessionService session, NotificationService notifications)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _capabilities = capabilities;
         _presentation = presentation;
         _pedidoWorkflow = pedidoWorkflow;
         _session = session;
         _notifications = notifications;
         ActualizarHeaderOperativo();
+        System.Diagnostics.Debug.WriteLine($"[PERF][PedidoDetalleViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     partial void OnPedidoIdChanged(int value)
@@ -92,6 +95,7 @@ public partial class PedidoDetalleViewModel : ObservableObject
     [RelayCommand]
     public async Task CargarAsync()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         if (PedidoId <= 0) return;
         IsBusy = true;
         ErrorMessage = string.Empty;
@@ -115,6 +119,7 @@ public partial class PedidoDetalleViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            System.Diagnostics.Debug.WriteLine($"[PERF][PedidoDetalleViewModel] CargarAsync pedido {PedidoId}: {sw.ElapsedMilliseconds} ms");
         }
     }
 

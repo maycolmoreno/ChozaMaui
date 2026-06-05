@@ -13,16 +13,30 @@ public class SettingsService
     private const string DefaultHost = "192.168.0.168";
     private const string DefaultPort = "8081";
 
+    // Caché en memoria: evita múltiples lecturas a Preferences en el hilo UI
+    private string? _hostCache;
+    private string? _portCache;
+
     public string Host
     {
-        get => Preferences.Default.Get(HostKey, DefaultHost);
-        set => Preferences.Default.Set(HostKey, NormalizeHostOnly(value));
+        get => _hostCache ??= Preferences.Default.Get(HostKey, DefaultHost);
+        set
+        {
+            var normalized = NormalizeHostOnly(value);
+            _hostCache = normalized;
+            Preferences.Default.Set(HostKey, normalized);
+        }
     }
 
     public string Port
     {
-        get => Preferences.Default.Get(PortKey, DefaultPort);
-        set => Preferences.Default.Set(PortKey, NormalizePort(value));
+        get => _portCache ??= Preferences.Default.Get(PortKey, DefaultPort);
+        set
+        {
+            var normalized = NormalizePort(value);
+            _portCache = normalized;
+            Preferences.Default.Set(PortKey, normalized);
+        }
     }
 
     public string BaseUrl => BuildBaseUrl(Host, Port);
@@ -34,6 +48,8 @@ public class SettingsService
         if (!TryNormalizeServer(hostInput, portInput, out var host, out var port, out errorMessage))
             return false;
 
+        _hostCache = host;
+        _portCache = port;
         Preferences.Default.Set(HostKey, host);
         Preferences.Default.Set(PortKey, port);
         return true;
@@ -41,6 +57,8 @@ public class SettingsService
 
     public void ResetToDefaults()
     {
+        _hostCache = DefaultHost;
+        _portCache = DefaultPort;
         Preferences.Default.Set(HostKey, DefaultHost);
         Preferences.Default.Set(PortKey, DefaultPort);
     }

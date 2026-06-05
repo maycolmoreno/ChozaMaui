@@ -1,4 +1,5 @@
 using ChozaMaui.Models;
+using System.Diagnostics;
 
 namespace ChozaMaui.Services;
 
@@ -10,8 +11,10 @@ public sealed class PosCatalogService
 
     public PosCatalogService(ProductoApiService productosApi, SessionCacheService cache)
     {
+        var sw = Stopwatch.StartNew();
         _productosApi = productosApi;
         _cache = cache;
+        Debug.WriteLine($"[PERF][PosCatalogService] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     public Task<IReadOnlyList<ProductoResponse>> ObtenerProductosActivosAsync()
@@ -53,17 +56,24 @@ public sealed class PosCatalogService
         await _cache.RemoveByPrefixAsync("pos:categorias:");
     }
 
+    public Task InvalidarProductosAsync()
+        => _cache.RemoveByPrefixAsync("pos:productos:");
+
     private static async Task<IReadOnlyList<ProductoResponse>> ObtenerProductosAsync(
         Func<Task<List<ProductoResponse>>> fetchAsync)
     {
+        var sw = Stopwatch.StartNew();
         var productos = await fetchAsync();
+        Debug.WriteLine($"[PERF][POS][API] Productos desde API/cache factory: {productos.Count} en {sw.ElapsedMilliseconds} ms");
         return productos;
     }
 
     private static async Task<IReadOnlyList<CategoriaResponse>> ObtenerCategoriasAsync(
         Func<Task<List<CategoriaResponse>>> fetchAsync)
     {
+        var sw = Stopwatch.StartNew();
         var categorias = await fetchAsync();
+        Debug.WriteLine($"[PERF][POS][API] Categorias desde API/cache factory: {categorias.Count} en {sw.ElapsedMilliseconds} ms");
         return categorias;
     }
 }

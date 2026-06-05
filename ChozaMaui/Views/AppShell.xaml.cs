@@ -4,8 +4,11 @@ public partial class AppShell : Shell
 {
     public AppShell()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         InitializeComponent();
+        System.Diagnostics.Debug.WriteLine($"[PERF][AppShell] InitializeComponent: {sw.ElapsedMilliseconds} ms");
         AppRoutes.Register();
+        System.Diagnostics.Debug.WriteLine($"[PERF][AppShell] Constructor total: {sw.ElapsedMilliseconds} ms");
     }
 
     public void AplicarVisibilidadRol(string? rol)

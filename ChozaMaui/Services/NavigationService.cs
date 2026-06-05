@@ -12,12 +12,15 @@ public class NavigationService : INavigationService
 
     public NavigationService(IServiceProvider services, SessionService session)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _services = services;
         _session = session;
+        System.Diagnostics.Debug.WriteLine($"[PERF][NavigationService] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     public void IrAlShellSegunRol()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         if (Application.Current?.Windows.FirstOrDefault() is not Window w) return;
 
         w.Page?.Unfocus();
@@ -26,12 +29,14 @@ public class NavigationService : INavigationService
             || string.Equals(_session.Rol, "ADMIN", StringComparison.OrdinalIgnoreCase))
         {
             w.Page = _services.GetRequiredService<AppShellCajero>();
+            System.Diagnostics.Debug.WriteLine($"[PERF][Navigation] Crear/asignar AppShellCajero: {sw.ElapsedMilliseconds} ms");
         }
         else
         {
             var shell = _services.GetRequiredService<AppShell>();
             shell.AplicarVisibilidadRol(_session.Rol);   // oculta Turnos a CAMARERO/COCINA
             w.Page = shell;
+            System.Diagnostics.Debug.WriteLine($"[PERF][Navigation] Crear/asignar AppShell: {sw.ElapsedMilliseconds} ms");
         }
     }
 

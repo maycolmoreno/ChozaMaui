@@ -4,6 +4,7 @@ namespace ChozaMaui.Services;
 
 public class ConnectivityService : ObservableObject, IDisposable
 {
+    private static readonly TimeSpan HealthCacheTtl = TimeSpan.FromSeconds(5);
     private readonly ServerConnectionService _serverConnection;
     private readonly PendingOrderService _pendingOrders;
     private readonly SessionService _session;
@@ -14,6 +15,8 @@ public class ConnectivityService : ObservableObject, IDisposable
     private string _statusText = "Verificando conexion...";
     private string _statusColor = "#f59e0b";
     private bool _isChecking;
+    private BackendHealthCheckResult? _lastHealthCheck;
+    private DateTimeOffset _lastHealthCheckAt;
 
     public bool IsOnline
     {
@@ -57,30 +60,46 @@ public class ConnectivityService : ObservableObject, IDisposable
         {
             IsChecking = true;
 
-            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
-            {
-                SetOffline("Sin conexion a internet", showOfflineAlert);
-                return;
-            }
-
-            var (ok, estado) = await _serverConnection.PingAsync();
-            if (ok)
+            var health = await CheckBackendAsync(force: true);
+            if (health.IsOnline)
             {
                 IsOnline = true;
-                StatusText = estado;
+                StatusText = health.Message;
                 StatusColor = "#16a34a";
                 _offlineAlertShown = false;
                 await _pendingOrders.TrySyncPendingOrdersAsync();
                 return;
             }
 
-            SetOffline(estado, showOfflineAlert);
+            SetOffline(health.Message, showOfflineAlert);
         }
         finally
         {
             IsChecking = false;
             _refreshLock.Release();
         }
+    }
+
+    public async Task<BackendHealthCheckResult> CheckBackendAsync(bool force = false)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            return CacheHealthResult(BackendHealthCheckResult.Offline(
+                BackendConnectivityFailure.NoInternet,
+                "Sin internet. Revisa Wi-Fi o datos moviles.",
+                hasInternet: false), sw);
+
+        if (!force
+            && _lastHealthCheck is not null
+            && DateTimeOffset.UtcNow - _lastHealthCheckAt < HealthCacheTtl)
+        {
+            System.Diagnostics.Debug.WriteLine($"[PERF][Connectivity] Health check cache: {sw.ElapsedMilliseconds} ms");
+            return _lastHealthCheck;
+        }
+
+        var result = await _serverConnection.CheckAsync();
+        return CacheHealthResult(result, sw);
     }
 
     private void OnConnectivityChanged(object? sender, ConnectivityChangedEventArgs e)
@@ -93,14 +112,14 @@ public class ConnectivityService : ObservableObject, IDisposable
                 return;
             }
 
-            SetOffline("Sin conexion a internet", showOfflineAlert: true);
+            SetOffline("Sin internet. Revisa Wi-Fi o datos moviles.", showOfflineAlert: true);
         });
     }
 
     private void SetOffline(string message, bool showOfflineAlert)
     {
         IsOnline = false;
-        StatusText = string.IsNullOrWhiteSpace(message) ? "Sin conexion" : message;
+        StatusText = string.IsNullOrWhiteSpace(message) ? "Sin internet" : message;
         StatusColor = "#dc2626";
 
         if (!showOfflineAlert || _offlineAlertShown || !_session.EstaAutenticado)
@@ -111,8 +130,21 @@ public class ConnectivityService : ObservableObject, IDisposable
         {
             var page = Shell.Current?.CurrentPage ?? Application.Current?.Windows.FirstOrDefault()?.Page;
             if (page is not null)
-                await page.DisplayAlertAsync("Sin conexion", "No hay conexion disponible. Los cambios pendientes se guardaran localmente.", "OK");
+            {
+                var titulo = message.Contains("internet", StringComparison.OrdinalIgnoreCase)
+                    ? "Sin internet"
+                    : "Servidor no disponible";
+                await page.DisplayAlertAsync(titulo, message, "OK");
+            }
         });
+    }
+
+    private BackendHealthCheckResult CacheHealthResult(BackendHealthCheckResult result, System.Diagnostics.Stopwatch sw)
+    {
+        _lastHealthCheck = result;
+        _lastHealthCheckAt = DateTimeOffset.UtcNow;
+        System.Diagnostics.Debug.WriteLine($"[PERF][Connectivity] Validar conectividad real: {sw.ElapsedMilliseconds} ms | {result.Failure} | {result.Message}");
+        return result;
     }
 
     public void Dispose()

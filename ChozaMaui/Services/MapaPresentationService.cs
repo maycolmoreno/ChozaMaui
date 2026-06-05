@@ -4,16 +4,26 @@ namespace ChozaMaui.Services;
 
 public sealed class MapaPresentationService
 {
-    public MapaPresentationSnapshot Build(IReadOnlyList<MesaResponse> mesas, IReadOnlyList<PedidoResponse> pedidos)
+    public MapaPresentationSnapshot Build(
+        IReadOnlyList<MesaResponse> mesas,
+        IReadOnlyList<PedidoResponse> pedidos,
+        IReadOnlyList<CuentaResponse>? cuentasAbiertas = null)
     {
+        var mesasConCuentaAbierta = cuentasAbiertas?
+            .Where(c => c.Mesa?.Idmesa > 0 && string.Equals(c.Estado, CuentaEstados.Abierta, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Mesa!.Idmesa)
+            .ToHashSet()
+            ?? new HashSet<int>();
+
         var pedidosActivos = pedidos
-            .Where(p => p.EsActivo && p.Mesa is not null)
+            .Where(p => PedidoMantieneMesaEnMapa(p, mesasConCuentaAbierta))
             .ToList();
 
         var mesasVisuales = mesas
             .Select(mesa => new MesaVisual
             {
                 Mesa = mesa,
+                TieneCuentaAbierta = mesasConCuentaAbierta.Contains(mesa.Idmesa),
                 PedidosActivos = pedidosActivos
                     .Where(p => p.Mesa?.Idmesa == mesa.Idmesa)
                     .OrderByDescending(p => p.Fecha)
@@ -42,6 +52,18 @@ public sealed class MapaPresentationService
 
         return string.Join("\n", pedido.Detalle.Select(item =>
             $"{item.Cantidad}x {item.Producto?.Nombre ?? "Producto"}"));
+    }
+
+    private static bool PedidoMantieneMesaEnMapa(PedidoResponse pedido, IReadOnlySet<int> mesasConCuentaAbierta)
+    {
+        var mesaId = pedido.Mesa?.Idmesa ?? 0;
+        if (mesaId <= 0 || !pedido.MantieneMesaOcupada)
+            return false;
+
+        if (pedido.EsPendienteCobro)
+            return mesasConCuentaAbierta.Contains(mesaId);
+
+        return true;
     }
 }
 

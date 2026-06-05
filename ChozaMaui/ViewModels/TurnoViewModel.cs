@@ -75,11 +75,13 @@ public partial class TurnoViewModel : ObservableObject
 
     public TurnoViewModel(RoleCapabilityService capabilities, SessionService session, TurnoWorkflowService workflow, NotificationService notifications)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _capabilities = capabilities;
         _session = session;
         _workflow = workflow;
         _notifications = notifications;
         ActualizarHeaderOperativo();
+        System.Diagnostics.Debug.WriteLine($"[PERF][TurnoViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     // ── Cargar datos ──────────────────────────────────────────────────
@@ -94,6 +96,7 @@ public partial class TurnoViewModel : ObservableObject
 
     private async Task CargarInternoAsync(bool force)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         if (!force && _ultimaCargaUtc is not null && DateTimeOffset.UtcNow - _ultimaCargaUtc < VentanaMinimaRecarga)
             return;
 
@@ -125,7 +128,11 @@ public partial class TurnoViewModel : ObservableObject
             Mensaje = $"Error al cargar caja: {ex.Message}";
             ActualizarHeaderOperativo();
         }
-        finally { IsBusy = false; }
+        finally
+        {
+            IsBusy = false;
+            System.Diagnostics.Debug.WriteLine($"[PERF][TurnoViewModel] CargarInternoAsync(force={force}): {sw.ElapsedMilliseconds} ms");
+        }
     }
 
     // ── Abrir caja ────────────────────────────────────────────────────

@@ -54,16 +54,42 @@ public class CategoriaRequest
 
 public class ProductoResponse
 {
+    private static readonly TimeSpan ImageCacheValidity = TimeSpan.FromDays(7);
+    private ImageSource? _imagenMenuSource;
+
     public int Idproducto { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public double Precio { get; set; }
     public int StockActual { get; set; }
     public string Descripcion { get; set; } = string.Empty;
     public string? ImagenUrl { get; set; }
+    public string? ThumbnailUrl { get; set; }
     public bool Estado { get; set; }
     public int CategoriaId { get; set; }
     public string EstadoTexto => Estado ? "Activo" : "Inactivo";
     public string EstadoColor => Estado ? "#16A34A" : "#DC2626";
+    public string? ImagenMenuUrl => !string.IsNullOrWhiteSpace(ThumbnailUrl) ? ThumbnailUrl : ImagenUrl;
+    public bool TieneImagenMenu => !string.IsNullOrWhiteSpace(ImagenMenuUrl);
+    public ImageSource? ImagenMenuSource => _imagenMenuSource ??= CrearImagenMenuSource(ImagenMenuUrl);
+
+    private static ImageSource? CrearImagenMenuSource(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+            return null;
+
+        if (Uri.TryCreate(source, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        {
+            return new UriImageSource
+            {
+                Uri = uri,
+                CachingEnabled = true,
+                CacheValidity = ImageCacheValidity
+            };
+        }
+
+        return ImageSource.FromFile(source);
+    }
 }
 
 public class ProductoRequest
@@ -73,6 +99,7 @@ public class ProductoRequest
     public int StockActual { get; set; }
     public string Descripcion { get; set; } = string.Empty;
     public string? ImagenUrl { get; set; }
+    public string? ThumbnailUrl { get; set; }
     public bool Estado { get; set; } = true;
     public int CategoriaId { get; set; }
 }
@@ -200,6 +227,8 @@ public class PedidoResponse
     public string EstadoBorderColor => EstadoBadgeColor;
     public string EstadoBadgeBackground => EstadoBadgeColor;
     public bool EsActivo => Estado is not (PedidoEstados.Completado or PedidoEstados.Entregado or PedidoEstados.Cancelado or "CERRADO");
+    public bool EsPendienteCobro => Estado is PedidoEstados.Completado or PedidoEstados.Entregado;
+    public bool MantieneMesaOcupada => Estado is not (PedidoEstados.Cancelado or "CERRADO" or "PAGADO" or "COBRADO");
     public bool EstaEnPreparacion => Estado is PedidoEstados.EnCocina or PedidoEstados.EnBar or PedidoEstados.EnProceso;
     public bool EstaListoParaEntrega => Estado is PedidoEstados.ListoParaEntrega or PedidoEstados.Listo;
     public bool PuedeEntregarse => EstaListoParaEntrega;
@@ -413,6 +442,10 @@ public class MesaVisual
 {
     public MesaResponse Mesa { get; init; } = null!;
     public List<PedidoResponse> PedidosActivos { get; init; } = [];
+    public bool TieneCuentaAbierta { get; init; }
+    private string? _estadoVisual;
+    private string? _estadoColor;
+    private Color? _estadoColorValue;
 
     public int Idmesa => Mesa.Idmesa;
     public int Numero => Mesa.Numero;
@@ -422,27 +455,19 @@ public class MesaVisual
     public int CantidadPedidos => PedidosActivos.Count;
     public int PedidosListos => PedidosActivos.Count(p => p.EstaListoParaEntrega);
 
-    public string EstadoVisual
-    {
-        get
-        {
-            if (PedidosActivos.Any(p => p.Estado == PedidoEstados.Entregado)) return "Pendiente de pago";
-            if (PedidosActivos.Any(p => p.EstaListoParaEntrega)) return "Lista para entregar";
-            if (PedidosActivos.Any(p => p.EstaEnPreparacion)) return "En preparacion";
-            if (PedidosActivos.Count > 0 || !Mesa.Estado) return "Ocupada";
-            return "Disponible";
-        }
-    }
+    public string EstadoVisual => _estadoVisual ??= CalcularEstadoVisual();
 
-    public string EstadoColor => EstadoVisual switch
+    public string EstadoColor => _estadoColor ??= EstadoVisual switch
     {
         "Disponible"            => "#22C55E",
         "Ocupada"               => "#F97316",
         "En preparacion"        => "#3B82F6",
         "Lista para entregar"   => "#8B5CF6",
-        "Pendiente de pago"     => "#EF4444",
+        "Pendiente de pago"     => "#6366F1",
         _                       => "#6b7280"
     };
+
+    public Color EstadoColorValue => _estadoColorValue ??= Color.FromArgb(EstadoColor);
 
     public string EstadoMapaTexto => EstadoVisual switch
     {
@@ -475,6 +500,15 @@ public class MesaVisual
     public string PedidoBadgeTexto => PedidosListos > 0
         ? $"Listo ({PedidosListos})"
         : CantidadPedidos > 0 ? CantidadPedidos.ToString() : string.Empty;
+
+    private string CalcularEstadoVisual()
+    {
+        if (PedidosActivos.Any(p => p.EsPendienteCobro)) return "Pendiente de pago";
+        if (PedidosActivos.Any(p => p.EstaListoParaEntrega)) return "Lista para entregar";
+        if (PedidosActivos.Any(p => p.EstaEnPreparacion)) return "En preparacion";
+        if (PedidosActivos.Count > 0 || TieneCuentaAbierta) return "Ocupada";
+        return "Disponible";
+    }
 }
 
 public class GrupoMesaVisual : List<MesaVisual>

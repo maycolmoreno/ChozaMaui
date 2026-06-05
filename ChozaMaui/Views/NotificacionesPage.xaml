@@ -12,44 +12,20 @@
 
     <Grid RowDefinitions="Auto,*">
 
-        <!-- ── HEADER COMPACTO ── -->
-        <Grid Grid.Row="0"
-              BackgroundColor="{StaticResource Primary}"
-              Padding="16,44,16,14"
-              ColumnDefinitions="Auto,*,Auto,Auto"
-              ColumnSpacing="10">
-
-            <Border Grid.Column="0"
-                    BackgroundColor="{StaticResource PrimaryDark}"
-                    StrokeShape="RoundRectangle 10"
-                    Stroke="Transparent"
-                    Padding="8,6">
-                <Label Text="LC" FontSize="14" FontAttributes="Bold" TextColor="White" />
-            </Border>
-
-            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                <Label Text="Avisos"
-                       FontSize="16" FontAttributes="Bold" TextColor="White" />
-                <Label Text="Centro de notificaciones"
-                       FontSize="11" TextColor="{StaticResource PrimaryLight}" />
-            </VerticalStackLayout>
-
-            <!-- Badge no leídas -->
-            <Border Grid.Column="2"
-                    BackgroundColor="{StaticResource Danger}"
-                    StrokeShape="RoundRectangle 14"
-                    Stroke="Transparent"
-                    Padding="10,5"
-                    VerticalOptions="Center"
-                    IsVisible="{Binding TotalNoLeidas, Converter={StaticResource IntIsNotZeroConverter}}">
-                <Label Text="{Binding TotalNoLeidas}"
-                       FontSize="13" FontAttributes="Bold" TextColor="White" />
-            </Border>
-
-            <controls:ConnectivityActionsView Grid.Column="3"
-                                              RefreshCommand="{Binding CargarCommand}"
-                                              VerticalOptions="Center" />
-        </Grid>
+        <controls:PosHeaderView Grid.Row="0"
+                                MostrarVolver="True"
+                                InicialesUsuario="{Binding InicialesUsuario}"
+                                NombreUsuario="{Binding NombreUsuarioHeader}"
+                                RolUsuario="{Binding RolUsuarioHeader}"
+                                Kpi1Titulo="{Binding HeaderKpi1Titulo}"
+                                Kpi1Valor="{Binding HeaderKpi1Valor}"
+                                Kpi2Titulo="{Binding HeaderKpi2Titulo}"
+                                Kpi2Valor="{Binding HeaderKpi2Valor}"
+                                Kpi3Titulo="{Binding HeaderKpi3Titulo}"
+                                Kpi3Valor="{Binding HeaderKpi3Valor}"
+                                TotalAlertas="{Binding TotalNoLeidas}"
+                                RefreshCommand="{Binding CargarCommand}"
+                                BackCommand="{Binding VolverCommand}" />
 
         <!-- ── LISTA DE NOTIFICACIONES ── -->
         <RefreshView Grid.Row="1"

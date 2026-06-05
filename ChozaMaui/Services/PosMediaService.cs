@@ -9,8 +9,10 @@ public sealed class PosMediaService
 
     public PosMediaService(PhotoCaptureService photoCaptureService, ReceiptPdfService receiptPdfService)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _photoCaptureService = photoCaptureService;
         _receiptPdfService = receiptPdfService;
+        System.Diagnostics.Debug.WriteLine($"[PERF][PosMediaService] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     public Task<FotoAdjunta?> CapturarFotoAsync()

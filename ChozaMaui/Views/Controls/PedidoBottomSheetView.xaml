@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ChozaMaui.ViewModels"
+             xmlns:models="clr-namespace:ChozaMaui.Models"
+             x:Class="ChozaMaui.Views.Controls.PedidoBottomSheetView"
+             x:DataType="vm:PosViewModel">
+
+    <Grid>
+        <!-- Overlay oscuro -->
+        <BoxView Color="#66000000">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding CerrarPedidoSheetCommand}" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- Panel inferior -->
+        <Border VerticalOptions="End"
+                BackgroundColor="White"
+                Stroke="{StaticResource Border}"
+                StrokeShape="RoundRectangle 24,24,0,0"
+                Padding="16,12,16,24">
+            <Border.Shadow>
+                <Shadow Brush="Black" Offset="0,-4" Radius="20" Opacity="0.12" />
+            </Border.Shadow>
+            <VerticalStackLayout Spacing="12">
+
+                <!-- Handle -->
+                <BoxView WidthRequest="40"
+                         HeightRequest="4"
+                         CornerRadius="2"
+                         Color="{StaticResource Border}"
+                         HorizontalOptions="Center" />
+
+                <!-- Título + botón cliente -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Pedido actual"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="{Binding MesaNumeroTexto}"
+                               FontSize="12"
+                               TextColor="{StaticResource TextSecondary}" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1"
+                            BackgroundColor="{StaticResource PrimaryLight}"
+                            Stroke="Transparent"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="12,6">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding BuscarClienteCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="+ Cliente"
+                               FontSize="12"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource Primary}" />
+                    </Border>
+                </Grid>
+
+                <!-- Cliente seleccionado -->
+                <Border BackgroundColor="{StaticResource PrimaryLight}"
+                        Stroke="Transparent"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="10,8"
+                        IsVisible="{Binding TieneClienteSeleccionado}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Label Text="{Binding ClienteNombreTexto}"
+                               FontSize="13"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource Primary}"
+                               VerticalOptions="Center" />
+                        <Label Grid.Column="1"
+                               Text="{Binding ClienteEstadoTexto}"
+                               FontSize="11"
+                               TextColor="{StaticResource TextSecondary}"
+                               VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- Items del carrito -->
+                <CollectionView ItemsSource="{Binding Carrito}"
+                                SelectionMode="None"
+                                MaximumHeightRequest="260"
+                                ItemsUpdatingScrollMode="KeepScrollOffset">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ItemCarrito">
+                            <Grid ColumnDefinitions="*,96,34"
+                                  ColumnSpacing="10"
+                                  Padding="0,4"
+                                  Margin="0,0,0,8">
+                                <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                    <Label Text="{Binding Producto.Nombre}"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           MaxLines="1"
+                                           LineBreakMode="TailTruncation" />
+                                    <Label Text="{Binding Subtotal, StringFormat='${0:0.00}'}"
+                                           FontSize="12"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Primary}" />
+                                </VerticalStackLayout>
+
+                                <!-- Contador cantidad -->
+                                <Border Grid.Column="1"
+                                        BackgroundColor="{StaticResource SurfaceSunken}"
+                                        Stroke="{StaticResource Border}"
+                                        StrokeShape="RoundRectangle 12"
+                                        HeightRequest="38"
+                                        VerticalOptions="Center">
+                                    <Grid ColumnDefinitions="30,*,30">
+                                        <Label Grid.Column="0"
+                                               Text="-"
+                                               FontSize="18"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource TextPrimary}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center">
+                                            <Label.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=BindingContext.QuitarDelCarritoCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </Label.GestureRecognizers>
+                                        </Label>
+                                        <Label Grid.Column="1"
+                                               Text="{Binding Cantidad}"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource TextPrimary}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center" />
+                                        <Label Grid.Column="2"
+                                               Text="+"
+                                               FontSize="18"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Primary}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center">
+                                            <Label.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=BindingContext.AgregarAlCarritoCommand}"
+                                                    CommandParameter="{Binding Producto}" />
+                                            </Label.GestureRecognizers>
+                                        </Label>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Eliminar item -->
+                                <Border Grid.Column="2"
+                                        BackgroundColor="{StaticResource DangerLight}"
+                                        Stroke="Transparent"
+                                        StrokeShape="RoundRectangle 10"
+                                        HeightRequest="34"
+                                        WidthRequest="34"
+                                        VerticalOptions="Center">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentView}}, Path=BindingContext.EliminarItemCarritoCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="X"
+                                           FontSize="12"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Danger}"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Observaciones -->
+                <Border BackgroundColor="{StaticResource SurfaceSunken}"
+                        Stroke="{StaticResource Border}"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="12,0"
+                        HeightRequest="48">
+                    <Entry Text="{Binding Observaciones}"
+                           Placeholder="Observaciones del pedido..."
+                           PlaceholderColor="{StaticResource TextMuted}"
+                           TextColor="{StaticResource TextPrimary}"
+                           FontSize="14"
+                           BackgroundColor="Transparent" />
+                </Border>
+
+                <!-- Total -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Total"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource TextPrimary}" />
+                    <Label Grid.Column="1"
+                           Text="{Binding TotalTexto}"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+                </Grid>
+
+                <!-- Acciones -->
+                <Button Text="{Binding EnviarCocinaTexto}"
+                        Command="{Binding EnviarACocinaCommand}"
+                        IsVisible="{Binding PuedeEnviarACocina}"
+                        IsEnabled="{Binding PuedeEjecutarEnviarACocina}"
+                        Style="{StaticResource BtnPrimary}"
+                        HeightRequest="56"
+                        FontSize="16" />
+
+                <Border IsVisible="{Binding MostrarPedidoEnPreparacion}"
+                        BackgroundColor="{StaticResource PrimaryLight}"
+                        Stroke="{StaticResource PrimarySoft}"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="14,12">
+                    <Label Text="Pedido en preparación"
+                           FontSize="15"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource PrimaryDark}"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+
+                <Button Text="ENTREGAR PEDIDO"
+                        Command="{Binding EntregarPedidoActualCommand}"
+                        IsVisible="{Binding PuedeEntregarPedido}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}"
+                        Style="{StaticResource BtnPrimary}"
+                        HeightRequest="56"
+                        FontSize="16" />
+
+                <Button Text="COBRAR CUENTA"
+                        Command="{Binding CobrarCuentaCommand}"
+                        IsVisible="{Binding PuedeCobrarCuenta}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}"
+                        Style="{StaticResource BtnPrimary}"
+                        HeightRequest="56"
+                        FontSize="16" />
+
+                <Button Text="CERRAR MESA"
+                        Command="{Binding CerrarMesaCommand}"
+                        IsVisible="{Binding PuedeCerrarMesa}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBoolConverter}}"
+                        Style="{StaticResource BtnPrimary}"
+                        HeightRequest="56"
+                        FontSize="16" />
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10"
+                      IsVisible="{Binding PuedeGuardarBorrador}">
+                    <Button Text="Guardar"
+                            Command="{Binding EnviarPedidoCommand}"
+                            Style="{StaticResource BtnSecondary}"
+                            HeightRequest="46"
+                            FontSize="14" />
+                    <Button Grid.Column="1"
+                            Text="Cancelar"
+                            Command="{Binding LimpiarCarritoCommand}"
+                            Style="{StaticResource BtnDanger}"
+                            HeightRequest="46"
+                            FontSize="14" />
+                </Grid>
+
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentView>

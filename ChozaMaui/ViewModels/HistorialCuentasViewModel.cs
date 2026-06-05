@@ -15,6 +15,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
     private readonly HistorialCuentasPresentationService _presentation;
     private readonly SessionService _session;
     private readonly INavigationService _navigation;
+    private readonly NotificationService _notifications;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
     private DateTimeOffset? _ultimaCargaUtc;
     private static readonly TimeSpan VentanaMinimaRecarga = TimeSpan.FromSeconds(10);
@@ -22,6 +23,21 @@ public partial class HistorialCuentasViewModel : ObservableObject
     // ── Datos ─────────────────────────────────────────────────────
     [ObservableProperty] private ObservableCollection<CuentaResponse> cuentas = new();
     private List<CuentaResponse> _todas = [];
+
+    // ── Header del usuario ────────────────────────────────────────
+    [ObservableProperty] private string inicialUsuario = "U";
+    [ObservableProperty] private string nombreUsuario = "Usuario";
+    [ObservableProperty] private string rolUsuario = "Usuario";
+    [ObservableProperty] private string headerKpi1Titulo = "Pendientes";
+    [ObservableProperty] private string headerKpi1Valor = "0";
+    [ObservableProperty] private string headerKpi2Titulo = "Cobradas";
+    [ObservableProperty] private string headerKpi2Valor = "0";
+    [ObservableProperty] private string headerKpi3Titulo = "Total";
+    [ObservableProperty] private string headerKpi3Valor = "$0";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TieneAlertasHeader))]
+    private int totalAlertasHeader;
+    public bool TieneAlertasHeader => TotalAlertasHeader > 0;
 
     // ── Filtros ───────────────────────────────────────────────────
     [ObservableProperty]
@@ -90,8 +106,9 @@ public partial class HistorialCuentasViewModel : ObservableObject
     public bool TabCobradasActivo => FiltroEstado == "COBRADAS";
     public bool TabTodasActivo => FiltroEstado == "TODAS";
 
-    public HistorialCuentasViewModel(RoleCapabilityService capabilities, SessionService session, HistorialCuentasPresentationService presentation, HistorialCuentasClienteService clienteService, HistorialCuentasCobroService cobroService, HistorialCuentasLoadService loadService, INavigationService navigation)
+    public HistorialCuentasViewModel(RoleCapabilityService capabilities, SessionService session, HistorialCuentasPresentationService presentation, HistorialCuentasClienteService clienteService, HistorialCuentasCobroService cobroService, HistorialCuentasLoadService loadService, INavigationService navigation, NotificationService notifications)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _capabilities = capabilities;
         _session = session;
         _presentation = presentation;
@@ -99,6 +116,9 @@ public partial class HistorialCuentasViewModel : ObservableObject
         _cobroService = cobroService;
         _loadService = loadService;
         _navigation = navigation;
+        _notifications = notifications;
+        ActualizarHeaderOperativo();
+        System.Diagnostics.Debug.WriteLine($"[PERF][HistorialCuentasViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -115,6 +135,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
 
     private async Task CargarInternoAsync(bool force)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         if (!await _refreshLock.WaitAsync(0))
             return;
 
@@ -146,6 +167,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
         {
             IsBusy = false;
             _refreshLock.Release();
+            System.Diagnostics.Debug.WriteLine($"[PERF][HistorialCuentasViewModel] CargarInternoAsync(force={force}): {sw.ElapsedMilliseconds} ms");
         }
     }
 
@@ -195,6 +217,7 @@ public partial class HistorialCuentasViewModel : ObservableObject
         TotalFacturado = stats.TotalFacturado;
         OnPropertyChanged(nameof(TotalPendientes));
         OnPropertyChanged(nameof(TotalCobradas));
+        ActualizarHeaderOperativo();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -313,11 +336,60 @@ public partial class HistorialCuentasViewModel : ObservableObject
         try
         {
             var pedido = await _cobroService.ObtenerPedidoParaCobroAsync(cuenta);
+            if (pedido.Estado is not (PedidoEstados.Completado or PedidoEstados.Entregado))
+            {
+                Mensaje = "El pedido aún no fue entregado al cliente.";
+                return;
+            }
             MostrarDetalle = false;
             await _navigation.GoToAsync("pago",
                 new Dictionary<string, object> { { "Pedido", pedido } });
         }
         catch (Exception ex) { Mensaje = $"Error: {ex.Message}"; }
         finally { IsBusy = false; }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Header operativo
+    // ═══════════════════════════════════════════════════════════════
+    private void ActualizarHeaderOperativo()
+    {
+        var nombre = _session.NombreCompleto ?? _session.Username ?? "Usuario";
+        NombreUsuario = nombre;
+        RolUsuario = FormatearRol(_session.Rol);
+        InicialUsuario = CrearIniciales(nombre);
+        TotalAlertasHeader = _notifications.Historial.Count(n => !n.Leida);
+
+        // KPIs: pendientes, cobradas, total facturado
+        var pendientes = _todas.Count(c => c.Estado == CuentaEstados.Abierta);
+        var cobradas = _todas.Count(c => c.Estado != CuentaEstados.Abierta);
+        var total = _todas.Where(c => c.Estado != CuentaEstados.Abierta).Sum(c => c.Total);
+        HeaderKpi1Titulo = "Pendientes";
+        HeaderKpi1Valor = pendientes.ToString();
+        HeaderKpi2Titulo = "Cobradas";
+        HeaderKpi2Valor = cobradas.ToString();
+        HeaderKpi3Titulo = "Total";
+        HeaderKpi3Valor = $"${total:F0}";
+    }
+
+    [RelayCommand]
+    private Task IrNotificacionesAsync()
+        => _navigation.GoToAsync("notificaciones");
+
+    private static string FormatearRol(string? rol) => (rol ?? string.Empty).ToUpperInvariant() switch
+    {
+        "CAJERO" => "Cajero",
+        "CAMARERO" => "Camarero",
+        "COCINA" => "Cocina",
+        "ADMIN" => "Admin",
+        _ => rol ?? "Usuario"
+    };
+
+    private static string CrearIniciales(string nombre)
+    {
+        var partes = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return partes.Length >= 2
+            ? $"{partes[0][0]}{partes[1][0]}".ToUpperInvariant()
+            : nombre.Length > 0 ? nombre[0].ToString().ToUpperInvariant() : "U";
     }
 }

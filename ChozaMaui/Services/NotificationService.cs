@@ -30,6 +30,12 @@ public class NotificationService
     /// <summary>Se dispara en el hilo principal cada vez que se agrega una nueva notificación.</summary>
     public event Action? Cambiaron;
 
+    public NotificationService()
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        System.Diagnostics.Debug.WriteLine($"[PERF][NotificationService] Constructor: {sw.ElapsedMilliseconds} ms");
+    }
+
     /// <summary>
     /// Agrega una notificación al historial y dispara el evento <see cref="Cambiaron"/>.
     /// Puede llamarse desde cualquier hilo; internamente se marshalea al hilo principal.

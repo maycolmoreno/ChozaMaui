@@ -38,15 +38,18 @@ public partial class PerfilViewModel : ObservableObject
 
     public PerfilViewModel(SessionService session, UsuarioApiService usuariosApi, INavigationService navigation, NotificationService notifications)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         _session = session;
         _usuariosApi = usuariosApi;
         _navigation = navigation;
         _notifications = notifications;
+        System.Diagnostics.Debug.WriteLine($"[PERF][PerfilViewModel] Constructor: {sw.ElapsedMilliseconds} ms");
     }
 
     [RelayCommand]
     public void CargarPerfil()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         NombreCompleto = _session.NombreCompleto ?? "—";
         Username = _session.Username ?? "—";
         Rol = _session.Rol ?? "—";
@@ -61,6 +64,7 @@ public partial class PerfilViewModel : ObservableObject
         HeaderKpi3Titulo = "Alertas";
         TotalAlertasHeader = _notifications.Historial.Count(n => !n.Leida);
         HeaderKpi3Valor = TotalAlertasHeader.ToString();
+        System.Diagnostics.Debug.WriteLine($"[PERF][PerfilViewModel] CargarPerfil: {sw.ElapsedMilliseconds} ms");
     }
 
     [RelayCommand]
